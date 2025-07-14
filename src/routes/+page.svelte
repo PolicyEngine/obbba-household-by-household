@@ -26,7 +26,7 @@
       view: {
         xDomain: [-15, 15],
         yDomain: [0, 350000],
-        filter: d => d['Gross income'] < 350000,
+        filter: d => d['Gross Income'] < 350000,
         highlightGroup: null
       }
     },
@@ -37,18 +37,18 @@
       view: {
         xDomain: [-10, 15],
         yDomain: [0, 50000],
-        filter: d => d['Gross income'] >= 0 && d['Gross income'] < 50000,
+        filter: d => d['Gross Income'] >= 0 && d['Gross Income'] < 50000,
         highlightGroup: 'lower'
       }
     },
     {
       id: 'middle-income',
       title: "Middle-income households ($50,000 - $200,000)", 
-      groupText: "This broad middle class benefits significantly from TCJA extensions, enhanced Child Tax Credits, and new deductions for tips and overtime pay. Seniors in this range gain substantially from the additional $6,000 senior deduction. These households typically see net income increases from the tax provisions.",
+      groupText: "This broad middle class benefits significantly from TCJA extensions, enhanced Child Tax Credits, and new deductions for tips and overtime pay. Seniors in this range gain substantially from the additional $6,000 senior deduction. These households typically see Net Income increases from the tax provisions.",
       view: {
         xDomain: [-15, 25],
         yDomain: [50000, 200000],
-        filter: d => d['Gross income'] >= 50000 && d['Gross income'] < 200000,
+        filter: d => d['Gross Income'] >= 50000 && d['Gross Income'] < 200000,
         highlightGroup: 'middle'
       }
     },
@@ -59,7 +59,7 @@
       view: {
         xDomain: [-30, 30], 
         yDomain: [200000, 1000000],
-        filter: d => d['Gross income'] >= 200000 && d['Gross income'] < 1000000,
+        filter: d => d['Gross Income'] >= 200000 && d['Gross Income'] < 1000000,
         highlightGroup: 'upper'
       }
     },
@@ -70,7 +70,7 @@
       view: {
         xDomain: [-50, 50],
         yDomain: [1000000, 10000000],
-        filter: d => d['Gross income'] >= 1000000,
+        filter: d => d['Gross Income'] >= 1000000,
         highlightGroup: 'highest'
       }
     }
@@ -127,8 +127,8 @@
           let closest = null;
           let minDistance = Infinity;
           filteredData.forEach(d => {
-            const dx = (d['Percentage change in net income'] - centerX) / (baseView.view.xDomain[1] - baseView.view.xDomain[0]);
-            const dy = (d['Gross income'] - centerY) / (baseView.view.yDomain[1] - baseView.view.yDomain[0]);
+            const dx = (d['Percentage Change in Net Income'] - centerX) / (baseView.view.xDomain[1] - baseView.view.xDomain[0]);
+            const dy = (d['Gross Income'] - centerY) / (baseView.view.yDomain[1] - baseView.view.yDomain[0]);
             const distance = Math.sqrt(dx * dx + dy * dy);
             if (distance < minDistance) {
               minDistance = distance;
@@ -257,14 +257,14 @@
   function generateHouseholdSummary(household) {
     if (!household) return '';
     
-    const income = household['Gross income'];
-    const baselineNetIncome = household['Baseline net income'];
-    const changeInNetIncome = household['Total change in net income'];
-    const percentChange = household['Percentage change in net income'];
-    const householdSize = household['Household size'];
-    const isMarried = household['Is married'];
-    const numDependents = household['Number of dependents'];
-    const age = household['Age of head'];
+    const income = household['Gross Income'];
+          const baselineNetIncome = household['Baseline Net Income'];
+      const changeInNetIncome = household['Total Change in Net Income'];
+    const percentChange = household['Percentage Change in Net Income'];
+          const householdSize = household['Household Size'];
+      const isMarried = household['Is Married'];
+          const numDependents = household['Number of Dependents'];
+      const age = household['Age of Head'];
     const state = household['State'];
     
     const familyStructure = isMarried ? 
@@ -273,7 +273,7 @@
     
     const gainOrLoss = changeInNetIncome > 0 ? 'gains' : 'loses';
     
-    return `This household is a ${familyStructure} living in ${state}. The head of household is ${age} years old. Under the baseline tax system, this household has a gross income of $${income.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} and a net income of $${baselineNetIncome.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}. After the proposed tax reforms, this household ${gainOrLoss} $${Math.abs(changeInNetIncome).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} annually, representing a ${Math.abs(percentChange).toFixed(1)}% ${changeInNetIncome > 0 ? 'increase' : 'decrease'} in their net income.`;
+    return `This household is a ${familyStructure} living in ${state}. The head of household is ${age} years old. Under the baseline tax system, this household has a Gross Income of $${income.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} and a Net Income of $${baselineNetIncome.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}. After the proposed tax reforms, this household ${gainOrLoss} $${Math.abs(changeInNetIncome).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} annually, representing a ${Math.abs(percentChange).toFixed(1)}% ${changeInNetIncome > 0 ? 'increase' : 'decrease'} in their Net Income.`;
   }
 
   // Get provision breakdown for a household
@@ -281,26 +281,26 @@
     if (!household) return [];
     
     const provisions = [
-      { name: 'Tax rate reform', key: 'Change in net income after tax rate reform' },
-      { name: 'Standard deduction reform', key: 'Change in net income after standard deduction reform' },
-      { name: 'Exemption reform', key: 'Change in net income after exemption reform' },
-      { name: 'Child Tax Credit reform', key: 'Change in net income after CTC reform' },
-      { name: 'QBID reform', key: 'Change in net income after QBID reform' },
-      { name: 'AMT reform', key: 'Change in net income after AMT reform' },
-      { name: 'Miscellaneous reform', key: 'Change in net income after miscellaneous reform' },
-      { name: 'Other itemized deductions reform', key: 'Change in net income after other itemized deductions reform' },
-      { name: 'Limitation on itemized deductions reform', key: 'Change in net income after limitation on itemized deductions reform' },
-      { name: 'Estate tax reform', key: 'Change in net income after estate tax reform' },
-      { name: 'Senior deduction reform', key: 'Change in net income after senior deduction reform' },
-      { name: 'Tip income exempt', key: 'Change in net income after tip income exempt' },
-      { name: 'Overtime income exempt', key: 'Change in net income after overtime income exempt' },
-      { name: 'Auto loan interest ALD', key: 'Change in net income after auto loan interest ALD' },
-      { name: 'SALT reform', key: 'Change in net income after SALT reform' },
-      { name: 'CDCC reform', key: 'Change in net income after CDCC reform' },
-      { name: 'ACA enhanced subsidies reform', key: 'Change in net income after ACA enhanced subsidies reform' },
-      { name: 'SNAP takeup reform', key: 'Change in net income after SNAP takeup reform' },
-      { name: 'ACA takeup reform', key: 'Change in net income after ACA takeup reform' },
-      { name: 'Medicaid takeup reform', key: 'Change in net income after Medicaid takeup reform' }
+      { name: 'Tax Rate Reform', key: 'Change in Net income after Tax Rate Reform' },
+      { name: 'Standard Deduction Reform', key: 'Change in Net income after Standard Deduction Reform' },
+      { name: 'Exemption Reform', key: 'Change in Net income after Exemption Reform' },
+      { name: 'Child Tax Credit Reform', key: 'Change in Net income after CTC Reform' },
+      { name: 'QBID Reform', key: 'Change in Net income after QBID Reform' },
+      { name: 'AMT Reform', key: 'Change in Net income after AMT Reform' },
+      { name: 'Miscellaneous Reform', key: 'Change in Net income after Miscellaneous Reform' },
+      { name: 'Other Itemized Deductions Reform', key: 'Change in Net income after Other Itemized Deductions Reform' },
+      { name: 'Limitation on Itemized Deductions Reform', key: 'Change in Net income after Limitation on Itemized Deductions Reform' },
+      { name: 'Estate Tax Reform', key: 'Change in Net income after Estate Tax Reform' },
+      { name: 'Senior Deduction Reform', key: 'Change in Net income after Senior Deduction Reform' },
+      { name: 'Tip Income Exempt', key: 'Change in Net income after Tip Income Exempt' },
+      { name: 'Overtime Income Exempt', key: 'Change in Net income after Overtime Income Exempt' },
+      { name: 'Auto Loan Interest ALD', key: 'Change in Net income after Auto Loan Interest ALD' },
+      { name: 'SALT Reform', key: 'Change in Net income after SALT Reform' },
+      { name: 'CDCC Reform', key: 'Change in Net income after CDCC Reform' },
+      { name: 'ACA Enhanced Subsidies Reform', key: 'Change in Net income after ACA Enhanced Subsidies Reform' },
+      { name: 'SNAP Takeup Reform', key: 'Change in Net income after SNAP Takeup Reform' },
+      { name: 'ACA Takeup Reform', key: 'Change in Net income after ACA Takeup Reform' },
+      { name: 'Medicaid Takeup Reform', key: 'Change in Net income after Medicaid Takeup Reform' }
     ];
     
     return provisions
@@ -481,9 +481,9 @@
       const currentState = currentView;
       allRelevantData = data.filter(d => {
         // Include a much wider range so we can fade points in/out smoothly
-        return d['Gross income'] >= 0 && d['Gross income'] <= 15000000 &&
-               d['Percentage change in net income'] >= -100 && 
-               d['Percentage change in net income'] <= 100;
+            return d['Gross Income'] >= 0 && d['Gross Income'] <= 15000000 &&
+           d['Percentage Change in Net Income'] >= -100 &&
+           d['Percentage Change in Net Income'] <= 100;
       });
     }
 
@@ -526,8 +526,8 @@
 
     // Enhanced point rendering with smooth fade animations
     allRelevantData.forEach(d => {
-      const x = xScale(d['Percentage change in net income']);
-      const y = yScale(d['Gross income']);
+      const x = xScale(d['Percentage Change in Net Income']);
+      const y = yScale(d['Gross Income']);
       
       // Skip if outside canvas bounds
       if (x < margin.left || x > width - margin.right || y < margin.top || y > height - margin.bottom) return;
@@ -564,7 +564,7 @@
 
       // NYT color scheme
       let color;
-      const change = d['Percentage change in net income'];
+              const change = d['Percentage Change in Net Income'];
       if (Math.abs(change) < 0.1) {
         color = '#999999'; // gray for no change
       } else if (change > 0) {
@@ -742,8 +742,8 @@
             setTimeout(() => {
               createAnimatedNumber(
                 `gross-income-${sectionIndex}`,
-                previousHousehold['Gross income'],
-                currentHousehold['Gross income'],
+                previousHousehold['Gross Income'],
+                currentHousehold['Gross Income'],
                 formatCurrency,
                 animationDuration
               );
@@ -752,8 +752,8 @@
             setTimeout(() => {
               createAnimatedNumber(
                 `net-change-${sectionIndex}`,
-                previousHousehold['Total change in net income'],
-                currentHousehold['Total change in net income'],
+                previousHousehold['Total Change in Net Income'],
+                currentHousehold['Total Change in Net Income'],
                 formatDollarChange,
                 animationDuration
               );
@@ -762,8 +762,8 @@
             setTimeout(() => {
               createAnimatedNumber(
                 `percent-change-${sectionIndex}`,
-                previousHousehold['Percentage change in net income'],
-                currentHousehold['Percentage change in net income'],
+                previousHousehold['Percentage Change in Net Income'],
+                currentHousehold['Percentage Change in Net Income'],
                 formatPercentage,
                 animationDuration
               );
@@ -966,14 +966,14 @@
     if (!filteredData || filteredData.length === 0) return null;
     
     // Calculate total weight
-    const totalWeight = filteredData.reduce((sum, household) => sum + (household['Household weight'] || 1), 0);
+    const totalWeight = filteredData.reduce((sum, household) => sum + (household['Household Weight'] || 1), 0);
     
     // Generate random number between 0 and totalWeight
     let randomWeight = Math.random() * totalWeight;
     
     // Find the household that corresponds to this weight
     for (const household of filteredData) {
-      randomWeight -= (household['Household weight'] || 1);
+      randomWeight -= (household['Household Weight'] || 1);
       if (randomWeight <= 0) {
         return household;
       }
@@ -1075,21 +1075,21 @@
                   </div>
                   <div class="household-details">
                     <div class="detail-item">
-                      <span class="label">Gross income:</span>
+                                              <span class="label">Gross Income:</span>
                       <span class="value" id="gross-income-{i}">
-                        {formatCurrency(randomHousehold['Gross income'])}
+                        {formatCurrency(randomHousehold['Gross Income'])}
                       </span>
                     </div>
                     <div class="detail-item">
-                      <span class="label">Net income change:</span>
-                      <span class="value {randomHousehold['Total change in net income'] > 0 ? 'positive' : 'negative'}" id="net-change-{i}">
-                        {formatDollarChange(randomHousehold['Total change in net income'])}
+                      <span class="label">Net Income change:</span>
+                                  <span class="value {randomHousehold['Total Change in Net Income'] > 0 ? 'positive' : 'negative'}" id="net-change-{i}">
+              {formatDollarChange(randomHousehold['Total Change in Net Income'])}
                       </span>
                     </div>
                     <div class="detail-item">
-                      <span class="label">Percentage change:</span>
-                      <span class="value {randomHousehold['Percentage change in net income'] > 0 ? 'positive' : 'negative'}" id="percent-change-{i}">
-                        {formatPercentage(randomHousehold['Percentage change in net income'])}
+                                              <span class="label">Percentage Change:</span>
+                                  <span class="value {randomHousehold['Percentage Change in Net Income'] > 0 ? 'positive' : 'negative'}" id="percent-change-{i}">
+              {formatPercentage(randomHousehold['Percentage Change in Net Income'])}
                       </span>
                     </div>
                   </div>
