@@ -33,7 +33,7 @@
     {
       id: 'lower-income', 
       title: "Lower-income households under $50,000",
-      groupText: "Households earning under $50,000 see varied outcomes. While many benefit from Child Tax Credit expansions and TCJA extensions, some undocumented families lose access to credits due to new SSN requirements. The bill reduces poverty by 5.5% overall, with the bottom decile gaining an average of $342.",
+      groupText: "Households earning under $50,000 see varied outcomes. While many benefit from Child Tax Credit expansions and TCJA extensions, some undocumented families lose access to credits due to new SSN requirements. Individuals in the bottom decile will gain an average of $213, while the top decile will gain an average of $13,075.",
       view: {
         xDomain: [-10, 15],
         yDomain: [0, 50000],
@@ -273,7 +273,7 @@
     
     const gainOrLoss = changeInNetIncome > 0 ? 'gains' : 'loses';
     
-    return `This household is a ${familyStructure} living in ${state}. The head of household is ${age} years old. Under the baseline tax system, this household has a Gross Income of $${income.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} and a Net Income of $${baselineNetIncome.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}. After the proposed tax reforms, this household ${gainOrLoss} $${Math.abs(changeInNetIncome).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} annually, representing a ${Math.abs(percentChange).toFixed(1)}% ${changeInNetIncome > 0 ? 'increase' : 'decrease'} in their Net Income.`;
+    return `This household is a ${familyStructure} living in ${state}. The head of household is ${age} years old. Under the baseline tax system, this household has a Gross Income of $${income.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} and a Net Income of $${baselineNetIncome.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}. After the proposed tax reforms, this household ${gainOrLoss} $${Math.abs(changeInNetIncome).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} annually, representing a ${Math.abs(percentChange).toFixed(1)}% ${changeInNetIncome > 0 ? 'increase' : 'decrease'} in their net income.`;
   }
 
   // Get provision breakdown for a household
@@ -298,9 +298,9 @@
       { name: 'SALT Reform', key: 'Change in Net income after SALT Reform' },
       { name: 'CDCC Reform', key: 'Change in Net income after CDCC Reform' },
       { name: 'ACA Enhanced Subsidies Reform', key: 'Change in Net income after ACA Enhanced Subsidies Reform' },
-      { name: 'SNAP Takeup Reform', key: 'Change in Net income after SNAP Takeup Reform' },
-      { name: 'ACA Takeup Reform', key: 'Change in Net income after ACA Takeup Reform' },
-      { name: 'Medicaid Takeup Reform', key: 'Change in Net income after Medicaid Takeup Reform' }
+      { name: 'SNAP Reform', key: 'Change in Net income after SNAP Takeup Reform' },
+      { name: 'Extension of ACA Subsidies', key: 'Change in Net income after Extension of ACA Subsidies Reform' },
+      { name: 'Medicaid Reform', key: 'Change in Net income after Medicaid Takeup Reform' }
     ];
     
     return provisions
