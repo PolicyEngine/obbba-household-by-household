@@ -431,11 +431,11 @@
     rightSideAccumulatedScroll += deltaY;
     
     // Calculate new y-axis range based on scroll
-    const maxIncome = 10000000; // Maximum income in dataset
+    const maxIncome = 10000000; // Maximum income in dataset (increased to handle high earners)
     const minIncome = 0; // Always keep 0 in view
     const scrollSensitivity = 8000; // How much income range changes per scroll unit
     
-    // Calculate new max income based on scroll
+    // Calculate new max income based on scroll (inverted logic for intuitive scrolling)
     let newMaxIncome = Math.max(
       350000 - (rightSideAccumulatedScroll * scrollSensitivity),
       25000 // Minimum range to maintain usability
@@ -443,7 +443,7 @@
     
     // Clamp to reasonable bounds
     newMaxIncome = Math.min(newMaxIncome, maxIncome);
-    newMaxIncome = Math.max(newMaxIncome, 25000);
+    newMaxIncome = Math.max(newMaxIncome, 50000);
     
     // Update the y-axis range
     rightSideYRange = [minIncome, newMaxIncome];
@@ -548,9 +548,11 @@
       const currentState = currentView;
       allRelevantData = data.filter(d => {
         // Include a much wider range so we can fade points in/out smoothly
-            return d['Gross Income'] >= 0 && d['Gross Income'] <= 15000000 &&
-           d['Percentage Change in Net Income'] >= -100 &&
-           d['Percentage Change in Net Income'] <= 100;
+        // When in right-side scroll mode, include all data up to the maximum possible range
+        const maxIncomeToInclude = rightSideScrollMode ? 10000000 : 10000000;
+        return d['Gross Income'] >= 0 && d['Gross Income'] <= maxIncomeToInclude &&
+               d['Percentage Change in Net Income'] >= -100 &&
+               d['Percentage Change in Net Income'] <= 100;
       });
     }
 
@@ -625,7 +627,16 @@
       } else {
         // Static view - check if point should be visible
         const currentState = currentView;
-        const shouldBeVisible = currentState.filter ? currentState.filter(d) : true;
+        let shouldBeVisible;
+        
+        if (rightSideScrollMode) {
+          // In right-side scroll mode, show all points within the current y-axis range
+          shouldBeVisible = d['Gross Income'] >= rightSideYRange[0] && d['Gross Income'] <= rightSideYRange[1];
+        } else {
+          // Normal left-side scroll behavior
+          shouldBeVisible = currentState.filter ? currentState.filter(d) : true;
+        }
+        
         fadeOpacity = shouldBeVisible ? 1 : 0;
       }
 
