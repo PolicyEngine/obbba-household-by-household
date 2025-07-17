@@ -1224,7 +1224,7 @@
       {/each}
     </div>
     
-    <div class="viz-column" bind:this={vizColumnRef} on:scroll={handleScroll}>
+    <div class="viz-column" bind:this={vizColumnRef} on:wheel={handleRightSideScroll}>
       <div class="viz-sticky">
         <canvas 
           bind:this={canvasRef} 
