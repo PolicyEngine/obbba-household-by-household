@@ -323,9 +323,9 @@
   // Right-side scrolling variables
   let rightSideScrollMode = false;
   let rightSideYRange = [0, 350000]; // Default full range
-  let rightSideAccumulatedScroll = 0;
   let vizColumnRef;
-  let rightSideScrollThrottle;
+  let vizScrollTop = 0;
+  let scrollContentHeight = 10000; // Total scrollable height
 
   function setupIntersectionObserver() {
     if (intersectionObserver) {
@@ -373,11 +373,15 @@
     if (newIndex === currentStateIndex || isTransitioning) return;
     
     // Override right-side scroll mode when left-side scrolling is used
+    // Override right-side scroll mode when left-side scrolling is used
     if (rightSideScrollMode) {
       rightSideScrollMode = false;
-      rightSideAccumulatedScroll = 0;
+      // Reset the scroll position of the viz column
+      if (vizColumnRef) {
+        vizColumnRef.scrollTop = 0;
+        vizScrollTop = 0;
+      }
     }
-    
     isTransitioning = true;
     previousStateIndex = currentStateIndex;
     const fromState = scrollStates[currentStateIndex];
@@ -411,69 +415,57 @@
   }
 
   // Right-side scrolling functions
-  function handleRightSideScroll(event) {
-    if (isTransitioning) return;
-    
-    // Enable right-side scroll mode
-    rightSideScrollMode = true;
-    
-    // Throttle scroll events
-    if (rightSideScrollThrottle) clearTimeout(rightSideScrollThrottle);
-    rightSideScrollThrottle = setTimeout(() => {
-      processRightSideScroll(event);
-    }, 16); // ~60fps throttling
-  }
-
-  function processRightSideScroll(event) {
-    const deltaY = event.deltaY;
-    
-    // Accumulate scroll delta
-    rightSideAccumulatedScroll += deltaY;
-    
-    // Calculate new y-axis range based on scroll
-    const maxIncome = 10000000; // Maximum income in dataset (increased to handle high earners)
-    const maxMinIncome = 1000000; // Maximum minimum y-axis value
-    const scrollSensitivity = 8000; // How much income range changes per scroll unit
-    const minRange = 50000; // Minimum range to maintain usability
-    
-    // Calculate scroll position as a continuous value
-    const scrollPosition = rightSideAccumulatedScroll * scrollSensitivity;
-    
-    // Calculate new max and min income based on scroll
-    // When scrolling up (negative deltaY), we want to zoom in (reduce range)
-    // When scrolling down (positive deltaY), we want to zoom out or shift the window
-    
-    let newMaxIncome, newMinIncome;
-    
-    if (scrollPosition <= 0) {
-      // Scrolling up from initial position - zoom in by reducing max
-      newMaxIncome = Math.max(350000 + scrollPosition, minRange);
-      newMinIncome = 0;
-    } else {
-      // Scrolling down - first expand to max, then start adjusting minimum
-      const maxReached = Math.max(0, scrollPosition - (maxIncome - 350000));
+  // Reactive statement to handle scroll-based y-axis adjustment
+  $: {
+    if (vizScrollTop !== undefined && !isTransitioning) {
+      // Enable right-side scroll mode when scrolling
+      if (vizScrollTop > 0) {
+        rightSideScrollMode = true;
+      }
       
-      if (maxReached <= 0) {
-        // Still expanding maximum
-        newMaxIncome = Math.min(350000 + scrollPosition, maxIncome);
+      // Calculate y-axis range based on scroll position
+      const maxIncome = 10000000; // Maximum income in dataset
+      const minRange = 50000; // Minimum range to maintain usability
+      const initialRange = 350000; // Initial y-axis max
+      
+      // Map scroll position (0 to scrollContentHeight) to income range changes
+      const scrollProgress = vizScrollTop / scrollContentHeight;
+      
+      // Three phases of scrolling:
+      // 1. First 40%: Zoom in by reducing max from 350k to minRange
+      // 2. Next 40%: Zoom out by increasing max from 350k to maxIncome
+      // 3. Last 20%: Shift window up by increasing min
+      
+      let newMaxIncome, newMinIncome;
+      
+      if (scrollProgress < 0.4) {
+        // Phase 1: Zoom in
+        const zoomProgress = scrollProgress / 0.4;
+        newMaxIncome = initialRange - (initialRange - minRange) * zoomProgress;
+        newMinIncome = 0;
+      } else if (scrollProgress < 0.8) {
+        // Phase 2: Zoom out
+        const zoomProgress = (scrollProgress - 0.4) / 0.4;
+        newMaxIncome = initialRange + (maxIncome - initialRange) * zoomProgress;
         newMinIncome = 0;
       } else {
-        // Maximum reached, now adjust minimum
+        // Phase 3: Shift window up
+        const shiftProgress = (scrollProgress - 0.8) / 0.2;
         newMaxIncome = maxIncome;
-        newMinIncome = Math.min(maxReached, maxMinIncome);
+        newMinIncome = 1000000 * shiftProgress; // Max shift to 1M
         
         // Ensure minimum range is maintained
         if (newMaxIncome - newMinIncome < minRange) {
-          newMinIncome = Math.max(0, newMaxIncome - minRange);
+          newMinIncome = newMaxIncome - minRange;
         }
       }
+      
+      // Update the y-axis range
+      rightSideYRange = [newMinIncome, newMaxIncome];
+      
+      // Trigger re-render
+      renderVisualization();
     }
-    
-    // Update the y-axis range
-    rightSideYRange = [newMinIncome, newMaxIncome];
-    
-    // Trigger re-render with new range
-    renderVisualization();
   }
 
   function animateScales({ from, to, duration, onComplete }) {
@@ -520,8 +512,8 @@
     
     const width = displayWidth;
     const height = displayHeight;
-    const margin = { top: 80, right: 120, bottom: 100, left: 100 };
-
+    const margin = { top: 80, right: 120, bottom: 100, left: 130 };
+    
     // Determine current view and interpolation
     let currentView, targetView, interpolationT;
     
@@ -1224,7 +1216,7 @@
       {/each}
     </div>
     
-    <div class="viz-column" bind:this={vizColumnRef} on:wheel={handleRightSideScroll}>
+    <div class="viz-column" bind:this={vizColumnRef} on:scroll={() => vizScrollTop = vizColumnRef.scrollTop}>
       <div class="viz-sticky">
         <canvas 
           bind:this={canvasRef} 
@@ -1240,7 +1232,20 @@
           class="overlay-svg"
         ></svg>
         
+        {#if rightSideScrollMode}
+          <div class="scroll-indicator">
+            <div class="scroll-indicator-text">
+              Scrolling adjusts Y-axis
+              <div class="scroll-range">
+                ${Math.round(rightSideYRange[0]).toLocaleString()} - ${Math.round(rightSideYRange[1]).toLocaleString()}
+              </div>
+            </div>
+          </div>
+        {/if}
       </div>
+      
+      <!-- Invisible scroll content to create scrollable area -->
+      <div class="scroll-spacer" style="height: {scrollContentHeight}px; pointer-events: none;"></div>
     </div>
   </div>
 
@@ -1341,21 +1346,42 @@
     height: 100vh;
     overflow-y: auto;
   }
-
   .viz-column {
     flex: 0 0 60%;
     background: var(--nyt-background);
+    height: 100vh;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    position: relative;
+    /* Hide scrollbar for cleaner look */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .viz-column::-webkit-scrollbar {
+    display: none;
   }
 
   .viz-sticky {
     position: sticky;
-    top: 60px;
-    height: calc(100vh - 120px);
+    top: 0;
+    height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 20px;
-    position: relative;
+    background: var(--nyt-background);
+    z-index: 1;
+  }
+
+  .scroll-spacer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    opacity: 0;
+    z-index: -1;
   }
 
   .scroll-indicator {
@@ -1615,6 +1641,8 @@
     .viz-column {
       flex: none;
       order: 1;
+      height: 50vh;
+      overflow-y: auto;
     }
     
     .viz-sticky {
