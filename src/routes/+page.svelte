@@ -432,21 +432,45 @@
     
     // Calculate new y-axis range based on scroll
     const maxIncome = 10000000; // Maximum income in dataset (increased to handle high earners)
-    const minIncome = 0; // Always keep 0 in view
+    const maxMinIncome = 1000000; // Maximum minimum y-axis value
     const scrollSensitivity = 8000; // How much income range changes per scroll unit
+    const minRange = 50000; // Minimum range to maintain usability
     
-    // Calculate new max income based on scroll (inverted logic for intuitive scrolling)
-    let newMaxIncome = Math.max(
-      350000 - (rightSideAccumulatedScroll * scrollSensitivity),
-      25000 // Minimum range to maintain usability
-    );
+    // Calculate scroll position as a continuous value
+    const scrollPosition = rightSideAccumulatedScroll * scrollSensitivity;
     
-    // Clamp to reasonable bounds
-    newMaxIncome = Math.min(newMaxIncome, maxIncome);
-    newMaxIncome = Math.max(newMaxIncome, 50000);
+    // Calculate new max and min income based on scroll
+    // When scrolling up (negative deltaY), we want to zoom in (reduce range)
+    // When scrolling down (positive deltaY), we want to zoom out or shift the window
+    
+    let newMaxIncome, newMinIncome;
+    
+    if (scrollPosition <= 0) {
+      // Scrolling up from initial position - zoom in by reducing max
+      newMaxIncome = Math.max(350000 + scrollPosition, minRange);
+      newMinIncome = 0;
+    } else {
+      // Scrolling down - first expand to max, then start adjusting minimum
+      const maxReached = Math.max(0, scrollPosition - (maxIncome - 350000));
+      
+      if (maxReached <= 0) {
+        // Still expanding maximum
+        newMaxIncome = Math.min(350000 + scrollPosition, maxIncome);
+        newMinIncome = 0;
+      } else {
+        // Maximum reached, now adjust minimum
+        newMaxIncome = maxIncome;
+        newMinIncome = Math.min(maxReached, maxMinIncome);
+        
+        // Ensure minimum range is maintained
+        if (newMaxIncome - newMinIncome < minRange) {
+          newMinIncome = Math.max(0, newMaxIncome - minRange);
+        }
+      }
+    }
     
     // Update the y-axis range
-    rightSideYRange = [minIncome, newMaxIncome];
+    rightSideYRange = [newMinIncome, newMaxIncome];
     
     // Trigger re-render with new range
     renderVisualization();
@@ -518,9 +542,9 @@
       // Use right-side scroll range for y-axis
       yMin = rightSideYRange[0];
       yMax = rightSideYRange[1];
-      // Keep x-axis from current view or use default
-      xMin = currentView.xDomain[0];
-      xMax = currentView.xDomain[1];
+      // Fixed x-axis domain for right-side scrolling
+      xMin = -30;
+      xMax = 30;
     } else {
       // Use normal left-side scroll behavior
       yMin = d3.interpolate(currentView.yDomain[0], targetView.yDomain[0])(interpolationT);
@@ -1200,17 +1224,8 @@
       {/each}
     </div>
     
-    <div class="viz-column" bind:this={vizColumnRef} on:wheel={handleRightSideScroll}>
+    <div class="viz-column" bind:this={vizColumnRef} on:scroll={handleScroll}>
       <div class="viz-sticky">
-        {#if rightSideScrollMode}
-          <div class="scroll-indicator">
-            <div class="scroll-indicator-text">
-              Right-side scrolling active
-              <br>
-              <span class="scroll-range">Income range: $0 - ${Math.round(rightSideYRange[1]).toLocaleString()}</span>
-            </div>
-          </div>
-        {/if}
         <canvas 
           bind:this={canvasRef} 
           width="800" 
