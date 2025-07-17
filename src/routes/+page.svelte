@@ -319,6 +319,13 @@
   let previousStateIndex = 0;
   let isTransitioning = false;
   let intersectionObserver;
+  
+  // Right-side scrolling variables
+  let rightSideScrollMode = false;
+  let rightSideYRange = [0, 350000]; // Default full range
+  let vizColumnRef;
+  let vizScrollTop = 0;
+  let scrollContentHeight = 10000; // Total scrollable height
 
   function setupIntersectionObserver() {
     if (intersectionObserver) {
@@ -365,6 +372,16 @@
   function transitionToState(newIndex) {
     if (newIndex === currentStateIndex || isTransitioning) return;
     
+    // Override right-side scroll mode when left-side scrolling is used
+    // Override right-side scroll mode when left-side scrolling is used
+    if (rightSideScrollMode) {
+      rightSideScrollMode = false;
+      // Reset the scroll position of the viz column
+      if (vizColumnRef) {
+        vizColumnRef.scrollTop = 0;
+        vizScrollTop = 0;
+      }
+    }
     isTransitioning = true;
     previousStateIndex = currentStateIndex;
     const fromState = scrollStates[currentStateIndex];
@@ -395,6 +412,60 @@
         isTransitioning = false;
       }
     });
+  }
+
+  // Right-side scrolling functions
+  // Reactive statement to handle scroll-based y-axis adjustment
+  $: {
+    if (vizScrollTop !== undefined && !isTransitioning) {
+      // Enable right-side scroll mode when scrolling
+      if (vizScrollTop > 0) {
+        rightSideScrollMode = true;
+      }
+      
+      // Calculate y-axis range based on scroll position
+      const maxIncome = 10000000; // Maximum income in dataset
+      const minRange = 50000; // Minimum range to maintain usability
+      const initialRange = 350000; // Initial y-axis max
+      
+      // Map scroll position (0 to scrollContentHeight) to income range changes
+      const scrollProgress = vizScrollTop / scrollContentHeight;
+      
+      // Three phases of scrolling:
+      // 1. First 40%: Zoom in by reducing max from 350k to minRange
+      // 2. Next 40%: Zoom out by increasing max from 350k to maxIncome
+      // 3. Last 20%: Shift window up by increasing min
+      
+      let newMaxIncome, newMinIncome;
+      
+      if (scrollProgress < 0.4) {
+        // Phase 1: Zoom in
+        const zoomProgress = scrollProgress / 0.4;
+        newMaxIncome = initialRange - (initialRange - minRange) * zoomProgress;
+        newMinIncome = 0;
+      } else if (scrollProgress < 0.8) {
+        // Phase 2: Zoom out
+        const zoomProgress = (scrollProgress - 0.4) / 0.4;
+        newMaxIncome = initialRange + (maxIncome - initialRange) * zoomProgress;
+        newMinIncome = 0;
+      } else {
+        // Phase 3: Shift window up
+        const shiftProgress = (scrollProgress - 0.8) / 0.2;
+        newMaxIncome = maxIncome;
+        newMinIncome = 1000000 * shiftProgress; // Max shift to 1M
+        
+        // Ensure minimum range is maintained
+        if (newMaxIncome - newMinIncome < minRange) {
+          newMinIncome = newMaxIncome - minRange;
+        }
+      }
+      
+      // Update the y-axis range
+      rightSideYRange = [newMinIncome, newMaxIncome];
+      
+      // Trigger re-render
+      renderVisualization();
+    }
   }
 
   function animateScales({ from, to, duration, onComplete }) {
@@ -441,8 +512,8 @@
     
     const width = displayWidth;
     const height = displayHeight;
-    const margin = { top: 80, right: 120, bottom: 100, left: 100 };
-
+    const margin = { top: 80, right: 120, bottom: 100, left: 130 };
+    
     // Determine current view and interpolation
     let currentView, targetView, interpolationT;
     
@@ -457,10 +528,22 @@
     }
 
     // Interpolate between views with D3
-    const yMin = d3.interpolate(currentView.yDomain[0], targetView.yDomain[0])(interpolationT);
-    const yMax = d3.interpolate(currentView.yDomain[1], targetView.yDomain[1])(interpolationT);
-    const xMin = d3.interpolate(currentView.xDomain[0], targetView.xDomain[0])(interpolationT);
-    const xMax = d3.interpolate(currentView.xDomain[1], targetView.xDomain[1])(interpolationT);
+    let yMin, yMax, xMin, xMax;
+    
+    if (rightSideScrollMode) {
+      // Use right-side scroll range for y-axis
+      yMin = rightSideYRange[0];
+      yMax = rightSideYRange[1];
+      // Fixed x-axis domain for right-side scrolling
+      xMin = -30;
+      xMax = 30;
+    } else {
+      // Use normal left-side scroll behavior
+      yMin = d3.interpolate(currentView.yDomain[0], targetView.yDomain[0])(interpolationT);
+      yMax = d3.interpolate(currentView.yDomain[1], targetView.yDomain[1])(interpolationT);
+      xMin = d3.interpolate(currentView.xDomain[0], targetView.xDomain[0])(interpolationT);
+      xMax = d3.interpolate(currentView.xDomain[1], targetView.xDomain[1])(interpolationT);
+    }
     
     // Clear canvas with NYT-style background
     ctx.fillStyle = '#ffffff';
@@ -481,9 +564,11 @@
       const currentState = currentView;
       allRelevantData = data.filter(d => {
         // Include a much wider range so we can fade points in/out smoothly
-            return d['Gross Income'] >= 0 && d['Gross Income'] <= 15000000 &&
-           d['Percentage Change in Net Income'] >= -100 &&
-           d['Percentage Change in Net Income'] <= 100;
+        // When in right-side scroll mode, include all data up to the maximum possible range
+        const maxIncomeToInclude = rightSideScrollMode ? 10000000 : 10000000;
+        return d['Gross Income'] >= 0 && d['Gross Income'] <= maxIncomeToInclude &&
+               d['Percentage Change in Net Income'] >= -100 &&
+               d['Percentage Change in Net Income'] <= 100;
       });
     }
 
@@ -558,7 +643,16 @@
       } else {
         // Static view - check if point should be visible
         const currentState = currentView;
-        const shouldBeVisible = currentState.filter ? currentState.filter(d) : true;
+        let shouldBeVisible;
+        
+        if (rightSideScrollMode) {
+          // In right-side scroll mode, show all points within the current y-axis range
+          shouldBeVisible = d['Gross Income'] >= rightSideYRange[0] && d['Gross Income'] <= rightSideYRange[1];
+        } else {
+          // Normal left-side scroll behavior
+          shouldBeVisible = currentState.filter ? currentState.filter(d) : true;
+        }
+        
         fadeOpacity = shouldBeVisible ? 1 : 0;
       }
 
@@ -1122,7 +1216,7 @@
       {/each}
     </div>
     
-    <div class="viz-column">
+    <div class="viz-column" bind:this={vizColumnRef} on:scroll={() => vizScrollTop = vizColumnRef.scrollTop}>
       <div class="viz-sticky">
         <canvas 
           bind:this={canvasRef} 
@@ -1138,7 +1232,20 @@
           class="overlay-svg"
         ></svg>
         
+        {#if rightSideScrollMode}
+          <div class="scroll-indicator">
+            <div class="scroll-indicator-text">
+              Scrolling adjusts Y-axis
+              <div class="scroll-range">
+                ${Math.round(rightSideYRange[0]).toLocaleString()} - ${Math.round(rightSideYRange[1]).toLocaleString()}
+              </div>
+            </div>
+          </div>
+        {/if}
       </div>
+      
+      <!-- Invisible scroll content to create scrollable area -->
+      <div class="scroll-spacer" style="height: {scrollContentHeight}px; pointer-events: none;"></div>
     </div>
   </div>
 
@@ -1239,20 +1346,72 @@
     height: 100vh;
     overflow-y: auto;
   }
-
   .viz-column {
     flex: 0 0 60%;
     background: var(--nyt-background);
+    height: 100vh;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    position: relative;
+    /* Hide scrollbar for cleaner look */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .viz-column::-webkit-scrollbar {
+    display: none;
   }
 
   .viz-sticky {
     position: sticky;
-    top: 60px;
-    height: calc(100vh - 120px);
+    top: 0;
+    height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 20px;
+    background: var(--nyt-background);
+    z-index: 1;
+  }
+
+  .scroll-spacer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    opacity: 0;
+    z-index: -1;
+  }
+
+  .scroll-indicator {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-family: var(--nyt-font-mono);
+    font-size: 12px;
+    z-index: 10;
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  .scroll-indicator-text {
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  .scroll-range {
+    font-size: 11px;
+    opacity: 0.9;
+    font-weight: 600;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   .main-canvas {
@@ -1482,6 +1641,8 @@
     .viz-column {
       flex: none;
       order: 1;
+      height: 50vh;
+      overflow-y: auto;
     }
     
     .viz-sticky {
