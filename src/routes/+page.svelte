@@ -1231,19 +1231,7 @@
           height="600"
           class="overlay-svg"
         ></svg>
-        
-        {#if rightSideScrollMode}
-          <div class="scroll-indicator">
-            <div class="scroll-indicator-text">
-              Scrolling adjusts Y-axis
-              <div class="scroll-range">
-                ${Math.round(rightSideYRange[0]).toLocaleString()} - ${Math.round(rightSideYRange[1]).toLocaleString()}
-              </div>
-            </div>
-          </div>
-        {/if}
       </div>
-      
       <!-- Invisible scroll content to create scrollable area -->
       <div class="scroll-spacer" style="height: {scrollContentHeight}px; pointer-events: none;"></div>
     </div>
