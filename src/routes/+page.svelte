@@ -319,6 +319,13 @@
   let previousStateIndex = 0;
   let isTransitioning = false;
   let intersectionObserver;
+  
+  // Right-side scrolling variables
+  let rightSideScrollMode = false;
+  let rightSideYRange = [0, 350000]; // Default full range
+  let rightSideAccumulatedScroll = 0;
+  let vizColumnRef;
+  let rightSideScrollThrottle;
 
   function setupIntersectionObserver() {
     if (intersectionObserver) {
@@ -365,6 +372,12 @@
   function transitionToState(newIndex) {
     if (newIndex === currentStateIndex || isTransitioning) return;
     
+    // Override right-side scroll mode when left-side scrolling is used
+    if (rightSideScrollMode) {
+      rightSideScrollMode = false;
+      rightSideAccumulatedScroll = 0;
+    }
+    
     isTransitioning = true;
     previousStateIndex = currentStateIndex;
     const fromState = scrollStates[currentStateIndex];
@@ -395,6 +408,48 @@
         isTransitioning = false;
       }
     });
+  }
+
+  // Right-side scrolling functions
+  function handleRightSideScroll(event) {
+    if (isTransitioning) return;
+    
+    // Enable right-side scroll mode
+    rightSideScrollMode = true;
+    
+    // Throttle scroll events
+    if (rightSideScrollThrottle) clearTimeout(rightSideScrollThrottle);
+    rightSideScrollThrottle = setTimeout(() => {
+      processRightSideScroll(event);
+    }, 16); // ~60fps throttling
+  }
+
+  function processRightSideScroll(event) {
+    const deltaY = event.deltaY;
+    
+    // Accumulate scroll delta
+    rightSideAccumulatedScroll += deltaY;
+    
+    // Calculate new y-axis range based on scroll
+    const maxIncome = 10000000; // Maximum income in dataset
+    const minIncome = 0; // Always keep 0 in view
+    const scrollSensitivity = 8000; // How much income range changes per scroll unit
+    
+    // Calculate new max income based on scroll
+    let newMaxIncome = Math.max(
+      350000 - (rightSideAccumulatedScroll * scrollSensitivity),
+      25000 // Minimum range to maintain usability
+    );
+    
+    // Clamp to reasonable bounds
+    newMaxIncome = Math.min(newMaxIncome, maxIncome);
+    newMaxIncome = Math.max(newMaxIncome, 25000);
+    
+    // Update the y-axis range
+    rightSideYRange = [minIncome, newMaxIncome];
+    
+    // Trigger re-render with new range
+    renderVisualization();
   }
 
   function animateScales({ from, to, duration, onComplete }) {
@@ -457,10 +512,22 @@
     }
 
     // Interpolate between views with D3
-    const yMin = d3.interpolate(currentView.yDomain[0], targetView.yDomain[0])(interpolationT);
-    const yMax = d3.interpolate(currentView.yDomain[1], targetView.yDomain[1])(interpolationT);
-    const xMin = d3.interpolate(currentView.xDomain[0], targetView.xDomain[0])(interpolationT);
-    const xMax = d3.interpolate(currentView.xDomain[1], targetView.xDomain[1])(interpolationT);
+    let yMin, yMax, xMin, xMax;
+    
+    if (rightSideScrollMode) {
+      // Use right-side scroll range for y-axis
+      yMin = rightSideYRange[0];
+      yMax = rightSideYRange[1];
+      // Keep x-axis from current view or use default
+      xMin = currentView.xDomain[0];
+      xMax = currentView.xDomain[1];
+    } else {
+      // Use normal left-side scroll behavior
+      yMin = d3.interpolate(currentView.yDomain[0], targetView.yDomain[0])(interpolationT);
+      yMax = d3.interpolate(currentView.yDomain[1], targetView.yDomain[1])(interpolationT);
+      xMin = d3.interpolate(currentView.xDomain[0], targetView.xDomain[0])(interpolationT);
+      xMax = d3.interpolate(currentView.xDomain[1], targetView.xDomain[1])(interpolationT);
+    }
     
     // Clear canvas with NYT-style background
     ctx.fillStyle = '#ffffff';
@@ -1122,8 +1189,17 @@
       {/each}
     </div>
     
-    <div class="viz-column">
+    <div class="viz-column" bind:this={vizColumnRef} on:wheel={handleRightSideScroll}>
       <div class="viz-sticky">
+        {#if rightSideScrollMode}
+          <div class="scroll-indicator">
+            <div class="scroll-indicator-text">
+              Right-side scrolling active
+              <br>
+              <span class="scroll-range">Income range: $0 - ${Math.round(rightSideYRange[1]).toLocaleString()}</span>
+            </div>
+          </div>
+        {/if}
         <canvas 
           bind:this={canvasRef} 
           width="800" 
@@ -1253,6 +1329,37 @@
     align-items: center;
     justify-content: center;
     padding: 20px;
+    position: relative;
+  }
+
+  .scroll-indicator {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-family: var(--nyt-font-mono);
+    font-size: 12px;
+    z-index: 10;
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  .scroll-indicator-text {
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  .scroll-range {
+    font-size: 11px;
+    opacity: 0.9;
+    font-weight: 600;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   .main-canvas {
