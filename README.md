@@ -1,12 +1,67 @@
-# React + Vite
+# OBBBA Scatter
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Data visualization application showing how tax changes affect American households.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Deep Linking for Households
 
-## Expanding the ESLint configuration
+The application now supports deep linking to specific households, allowing users to:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- **Share specific household profiles**: Each household can be directly linked via URL
+- **Bookmark interesting cases**: Users can save links to specific households for later reference
+- **Navigate directly to households**: URLs automatically navigate to the appropriate section and household
+
+#### How to Use Deep Links
+
+1. **Automatic URL updates**: 
+   - Navigate to any individual household view
+   - The URL automatically updates to include the selected household
+   - Copy the URL from your browser's address bar
+
+2. **Share the link**: 
+   - Send the URL to others
+   - The link will take them directly to that specific household
+
+3. **URL format**:
+   ```
+   /obbba-scatter/?household=HOUSEHOLD_ID&section=SECTION_NAME
+   ```
+
+#### URL Parameters
+
+- `household`: The unique household ID from the dataset
+- `section`: The section/view name (optional - will auto-determine based on household income if not provided)
+
+#### Example URLs
+
+```
+# Direct link to a specific household in the middle-income individual view
+/obbba-scatter/?household=12345&section=middle-income-individual
+
+# Link to household with automatic section detection
+/obbba-scatter/?household=12345
+```
+
+#### Technical Implementation
+
+- Uses SvelteKit's built-in URL parameter handling
+- Automatically maps household income to appropriate sections
+- Preserves application state across page reloads
+- Smooth scrolling and transitions to the linked household
+
+## Development
+
+Run the development server:
+
+```bash
+npm run dev
+```
+
+## Build
+
+Create a production build:
+
+```bash
+npm run build
+```
