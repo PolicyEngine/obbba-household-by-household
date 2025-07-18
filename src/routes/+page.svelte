@@ -326,6 +326,8 @@
   let vizColumnRef;
   let vizScrollTop = 0;
   let scrollContentHeight = 10000; // Total scrollable height
+  let lastMaxIncome = 350000; // Track the tightest zoom-in achieved (Option A)
+  let lockedAtMinZoom = false; // For Option C
 
   function setupIntersectionObserver() {
     if (intersectionObserver) {
@@ -418,52 +420,55 @@
   // Reactive statement to handle scroll-based y-axis adjustment
   $: {
     if (vizScrollTop !== undefined && !isTransitioning) {
-      // Enable right-side scroll mode when scrolling
       if (vizScrollTop > 0) {
         rightSideScrollMode = true;
       }
-      
-      // Calculate y-axis range based on scroll position
-      const maxIncome = 10000000; // Maximum income in dataset
-      const minRange = 50000; // Minimum range to maintain usability
-      const initialRange = 350000; // Initial y-axis max
-      
-      // Map scroll position (0 to scrollContentHeight) to income range changes
+
+      const maxIncome = 10000000;
+      const minRange = 50000;
+      const initialRange = 350000;
+
       const scrollProgress = vizScrollTop / scrollContentHeight;
-      
-      // Three phases of scrolling:
-      // 1. First 40%: Zoom in by reducing max from 350k to minRange
-      // 2. Next 40%: Zoom out by increasing max from 350k to maxIncome
-      // 3. Last 20%: Shift window up by increasing min
-      
       let newMaxIncome, newMinIncome;
-      
+
       if (scrollProgress < 0.4) {
         // Phase 1: Zoom in
         const zoomProgress = scrollProgress / 0.4;
         newMaxIncome = initialRange - (initialRange - minRange) * zoomProgress;
         newMinIncome = 0;
+
+        // ✅ Option A: Only allow zoom *in* (i.e., smaller maxIncome)
+        if (newMaxIncome < lastMaxIncome) {
+          lastMaxIncome = newMaxIncome;
+        } else {
+          newMaxIncome = lastMaxIncome;
+        }
+        
       } else if (scrollProgress < 0.8) {
         // Phase 2: Zoom out
         const zoomProgress = (scrollProgress - 0.4) / 0.4;
         newMaxIncome = initialRange + (maxIncome - initialRange) * zoomProgress;
         newMinIncome = 0;
+
+        // ✅ Option A: Update lastMaxIncome only if zooming further in
+        if (newMaxIncome < lastMaxIncome) {
+          lastMaxIncome = newMaxIncome;
+        }
       } else {
         // Phase 3: Shift window up
         const shiftProgress = (scrollProgress - 0.8) / 0.2;
         newMaxIncome = maxIncome;
-        newMinIncome = 1000000 * shiftProgress; // Max shift to 1M
-        
-        // Ensure minimum range is maintained
+        newMinIncome = 1000000 * shiftProgress;
+
         if (newMaxIncome - newMinIncome < minRange) {
           newMinIncome = newMaxIncome - minRange;
         }
+
+        // Optional: Clear zoom lock once we’re shifting (if you want to reset behavior)
+        lockedAtMinZoom = false;
       }
-      
-      // Update the y-axis range
+
       rightSideYRange = [newMinIncome, newMaxIncome];
-      
-      // Trigger re-render
       renderVisualization();
     }
   }
