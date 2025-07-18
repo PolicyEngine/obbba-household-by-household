@@ -249,7 +249,7 @@
   }
 
   function formatDollarChange(value) {
-    const sign = value >= 0 ? '+' : '';
+    const sign = value >= 0 ? '+' : '-';
     return sign + '$' + Math.abs(Math.round(value)).toLocaleString();
   }
 
@@ -566,11 +566,11 @@
       let color;
               const change = d['Percentage Change in Net Income'];
       if (Math.abs(change) < 0.1) {
-        color = '#999999'; // gray for no change
+        color = '#D2D2D2'; // light gray for no change
       } else if (change > 0) {
-        color = '#1a9658'; // green for gains
+        color = '#227773'; // teal for gains
       } else {
-        color = '#d75442'; // red for losses
+        color = '#616161'; // dark gray for losses
       }
 
       // Point sizing and final opacity with smooth transitions
@@ -1182,9 +1182,9 @@
     --nyt-text-secondary: #666666;
     --nyt-axis-grid: #000000;
     --nyt-grid-lines: #DFDFDF;
-    --nyt-scatter-positive: #1a9658;
-    --nyt-scatter-negative: #d75442;
-    --nyt-scatter-neutral: #999999;
+    --nyt-scatter-positive: #227773;
+    --nyt-scatter-negative: #616161;
+    --nyt-scatter-neutral: #D2D2D2;
     --nyt-border: #DFDFDF;
     --nyt-hover: #EBEBEB;
     --nyt-font-sans: 'Roboto', sans-serif;
