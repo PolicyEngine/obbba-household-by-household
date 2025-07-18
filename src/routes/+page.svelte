@@ -17,6 +17,23 @@
   let animatedNumbers = new Map(); // Store animated number references
   let animatedHouseholds = new Map(); // Store animated household emphasis
   let emphasisAnimationId = null; // Track current emphasis animation
+  
+  // Dataset selection state
+  let selectedDataset = 'current_law'; // 'current_law' or 'tcja'
+  
+  // Dataset configuration
+  const datasets = {
+    current_law: {
+      filename: 'household_tax_income_changes_senate_current_law_baseline.csv',
+      label: 'TCJA Expiration',
+      description: 'Analysis showing impact if TCJA provisions expire'
+    },
+    tcja: {
+      filename: 'household_tax_income_changes_senate_tcja_baseline.csv', 
+      label: 'TCJA Extension',
+      description: 'Analysis showing impact if TCJA provisions are extended'
+    }
+  };
 
   const baseViews = [
     {
@@ -98,10 +115,11 @@
     }
   });
 
-  // Load data
-  onMount(async () => {
+  // Function to load dataset
+  async function loadDataset(datasetKey) {
+    loading = true;
     try {
-      const response = await fetch('/obbba-scatter/household_tax_income_changes_senate_current_law_baseline.csv');
+      const response = await fetch(`/obbba-scatter/${datasets[datasetKey].filename}`);
       const raw = await response.text();
       const result = Papa.parse(raw, {
         header: true,
@@ -115,6 +133,10 @@
         isAnnotated: false,
         sectionIndex: null
       }));
+
+      // Clear existing selections when switching datasets
+      selectedData = null;
+      randomHouseholds = {};
 
       // Find representative points for each scroll state and select random households
       baseViews.forEach((baseView, baseIndex) => {
@@ -156,6 +178,17 @@
       console.error('Error loading data:', error);
       loading = false;
     }
+  }
+
+  // Function to handle dataset switching
+  function switchDataset(newDataset) {
+    selectedDataset = newDataset;
+    loadDataset(newDataset);
+  }
+
+  // Load data on mount
+  onMount(() => {
+    loadDataset(selectedDataset);
   });
 
   // Animated number utility functions
@@ -1025,9 +1058,11 @@
 
 <div class="app">
   {#if loading}
-    <div class="loading">
-      <div class="spinner"></div>
-      <p>Loading data...</p>
+    <div class="loading-overlay">
+      <div class="loading-content">
+        <div class="spinner"></div>
+        <p>Loading {datasets[selectedDataset].label} data...</p>
+      </div>
     </div>
   {/if}
 
@@ -1044,6 +1079,29 @@
           <div class="section-content">
             <h2>{state.title}</h2>
             <p>{@html state.text}</p>
+            
+            <!-- Dataset Selector for intro section -->
+            {#if state.id === 'intro'}
+              <div class="dataset-selector">
+                <div class="selector-header">
+                  <h3>Choose Scenario</h3>
+                  <p>Select which baseline to use for the analysis</p>
+                </div>
+                <div class="selector-buttons">
+                  {#each Object.entries(datasets) as [key, dataset]}
+                    <button 
+                      class="dataset-button" 
+                      class:active={selectedDataset === key}
+                      on:click={() => switchDataset(key)}
+                      disabled={loading}
+                      title={dataset.description}
+                    >
+                      {dataset.label}
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            {/if}
             
             {#if state.viewType === 'individual'}
               {@const baseViewId = baseViews[Math.floor(i / 2)]?.id}
@@ -1137,7 +1195,6 @@
           height="600"
           class="overlay-svg"
         ></svg>
-        
       </div>
     </div>
   </div>
@@ -1199,17 +1256,28 @@
     font-family: var(--nyt-font-serif);
   }
 
-  .loading {
+  .loading-overlay {
     position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.7);
     z-index: 1000;
-    background: rgba(255, 255, 255, 0.95);
-    padding: 40px;
-    border-radius: 4px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .loading-content {
+    text-align: center;
+  }
+
+  .loading-content p {
+    font-family: var(--nyt-font-serif);
+    font-size: 14px;
+    color: var(--nyt-text-secondary);
+    margin: 15px 0 0 0;
   }
 
   .spinner {
@@ -1253,6 +1321,80 @@
     align-items: center;
     justify-content: center;
     padding: 20px;
+  }
+
+  /* Dataset Selector Styles */
+  .dataset-selector {
+    background: var(--nyt-hover);
+    border: 1px solid var(--nyt-border);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 32px 0 16px 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  .selector-header {
+    margin-bottom: 16px;
+  }
+
+  .selector-header h3 {
+    font-family: var(--nyt-font-serif);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--nyt-text-primary);
+    margin: 0 0 4px 0;
+  }
+
+  .selector-header p {
+    font-family: var(--nyt-font-serif);
+    font-size: 14px;
+    color: var(--nyt-text-secondary);
+    margin: 0;
+  }
+
+  .selector-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-start;
+  }
+
+  .dataset-button {
+    background: var(--nyt-background);
+    border: 2px solid var(--nyt-border);
+    border-radius: 6px;
+    padding: 12px 20px;
+    font-family: var(--nyt-font-serif);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--nyt-text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    white-space: nowrap;
+  }
+
+  .dataset-button:hover:not(:disabled) {
+    background: var(--nyt-hover);
+    border-color: var(--nyt-text-secondary);
+    color: var(--nyt-text-primary);
+  }
+
+  .dataset-button.active {
+    background: var(--nyt-text-primary);
+    border-color: var(--nyt-text-primary);
+    color: var(--nyt-background);
+  }
+
+  .dataset-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   .main-canvas {
@@ -1490,6 +1632,25 @@
       height: 50vh;
     }
     
+    .dataset-selector {
+      padding: 16px;
+      margin: 24px 0 12px 0;
+    }
+    
+    .selector-header h3 {
+      font-size: 1rem;
+    }
+    
+    .selector-header p {
+      font-size: 13px;
+    }
+    
+    .dataset-button {
+      padding: 10px 14px;
+      font-size: 13px;
+      min-height: 40px;
+    }
+    
     .main-canvas {
       max-width: 100%;
       max-height: 100%;
@@ -1607,6 +1768,10 @@
 
     .key-column {
       width: 55%;
+    }
+
+    .loading-content p {
+      font-size: 13px;
     }
   }
 

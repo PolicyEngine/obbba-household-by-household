@@ -54,6 +54,7 @@ declare module '$env/static/private' {
 	export const VSCODE_PROFILE_INITIALIZED: string;
 	export const __CF_USER_TEXT_ENCODING: string;
 	export const npm_execpath: string;
+	export const PAGER: string;
 	export const _CE_CONDA: string;
 	export const PATH: string;
 	export const npm_package_json: string;
@@ -66,6 +67,7 @@ declare module '$env/static/private' {
 	export const npm_command: string;
 	export const PWD: string;
 	export const POLICYENGINE_GITHUB_MICRODATA_AUTH_TOKEN: string;
+	export const DISABLE_AUTO_UPDATE: string;
 	export const npm_lifecycle_event: string;
 	export const EDITOR: string;
 	export const npm_package_name: string;
@@ -78,14 +80,17 @@ declare module '$env/static/private' {
 	export const _CE_M: string;
 	export const XPC_SERVICE_NAME: string;
 	export const VSCODE_INJECTION: string;
+	export const npm_config_yes: string;
 	export const SHLVL: string;
 	export const HOME: string;
 	export const VSCODE_GIT_ASKPASS_MAIN: string;
+	export const PIP_NO_INPUT: string;
 	export const npm_config_cache: string;
 	export const CONDA_PYTHON_EXE: string;
 	export const LOGNAME: string;
 	export const npm_lifecycle_script: string;
 	export const VSCODE_GIT_IPC_HANDLE: string;
+	export const COMPOSER_NO_INTERACTION: string;
 	export const CONDA_DEFAULT_ENV: string;
 	export const npm_config_user_agent: string;
 	export const VSCODE_GIT_ASKPASS_NODE: string;
@@ -153,6 +158,7 @@ declare module '$env/dynamic/private' {
 		VSCODE_PROFILE_INITIALIZED: string;
 		__CF_USER_TEXT_ENCODING: string;
 		npm_execpath: string;
+		PAGER: string;
 		_CE_CONDA: string;
 		PATH: string;
 		npm_package_json: string;
@@ -165,6 +171,7 @@ declare module '$env/dynamic/private' {
 		npm_command: string;
 		PWD: string;
 		POLICYENGINE_GITHUB_MICRODATA_AUTH_TOKEN: string;
+		DISABLE_AUTO_UPDATE: string;
 		npm_lifecycle_event: string;
 		EDITOR: string;
 		npm_package_name: string;
@@ -177,14 +184,17 @@ declare module '$env/dynamic/private' {
 		_CE_M: string;
 		XPC_SERVICE_NAME: string;
 		VSCODE_INJECTION: string;
+		npm_config_yes: string;
 		SHLVL: string;
 		HOME: string;
 		VSCODE_GIT_ASKPASS_MAIN: string;
+		PIP_NO_INPUT: string;
 		npm_config_cache: string;
 		CONDA_PYTHON_EXE: string;
 		LOGNAME: string;
 		npm_lifecycle_script: string;
 		VSCODE_GIT_IPC_HANDLE: string;
+		COMPOSER_NO_INTERACTION: string;
 		CONDA_DEFAULT_ENV: string;
 		npm_config_user_agent: string;
 		VSCODE_GIT_ASKPASS_NODE: string;
