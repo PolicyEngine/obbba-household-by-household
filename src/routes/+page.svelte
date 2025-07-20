@@ -1144,6 +1144,14 @@
                     (val) => (val > 0 ? '+' : '') + val.toFixed(2) + '%',
                     400
                   );
+                } else if (key.includes('ID') || key.includes('Household')) {
+                  createAnimatedNumber(
+                    `table-value-${index}`,
+                    prevValue,
+                    value,
+                    (val) => Math.round(val),
+                    400
+                  );
                 } else {
                   createAnimatedNumber(
                     `table-value-${index}`,
@@ -1534,6 +1542,8 @@
                       <span id="table-value-{index}">{value < 0 ? '-' : ''}${Math.abs(Math.round(value)).toLocaleString()}</span>
                     {:else if key.includes('Percentage')}
                       <span id="table-value-{index}">{value > 0 ? '+' : ''}{value.toFixed(2)}%</span>
+                    {:else if key.includes('ID') || key.includes('Household')}
+                      <span id="table-value-{index}">{Math.round(value)}</span>
                     {:else}
                       <span id="table-value-{index}">{Math.round(value).toLocaleString()}</span>
                     {/if}
