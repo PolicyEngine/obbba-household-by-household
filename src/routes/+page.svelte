@@ -1128,7 +1128,7 @@
             const prevValue = previousSelectedData[key];
             if (typeof prevValue === 'number' && prevValue !== value) {
               setTimeout(() => {
-                if (key.includes('Income') || key.includes('Taxes') || key.includes('Net Income Change')) {
+                if (key.includes('Income') || key.includes('Taxes') || key.includes('Tax Liability') || key.includes('Benefits') || key.includes('Gains') || key.includes('Interest') || key.includes('Medicaid') || key.includes('ACA') || key.includes('CHIP') || key.includes('SNAP') || key.toLowerCase().includes('change in') && !key.includes('Percentage')) {
                   createAnimatedNumber(
                     `table-value-${index}`,
                     prevValue,
@@ -1530,12 +1530,12 @@
                 <td class="key-column">{key}</td>
                 <td class="value-column">
                   {#if typeof value === 'number'}
-                    {#if key.includes('Income') || key.includes('Taxes') || key.includes('Net Income Change')}
+                    {#if key.includes('Income') || key.includes('Taxes') || key.includes('Tax Liability') || key.includes('Benefits') || key.includes('Gains') || key.includes('Interest') || key.includes('Medicaid') || key.includes('ACA') || key.includes('CHIP') || key.includes('SNAP') || key.toLowerCase().includes('change in') && !key.includes('Percentage')}
                       <span id="table-value-{index}">${Math.round(value).toLocaleString()}</span>
                     {:else if key.includes('Percentage')}
                       <span id="table-value-{index}">{value > 0 ? '+' : ''}{value.toFixed(2)}%</span>
                     {:else}
-                      <span id="table-value-{index}">{value.toLocaleString()}</span>
+                      <span id="table-value-{index}">{Math.round(value).toLocaleString()}</span>
                     {/if}
                   {:else}
                     {value}
