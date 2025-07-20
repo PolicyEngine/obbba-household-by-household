@@ -25,21 +25,25 @@ The application now supports deep linking to specific households, allowing users
 
 3. **URL format**:
    ```
-   /obbba-scatter/?household=HOUSEHOLD_ID&section=SECTION_NAME
+   /obbba-scatter/?household=HOUSEHOLD_ID&dataset=DATASET_NAME&section=SECTION_NAME
    ```
 
 #### URL Parameters
 
 - `household`: The unique household ID from the dataset
+- `dataset`: The policy scenario (`tcja-expiration` or `tcja-extension`)
 - `section`: The section/view name (optional - will auto-determine based on household income if not provided)
 
 #### Example URLs
 
-```
-# Direct link to a specific household in the middle-income individual view
-/obbba-scatter/?household=12345&section=middle-income-individual
+```url
+# Direct link to a specific household in the middle-income individual view with TCJA expiration scenario
+/obbba-scatter/?household=12345&dataset=tcja-expiration&section=middle-income-individual
 
-# Link to household with automatic section detection
+# Link to household with TCJA extension scenario and automatic section detection
+/obbba-scatter/?household=12345&dataset=tcja-extension
+
+# Link to household with automatic dataset and section detection (defaults to tcja-expiration)
 /obbba-scatter/?household=12345
 ```
 
