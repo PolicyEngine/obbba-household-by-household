@@ -1529,13 +1529,8 @@
     
     // Check if we're in an iframe
     if (typeof window !== 'undefined' && window.parent !== window) {
-      // We're in an iframe - construct PolicyEngine URL
-      // First check if we're on policyengine.github.io (dev) or elsewhere
-      const isGitHubPages = window.location.hostname === 'policyengine.github.io';
-      const baseUrl = isGitHubPages 
-        ? 'https://policyengine.org/us/obbba-household-explorer'
-        : window.location.href;
-      url = new URL(baseUrl);
+      // We're in an iframe - always use PolicyEngine URL
+      url = new URL('https://policyengine.org/us/obbba-household-explorer');
     } else {
       // Not in iframe, use current location
       url = new URL(window.location.href);
