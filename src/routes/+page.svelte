@@ -1133,7 +1133,7 @@
                     `table-value-${index}`,
                     prevValue,
                     value,
-                    (val) => '$' + Math.round(val).toLocaleString(),
+                    (val) => (val < 0 ? '-' : '') + '$' + Math.abs(Math.round(val)).toLocaleString(),
                     400
                   );
                 } else if (key.includes('Percentage')) {
@@ -1531,7 +1531,7 @@
                 <td class="value-column">
                   {#if typeof value === 'number'}
                     {#if key.includes('Income') || key.includes('Taxes') || key.includes('Tax Liability') || key.includes('Benefits') || key.includes('Gains') || key.includes('Interest') || key.includes('Medicaid') || key.includes('ACA') || key.includes('CHIP') || key.includes('SNAP') || key.toLowerCase().includes('change in') && !key.includes('Percentage')}
-                      <span id="table-value-{index}">${Math.round(value).toLocaleString()}</span>
+                      <span id="table-value-{index}">{value < 0 ? '-' : ''}${Math.abs(Math.round(value)).toLocaleString()}</span>
                     {:else if key.includes('Percentage')}
                       <span id="table-value-{index}">{value > 0 ? '+' : ''}{value.toFixed(2)}%</span>
                     {:else}
