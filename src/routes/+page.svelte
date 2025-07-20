@@ -1525,7 +1525,21 @@
   // Function to copy household URL to clipboard
   async function copyHouseholdUrl(household) {
     const currentState = scrollStates[currentStateIndex];
-    const url = new URL(window.location.href);
+    let url;
+    
+    // Check if we're in an iframe
+    if (typeof window !== 'undefined' && window.parent !== window) {
+      // We're in an iframe - construct PolicyEngine URL
+      // First check if we're on policyengine.github.io (dev) or elsewhere
+      const isGitHubPages = window.location.hostname === 'policyengine.github.io';
+      const baseUrl = isGitHubPages 
+        ? 'https://policyengine.org/us/obbba-household-explorer'
+        : window.location.href;
+      url = new URL(baseUrl);
+    } else {
+      // Not in iframe, use current location
+      url = new URL(window.location.href);
+    }
     
     // Set household parameters
     url.searchParams.set('household', household.id);
