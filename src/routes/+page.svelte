@@ -1576,14 +1576,46 @@
       
       console.log('Successfully copied URL to clipboard');
     } catch (err) {
-      console.error('Failed to copy URL:', err);
-      // Fallback: try to copy just the query string if full URL fails
+      console.error('Clipboard API failed:', err);
+      
+      // Fallback method: Create a temporary textarea
       try {
-        const fallbackUrl = url.search;
-        await navigator.clipboard.writeText(fallbackUrl);
-        console.log('Copied fallback URL (query string only):', fallbackUrl);
+        const textarea = document.createElement('textarea');
+        textarea.value = fullUrl;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-999999px';
+        textarea.style.top = '-999999px';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        
+        if (successful) {
+          console.log('Successfully copied using execCommand fallback');
+          
+          // Show success feedback
+          if (event && event.target) {
+            const button = event.target.closest('button');
+            if (button) {
+              const originalTitle = button.title;
+              button.title = 'Copied!';
+              button.classList.add('copied');
+              
+              setTimeout(() => {
+                button.title = originalTitle;
+                button.classList.remove('copied');
+              }, 2000);
+            }
+          }
+        } else {
+          console.error('execCommand copy failed');
+          alert('Failed to copy URL. URL is: ' + fullUrl);
+        }
       } catch (fallbackErr) {
-        console.error('Fallback copy also failed:', fallbackErr);
+        console.error('All copy methods failed:', fallbackErr);
+        alert('Failed to copy URL. URL is: ' + fullUrl);
       }
     }
   }
