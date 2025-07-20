@@ -45,6 +45,7 @@
     MEDIUM_LIGHT_GRAY: "#BDBDBD",
     TEAL_ACCENT: "#39C6C0",
     TEAL_LIGHT: "#F7FDFC",
+    TEAL_MEDIUM: "#2D9E99",
     TEAL_PRESSED: "#227773",
     WHITE: "#FFFFFF"
   };
@@ -888,7 +889,7 @@
       if (Math.abs(change) < 0.1) {
         color = COLORS.MEDIUM_DARK_GRAY; // light gray for no change
       } else if (change > 0) {
-        color = COLORS.TEAL_PRESSED; // teal for gains
+        color = COLORS.TEAL_MEDIUM; // medium teal for gains
       } else {
         color = COLORS.DARK_GRAY; // dark gray for losses
       }
@@ -1568,6 +1569,7 @@
     --medium-light-gray: #BDBDBD;
     --teal-accent: #39C6C0;
     --teal-light: #F7FDFC;
+    --teal-medium: #2D9E99;
     --teal-pressed: #227773;
     --white: #FFFFFF;
 
@@ -1577,7 +1579,7 @@
     --nyt-text-secondary: var(--dark-gray);
     --nyt-axis-grid: var(--black);
     --nyt-grid-lines: var(--medium-dark-gray);
-    --nyt-scatter-positive: var(--teal-pressed);
+    --nyt-scatter-positive: var(--teal-medium);
     --nyt-scatter-negative: var(--dark-gray);
     --nyt-scatter-neutral: var(--medium-dark-gray);
     --nyt-border: var(--medium-dark-gray);
