@@ -20,6 +20,29 @@
   let animatedHouseholds = new Map(); // Store animated household emphasis
   let emphasisAnimationId = null; // Track current emphasis animation
   
+  // Consistent number formatters
+  const fmtUSD = new Intl.NumberFormat('en-US', { 
+    style: 'currency', 
+    currency: 'USD', 
+    maximumFractionDigits: 0 
+  });
+  
+  const fmtPct = new Intl.NumberFormat('en-US', { 
+    style: 'percent', 
+    minimumFractionDigits: 1, 
+    maximumFractionDigits: 1 
+  });
+
+  // Get font family from CSS variables
+  function getFontFamily(type = 'sans') {
+    const fontMap = {
+      'serif': "'Roboto Serif', serif",
+      'sans': "'Roboto', sans-serif",
+      'mono': "'Roboto Mono', monospace"
+    };
+    return fontMap[type] || fontMap['sans'];
+  }
+  
   // Deep linking variables
   let householdIdMap = new Map(); // Map household IDs to data objects
   let urlSelectedHouseholdId = null;
@@ -561,17 +584,17 @@
 
   // Formatting functions
   function formatCurrency(value) {
-    return '$' + Math.round(value).toLocaleString();
+    return fmtUSD.format(Math.round(value));
   }
 
   function formatPercentage(value) {
-    const sign = value >= 0 ? '+' : '';
-    return sign + value.toFixed(1) + '%';
+    const formatted = fmtPct.format(value / 100); // Convert to decimal for Intl formatter
+    return value >= 0 ? '+' + formatted : formatted;
   }
 
   function formatDollarChange(value) {
-    const sign = value >= 0 ? '+' : '-';
-    return sign + '$' + Math.abs(Math.round(value)).toLocaleString();
+    const formatted = fmtUSD.format(Math.abs(Math.round(value)));
+    return value >= 0 ? '+' + formatted : '-' + formatted;
   }
 
   // Generate prose summary for a household
@@ -989,7 +1012,7 @@
       const xAxis = g.append('g')
         .attr('transform', `translate(0,${height - margin.bottom})`)
         .call(d3.axisBottom(xScale).tickFormat(d => `${d > 0 ? '+' : ''}${d}%`))
-        .style('font-family', 'Roboto Mono, monospace')
+        .style('font-family', getFontFamily('sans'))
         .style('font-size', '10px')
         .style('color', COLORS.DARKEST_BLUE);
 
@@ -997,7 +1020,7 @@
       const yAxis = g.append('g')
         .attr('transform', `translate(${margin.left},0)`)
         .call(d3.axisLeft(yScale).ticks(6).tickFormat(d => d3.format('$,')(d)))
-        .style('font-family', 'Roboto Mono, monospace')
+        .style('font-family', getFontFamily('sans'))
         .style('font-size', '10px')
         .style('color', COLORS.DARKEST_BLUE);
 
@@ -1014,7 +1037,7 @@
         .attr('x', width / 2)
         .attr('y', height - 15)
         .attr('text-anchor', 'middle')
-        .style('font-family', 'Roboto Serif, serif')
+        .style('font-family', getFontFamily('sans'))
         .style('font-size', '16px')
         .style('font-weight', '400')
         .style('fill', COLORS.DARK_GRAY)
@@ -1025,7 +1048,7 @@
         .attr('x', -height / 2)
         .attr('y', 25)
         .attr('text-anchor', 'middle')
-        .style('font-family', 'Roboto Serif, serif')
+        .style('font-family', getFontFamily('sans'))
         .style('font-size', '16px')
         .style('font-weight', '400')
         .style('fill', COLORS.DARK_GRAY)
@@ -1511,26 +1534,26 @@
                     </div>
                     <div class="detail-item">
                       <span class="label">Net Income change:</span>
-                                  <span class="value {randomHousehold['Total Change in Net Income'] > 0 ? 'positive' : 'negative'}" id="net-change-{i}">
+                                  <span class="value {randomHousehold['Total Change in Net Income'] > 0 ? 'pos' : randomHousehold['Total Change in Net Income'] < 0 ? 'neg' : 'zero'}" id="net-change-{i}">
               {formatDollarChange(randomHousehold['Total Change in Net Income'])}
                       </span>
                     </div>
                     <div class="detail-item">
                                               <span class="label">Percentage Change:</span>
-                                  <span class="value {randomHousehold['Percentage Change in Net Income'] > 0 ? 'positive' : 'negative'}" id="percent-change-{i}">
+                                  <span class="value {randomHousehold['Percentage Change in Net Income'] > 0 ? 'pos' : randomHousehold['Percentage Change in Net Income'] < 0 ? 'neg' : 'zero'}" id="percent-change-{i}">
               {formatPercentage(randomHousehold['Percentage Change in Net Income'])}
                       </span>
                     </div>
                   </div>
                   
                   {#if provisionBreakdown.length > 0}
-                    <div class="provision-breakdown">
+                    <div class="provision-breakdown provision-table">
                       <h4>Breakdown by provision</h4>
                       <div class="provision-list">
                         {#each provisionBreakdown as provision}
                           <div class="provision-item">
                             <span class="provision-name">{provision.name}:</span>
-                            <span class="provision-value {provision.value > 0 ? 'positive' : provision.value < 0 ? 'negative' : 'neutral'}" id="provision-{i}-{provision.index}">
+                            <span class="value {provision.value > 0 ? 'pos' : provision.value < 0 ? 'neg' : 'zero'}" id="provision-{i}-{provision.index}">
                               {formatDollarChange(provision.value)}
                             </span>
                           </div>
@@ -1576,7 +1599,7 @@
     <div class="data-table-overlay" on:click={() => selectedData = null}>
       <div class="data-table-container" on:click|stopPropagation>
       <h3>Selected Household Data</h3>
-      <table class="data-table">
+      <table class="data-table provision-table">
         <tbody>
           {#each Object.entries(selectedData) as [key, value], index}
             {#if key !== 'id' && key !== 'isAnnotated' && key !== 'sectionIndex' && key !== 'isHighlighted' && key !== 'highlightGroup' && key !== 'stateIndex'}
@@ -1646,11 +1669,30 @@
     --font-mono: 'Roboto Mono', monospace;
   }
 
+  /* Typography utility classes */
+  .font-serif {
+  }
+
+  .font-sans {
+    font-family: var(--font-sans);
+  }
+
+  .font-mono {
+  }
+
+  /* Default typography for common elements */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-sans);
+  }
+
+  p, span, div {
+    font-family: var(--font-sans);
+  }
+
   .app {
     width: 100%;
     min-height: 100vh;
     background: var(--app-background);
-    font-family: var(--font-serif);
   }
 
   .loading-overlay {
@@ -1671,7 +1713,6 @@
   }
 
   .loading-content p {
-    font-family: var(--font-serif);
     font-size: 14px;
     color: var(--text-secondary);
     margin: 15px 0 0 0;
@@ -1737,7 +1778,6 @@
   }
 
   .selector-header h3 {
-    font-family: var(--font-serif);
     font-size: 1.1rem;
     font-weight: 700;
     color: var(--text-primary);
@@ -1745,7 +1785,6 @@
   }
 
   .selector-header p {
-    font-family: var(--font-serif);
     font-size: 14px;
     color: var(--text-secondary);
     margin: 0;
@@ -1762,7 +1801,6 @@
     border: 2px solid var(--border);
     border-radius: 6px;
     padding: 12px 20px;
-    font-family: var(--font-serif);
     font-size: 14px;
     font-weight: 600;
     color: var(--text-secondary);
@@ -1822,7 +1860,6 @@
   }
 
   .text-section h2 {
-    font-family: var(--font-serif);
     font-size: 1.8rem;
     font-weight: 700;
     line-height: 1.2;
@@ -1831,7 +1868,6 @@
   }
 
   .text-section p {
-    font-family: var(--font-serif);
     font-size: 16px;
     line-height: 1.5;
     color: var(--text-secondary);
@@ -1847,7 +1883,6 @@
   }
 
   .household-profile h3 {
-    font-family: var(--font-serif);
     font-size: 1.2rem;
     font-weight: 700;
     color: var(--text-primary);
@@ -1908,7 +1943,6 @@
   }
 
   .household-summary p {
-    font-family: var(--font-serif);
     font-size: 16px;
     line-height: 1.5;
     color: var(--text-secondary);
@@ -1936,25 +1970,14 @@
   }
 
   .detail-item .label {
-    font-family: var(--font-mono);
     font-size: 12px;
     color: var(--text-secondary);
     font-weight: 500;
   }
 
   .detail-item .value {
-    font-family: var(--font-mono);
     font-size: 13px;
     font-weight: 600;
-    color: var(--text-primary);
-  }
-
-  .detail-item .value.positive {
-    color: var(--scatter-positive);
-  }
-
-  .detail-item .value.negative {
-    color: var(--scatter-negative);
   }
 
   .provision-breakdown {
@@ -1964,7 +1987,6 @@
   }
 
   .provision-breakdown h4 {
-    font-family: var(--font-serif);
     font-size: 1rem;
     font-weight: 600;
     color: var(--text-primary);
@@ -1986,33 +2008,14 @@
   }
 
   .provision-name {
-    font-family: var(--font-mono);
     color: var(--text-secondary);
     font-weight: 400;
     flex: 1;
     margin-right: 0.5rem;
   }
 
-  .provision-value {
-    font-family: var(--font-mono);
-    font-weight: 600;
-    text-align: right;
-  }
-
-  .provision-value.positive {
-    color: var(--scatter-positive);
-  }
-
-  .provision-value.negative {
-    color: var(--scatter-negative);
-  }
-
-  .provision-value.neutral {
-    color: var(--text-secondary);
-  }
 
   .no-provisions {
-    font-family: var(--font-serif);
     font-size: 14px;
     color: var(--text-secondary);
     font-style: italic;
@@ -2115,7 +2118,6 @@
   }
 
   .data-table-container h3 {
-    font-family: var(--font-serif);
     font-size: 1.2rem;
     font-weight: 700;
     color: var(--text-primary);
@@ -2126,7 +2128,6 @@
   .data-table {
     width: 100%;
     border-collapse: collapse;
-    font-family: var(--font-mono);
     font-size: 12px;
   }
 
@@ -2229,7 +2230,6 @@
   }
 
   .app-title {
-    font-family: var(--font-serif);
     font-size: 24px;
     font-weight: 700;
     color: var(--text-primary);
@@ -2244,11 +2244,47 @@
   }
 
   .baseline-label {
-    font-family: var(--font-sans);
     font-size: 14px;
     font-weight: 500;
     color: var(--text-secondary);
   }
+
+  /* Use sans-serif for UI elements */
+  .baseline-label,
+  .tab-button {
+    font-family: var(--font-sans);
+  }
+
+  /* Use monospace for data/numbers */
+  .data-table,
+  .value-column,
+  .key-column,
+  .detail-item .value {
+    font-family: var(--font-mono);
+  }
+
+  /* Provision tables with tabular figures */
+  .provision-table {
+    font-family: "Roboto", sans-serif;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  /* Shared value styles for consistent number alignment */
+  .value {
+    font-family: "Roboto", sans-serif;
+    font-variant-numeric: tabular-nums lining-nums;
+    text-align: right;
+    white-space: nowrap;
+    letter-spacing: 0;   /* overrides global headings */
+    word-spacing: normal;
+  }
+
+  /* Color logic for positive/negative/zero values */
+  .value.pos { color: var(--teal-medium); }
+  .value.neg { color: var(--dark-gray); }
+
+  /* Align sign + currency + digits as one block */
+  .value > span { display: inline-block; }
 
   /* Tabbed radio button styles */
   .baseline-selector {
@@ -2263,7 +2299,6 @@
     background: transparent;
     border: none;
     color: var(--text-secondary);
-    font-family: var(--font-sans);
     font-size: 14px;
     font-weight: 500;
     padding: 8px 16px;
