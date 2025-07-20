@@ -104,7 +104,7 @@
       title: "Lower-income households under $50,000",
       groupText: "Households earning under $50,000 see varied outcomes. While many benefit from Child Tax Credit expansions and TCJA extensions, some undocumented families lose access to credits due to new SSN requirements. Individuals in the bottom decile will gain an average of $213, while the top decile will gain an average of $13,075.",
       view: {
-        xDomain: [-10, 15],
+        xDomain: [-15, 15],
         yDomain: [0, 50000],
         filter: d => d['Gross Income'] >= 0 && d['Gross Income'] < 50000,
         highlightGroup: 'lower'
@@ -115,7 +115,7 @@
       title: "Middle-income households ($50,000 - $200,000)", 
       groupText: "This broad middle class benefits significantly from TCJA extensions, enhanced Child Tax Credits, and new deductions for tips and overtime pay. Seniors in this range gain substantially from the additional $6,000 senior deduction. These households typically see Net Income increases from the tax provisions.",
       view: {
-        xDomain: [-15, 25],
+        xDomain: [-25, 25],
         yDomain: [50000, 200000],
         filter: d => d['Gross Income'] >= 50000 && d['Gross Income'] < 200000,
         highlightGroup: 'middle'
