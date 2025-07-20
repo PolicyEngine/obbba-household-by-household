@@ -28,6 +28,27 @@
   // Dataset selection state
   let selectedDataset = 'tcja-expiration'; // 'tcja-expiration' or 'tcja-extension'
   
+  // PolicyEngine Color Constants
+  const COLORS = {
+    BLACK: "#000000",
+    BLUE_98: "#F7FAFD",
+    BLUE: "#2C6496",
+    BLUE_LIGHT: "#D8E6F3",
+    BLUE_PRESSED: "#17354F",
+    DARK_BLUE_HOVER: "#1d3e5e",
+    DARK_GRAY: "#616161",
+    DARK_RED: "#b50d0d",
+    DARKEST_BLUE: "#0C1A27",
+    GRAY: "#808080",
+    LIGHT_GRAY: "#F2F2F2",
+    MEDIUM_DARK_GRAY: "#D2D2D2",
+    MEDIUM_LIGHT_GRAY: "#BDBDBD",
+    TEAL_ACCENT: "#39C6C0",
+    TEAL_LIGHT: "#F7FDFC",
+    TEAL_PRESSED: "#227773",
+    WHITE: "#FFFFFF"
+  };
+  
   // Dataset configuration
   const datasets = {
     'tcja-expiration': {
@@ -761,8 +782,8 @@
     const xMin = d3.interpolate(currentView.xDomain[0], targetView.xDomain[0])(interpolationT);
     const xMax = d3.interpolate(currentView.xDomain[1], targetView.xDomain[1])(interpolationT);
     
-    // Clear canvas with NYT-style background
-    ctx.fillStyle = '#ffffff';
+    // Clear canvas with PolicyEngine background
+    ctx.fillStyle = COLORS.WHITE;
     ctx.fillRect(0, 0, width, height);
 
     // Don't filter data here - let points fade in/out during rendering
@@ -795,8 +816,8 @@
       .domain([yMin, yMax])
       .range([height - margin.bottom, margin.top]);
 
-    // Draw NYT-style grid lines
-    ctx.strokeStyle = '#DFDFDF';
+    // Draw grid lines
+    ctx.strokeStyle = COLORS.MEDIUM_DARK_GRAY;
     ctx.lineWidth = 0.5;
     ctx.setLineDash([]);
     
@@ -861,15 +882,15 @@
         fadeOpacity = shouldBeVisible ? 1 : 0;
       }
 
-      // NYT color scheme
+      // PolicyEngine color scheme
       let color;
               const change = d['Percentage Change in Net Income'];
       if (Math.abs(change) < 0.1) {
-        color = '#D2D2D2'; // light gray for no change
+        color = COLORS.MEDIUM_DARK_GRAY; // light gray for no change
       } else if (change > 0) {
-        color = '#227773'; // teal for gains
+        color = COLORS.TEAL_PRESSED; // teal for gains
       } else {
-        color = '#616161'; // dark gray for losses
+        color = COLORS.DARK_GRAY; // dark gray for losses
       }
 
       // Point sizing and final opacity with smooth transitions
@@ -937,7 +958,7 @@
         // Highlight stroke for featured points
         if (isHighlighted && finalOpacity > 0.5) {
           ctx.globalAlpha = finalOpacity;
-          ctx.strokeStyle = '#000000';
+          ctx.strokeStyle = COLORS.BLACK;
           ctx.lineWidth = 1;
           ctx.stroke();
         }
@@ -946,9 +967,9 @@
 
     ctx.globalAlpha = 1;
 
-    // Draw zero line (NYT style)
+    // Draw zero line
     if (xMin <= 0 && xMax >= 0) {
-      ctx.strokeStyle = '#000000';
+      ctx.strokeStyle = COLORS.BLACK;
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(xScale(0), margin.top);
@@ -969,7 +990,7 @@
         .call(d3.axisBottom(xScale).tickFormat(d => `${d > 0 ? '+' : ''}${d}%`))
         .style('font-family', 'Roboto Mono, monospace')
         .style('font-size', '10px')
-        .style('color', '#121212');
+        .style('color', COLORS.DARKEST_BLUE);
 
       // Y-axis with labels (no animation)
       const yAxis = g.append('g')
@@ -977,15 +998,15 @@
         .call(d3.axisLeft(yScale).ticks(6).tickFormat(d => d3.format('$,')(d)))
         .style('font-family', 'Roboto Mono, monospace')
         .style('font-size', '10px')
-        .style('color', '#121212');
+        .style('color', COLORS.DARKEST_BLUE);
 
       // Style axes lines
-      xAxis.select('.domain').style('stroke', '#000000').style('stroke-width', 1);
-      yAxis.select('.domain').style('stroke', '#000000').style('stroke-width', 1);
+      xAxis.select('.domain').style('stroke', COLORS.BLACK).style('stroke-width', 1);
+      yAxis.select('.domain').style('stroke', COLORS.BLACK).style('stroke-width', 1);
       
       // Style tick lines
-      xAxis.selectAll('.tick line').style('stroke', '#000000').style('stroke-width', 0.5);
-      yAxis.selectAll('.tick line').style('stroke', '#000000').style('stroke-width', 0.5);
+      xAxis.selectAll('.tick line').style('stroke', COLORS.BLACK).style('stroke-width', 0.5);
+      yAxis.selectAll('.tick line').style('stroke', COLORS.BLACK).style('stroke-width', 0.5);
 
       // Axis labels (NYT style)
       g.append('text')
@@ -995,7 +1016,7 @@
         .style('font-family', 'Roboto Serif, serif')
         .style('font-size', '16px')
         .style('font-weight', '400')
-        .style('fill', '#666666')
+        .style('fill', COLORS.DARK_GRAY)
         .text('Change in income →');
 
       g.append('text')
@@ -1006,7 +1027,7 @@
         .style('font-family', 'Roboto Serif, serif')
         .style('font-size', '16px')
         .style('font-weight', '400')
-        .style('fill', '#666666')
+        .style('fill', COLORS.DARK_GRAY)
         .text('Annual household income →');
     }
   }
@@ -1531,16 +1552,36 @@
 
 <style>
   :root {
-    --nyt-background: #FFFFFF;
-    --nyt-text-primary: #121212;
-    --nyt-text-secondary: #666666;
-    --nyt-axis-grid: #000000;
-    --nyt-grid-lines: #DFDFDF;
-    --nyt-scatter-positive: #227773;
-    --nyt-scatter-negative: #616161;
-    --nyt-scatter-neutral: #D2D2D2;
-    --nyt-border: #DFDFDF;
-    --nyt-hover: #EBEBEB;
+    /* PolicyEngine Color Constants */
+    --black: #000000;
+    --blue-98: #F7FAFD;
+    --blue: #2C6496;
+    --blue-light: #D8E6F3;
+    --blue-pressed: #17354F;
+    --dark-blue-hover: #1d3e5e;
+    --dark-gray: #616161;
+    --dark-red: #b50d0d;
+    --darkest-blue: #0C1A27;
+    --gray: #808080;
+    --light-gray: #F2F2F2;
+    --medium-dark-gray: #D2D2D2;
+    --medium-light-gray: #BDBDBD;
+    --teal-accent: #39C6C0;
+    --teal-light: #F7FDFC;
+    --teal-pressed: #227773;
+    --white: #FFFFFF;
+
+    /* Application Color Mappings */
+    --nyt-background: var(--white);
+    --nyt-text-primary: var(--darkest-blue);
+    --nyt-text-secondary: var(--dark-gray);
+    --nyt-axis-grid: var(--black);
+    --nyt-grid-lines: var(--medium-dark-gray);
+    --nyt-scatter-positive: var(--teal-pressed);
+    --nyt-scatter-negative: var(--dark-gray);
+    --nyt-scatter-neutral: var(--medium-dark-gray);
+    --nyt-border: var(--medium-dark-gray);
+    --nyt-hover: var(--blue-98);
     --nyt-font-sans: 'Roboto', sans-serif;
     --nyt-font-serif: 'Roboto Serif', serif;
     --nyt-font-mono: 'Roboto Mono', monospace;
@@ -1580,7 +1621,7 @@
   .spinner {
     width: 40px;
     height: 40px;
-    border: 3px solid #f3f3f3;
+    border: 3px solid var(--light-gray);
     border-top: 3px solid var(--nyt-text-secondary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
