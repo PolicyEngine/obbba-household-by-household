@@ -294,12 +294,25 @@
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.has('household') || urlParams.has('section')) {
-        // Keep existing household/section params but update dataset
-        urlParams.set('dataset', newDataset);
+        // Keep existing household/section params but update baseline
+        urlParams.set('baseline', newDataset);
         const url = new URL(window.location);
         url.search = urlParams.toString();
         goto(url.pathname + url.search, { replaceState: true, noScroll: true });
+        notifyParentOfUrlChange();
       }
+    }
+  }
+
+  // Helper function to notify parent window of URL changes
+  function notifyParentOfUrlChange() {
+    if (typeof window !== 'undefined' && window.parent !== window) {
+      // We're in an iframe, notify parent of URL change
+      const params = new URLSearchParams(window.location.search);
+      window.parent.postMessage({
+        type: 'urlUpdate',
+        params: params.toString()
+      }, '*');
     }
   }
 
@@ -316,8 +329,8 @@
       if (householdId) {
         url.searchParams.set('household', String(householdId));
         
-        // Always include the current dataset
-        url.searchParams.set('dataset', selectedDataset);
+        // Always include the current baseline
+        url.searchParams.set('baseline', selectedDataset);
         
         // Optionally include the section/view
         if (viewSection) {
@@ -326,11 +339,14 @@
       } else {
         url.searchParams.delete('household');
         url.searchParams.delete('section');
-        url.searchParams.delete('dataset');
+        url.searchParams.delete('baseline');
       }
       
       // Update URL without triggering navigation
       goto(url.pathname + url.search, { replaceState: true, noScroll: true });
+      
+      // Notify parent window of URL change
+      notifyParentOfUrlChange();
     }
   }
 
@@ -339,7 +355,7 @@
       const urlParams = new URLSearchParams(window.location.search);
       const householdId = String(urlParams.get('household') || ''); // Convert to string for consistent comparison
       const sectionParam = urlParams.get('section');
-      const datasetParam = urlParams.get('dataset');
+      const datasetParam = urlParams.get('baseline');
       
       console.log('🔗 Deep Link Check:', { 
         householdId, 
@@ -507,7 +523,7 @@
   // Reactive statement to watch for URL parameter changes
   $: if ($page?.url?.searchParams && data.length > 0 && !loading) {
     const currentHouseholdId = String($page.url.searchParams.get('household') || '');
-    const currentDatasetParam = $page.url.searchParams.get('dataset');
+    const currentDatasetParam = $page.url.searchParams.get('baseline');
     
     // Check if dataset changed
     if (currentDatasetParam && datasets[currentDatasetParam] && currentDatasetParam !== selectedDataset) {
@@ -652,26 +668,28 @@
     if (!household) return [];
     
     const provisions = [
-      { name: 'Tax Rate Reform', key: 'Change in Net income after Tax Rate Reform' },
-      { name: 'Standard Deduction Reform', key: 'Change in Net income after Standard Deduction Reform' },
-      { name: 'Exemption Reform', key: 'Change in Net income after Exemption Reform' },
-      { name: 'Child Tax Credit Reform', key: 'Change in Net income after CTC Reform' },
-      { name: 'QBID Reform', key: 'Change in Net income after QBID Reform' },
-      { name: 'AMT Reform', key: 'Change in Net income after AMT Reform' },
-      { name: 'Miscellaneous Reform', key: 'Change in Net income after Miscellaneous Reform' },
-      { name: 'Other Itemized Deductions Reform', key: 'Change in Net income after Other Itemized Deductions Reform' },
+      { name: 'Rate Adjustment', key: 'Change in Net income after Rate Adjustments' },
+      { name: 'Standard Deduction Increase', key: 'Change in Net income after Standard deduction increase' },
+      { name: 'Exemption Repeal', key: 'Change in Net income after Exemption Reform' },
+      { name: 'Child Tax Credit Social Security Number Requirement', key: 'Change in Net income after Child Tax Credit Social Security Number Requirement' },
+      { name: 'Child Tax Credit Expansion', key: 'Change in Net income after Child Tax Credit Expansion' },
+      { name: 'Qualified Business Income Deduction Reform', key: 'Change in Net income after Qualified Business Interest Deduction Reform' },
+      { name: 'Alternative Minimum Tax Reform', key: 'Change in Net income after Alternative Minimum Tax Reform' },
+      { name: 'Miscellaneous Deductions Reform', key: 'Change in Net income after Miscellaneous Deduction Reform' },
+      { name: 'Charitable Deductions Reform', key: 'Change in Net income after Charitable Deductions Reform' },
+      { name: 'Casualty Loss Deductions Repeal', key: 'Change in Net income after Casualty Loss Deductions Repeal' },
+      { name: 'Pease Repeal', key: 'Change in Net income after Pease Repeal' },
       { name: 'Limitation on Itemized Deductions Reform', key: 'Change in Net income after Limitation on Itemized Deductions Reform' },
       { name: 'Estate Tax Reform', key: 'Change in Net income after Estate Tax Reform' },
-      { name: 'Senior Deduction Reform', key: 'Change in Net income after Senior Deduction Reform' },
-      { name: 'Tip Income Exempt', key: 'Change in Net income after Tip Income Exempt' },
-      { name: 'Overtime Income Exempt', key: 'Change in Net income after Overtime Income Exempt' },
-      { name: 'Auto Loan Interest ALD', key: 'Change in Net income after Auto Loan Interest ALD' },
-      { name: 'SALT Reform', key: 'Change in Net income after SALT Reform' },
-      { name: 'CDCC Reform', key: 'Change in Net income after CDCC Reform' },
-      { name: 'ACA Enhanced Subsidies Reform', key: 'Change in Net income after ACA Enhanced Subsidies Reform' },
-      { name: 'SNAP Reform', key: 'Change in Net income after SNAP Takeup Reform' },
-      { name: 'Extension of ACA Subsidies', key: 'Change in Net income after Extension of ACA Subsidies Reform' },
-      { name: 'Medicaid Reform', key: 'Change in Net income after Medicaid Takeup Reform' }
+      { name: 'New Senior Deduction', key: 'Change in Net income after New Senior Deduction' },
+      { name: 'Tip Exemption', key: 'Change in Net income after Tip Exemption' },
+      { name: 'Overtime Exemption', key: 'Change in Net income after Overtime Exemption' },
+      { name: 'Auto Loan Interest Deduction', key: 'Change in Net income after Auto Loan Interest Deduction' },
+      { name: 'Cap on State and Local Tax Deduction', key: 'Change in Net income after Cap on state and local tax deduction' },
+      { name: 'Child and Dependent Care Credit Reform', key: 'Change in Net income after Child and dependent care credit reform' },
+      { name: 'Extension of ACA Enhanced Subsidies', key: 'Change in Net income after Extension of ACA Enhanced Subsidies' },
+      { name: 'SNAP Reform', key: 'Change in Net income after SNAP Reform' },
+      { name: 'Medicaid Reform', key: 'Change in Net income after Medicaid Reform' }
     ];
     
     return provisions
@@ -1507,11 +1525,25 @@
   // Function to copy household URL to clipboard
   async function copyHouseholdUrl(household) {
     const currentState = scrollStates[currentStateIndex];
-    const url = new URL(window.location.href);
+    let url;
+    
+    // Check if we're in an iframe
+    if (typeof window !== 'undefined' && window.parent !== window) {
+      // We're in an iframe - construct PolicyEngine URL
+      // First check if we're on policyengine.github.io (dev) or elsewhere
+      const isGitHubPages = window.location.hostname === 'policyengine.github.io';
+      const baseUrl = isGitHubPages 
+        ? 'https://policyengine.org/us/obbba-household-explorer'
+        : window.location.href;
+      url = new URL(baseUrl);
+    } else {
+      // Not in iframe, use current location
+      url = new URL(window.location.href);
+    }
     
     // Set household parameters
     url.searchParams.set('household', household.id);
-    url.searchParams.set('dataset', selectedDataset);
+    url.searchParams.set('baseline', selectedDataset);
     if (currentState) {
       url.searchParams.set('section', currentState.id);
     }
