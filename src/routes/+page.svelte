@@ -20,6 +20,29 @@
   let animatedHouseholds = new Map(); // Store animated household emphasis
   let emphasisAnimationId = null; // Track current emphasis animation
   
+  // Consistent number formatters
+  const fmtUSD = new Intl.NumberFormat('en-US', { 
+    style: 'currency', 
+    currency: 'USD', 
+    maximumFractionDigits: 0 
+  });
+  
+  const fmtPct = new Intl.NumberFormat('en-US', { 
+    style: 'percent', 
+    minimumFractionDigits: 1, 
+    maximumFractionDigits: 1 
+  });
+
+  // Get font family from CSS variables
+  function getFontFamily(type = 'sans') {
+    const fontMap = {
+      'serif': "'Roboto Serif', serif",
+      'sans': "'Roboto', sans-serif",
+      'mono': "'Roboto Mono', monospace"
+    };
+    return fontMap[type] || fontMap['sans'];
+  }
+  
   // Deep linking variables
   let householdIdMap = new Map(); // Map household IDs to data objects
   let urlSelectedHouseholdId = null;
@@ -27,6 +50,28 @@
   
   // Dataset selection state
   let selectedDataset = 'tcja-expiration'; // 'tcja-expiration' or 'tcja-extension'
+  
+  // PolicyEngine Color Constants
+  const COLORS = {
+    BLACK: "#000000",
+    BLUE_98: "#F7FAFD",
+    BLUE: "#2C6496",
+    BLUE_LIGHT: "#D8E6F3",
+    BLUE_PRESSED: "#17354F",
+    DARK_BLUE_HOVER: "#1d3e5e",
+    DARK_GRAY: "#616161",
+    DARK_RED: "#b50d0d",
+    DARKEST_BLUE: "#0C1A27",
+    GRAY: "#808080",
+    LIGHT_GRAY: "#F2F2F2",
+    MEDIUM_DARK_GRAY: "#D2D2D2",
+    MEDIUM_LIGHT_GRAY: "#BDBDBD",
+    TEAL_ACCENT: "#39C6C0",
+    TEAL_LIGHT: "#F7FDFC",
+    TEAL_MEDIUM: "#2D9E99",
+    TEAL_PRESSED: "#227773",
+    WHITE: "#FFFFFF"
+  };
   
   // Dataset configuration
   const datasets = {
@@ -46,7 +91,7 @@
     {
       id: 'intro',
       title: "How tax changes affect every American household",
-      groupText: "Each dot represents a household, positioned by their income and how much they gain or lose under the proposed tax changes. Green dots show households that benefit, red shows those that face increases.",
+      groupText: "Each dot represents a household, positioned by their income and how much they gain or lose under the proposed tax changes. Teal dots show households that benefit, gray shows those that face increases.",
       view: {
         xDomain: [-15, 15],
         yDomain: [0, 350000],
@@ -59,7 +104,7 @@
       title: "Lower-income households under $50,000",
       groupText: "Households earning under $50,000 see varied outcomes. While many benefit from Child Tax Credit expansions and TCJA extensions, some undocumented families lose access to credits due to new SSN requirements. Individuals in the bottom decile will gain an average of $213, while the top decile will gain an average of $13,075.",
       view: {
-        xDomain: [-10, 15],
+        xDomain: [-15, 15],
         yDomain: [0, 50000],
         filter: d => d['Gross Income'] >= 0 && d['Gross Income'] < 50000,
         highlightGroup: 'lower'
@@ -70,7 +115,7 @@
       title: "Middle-income households ($50,000 - $200,000)", 
       groupText: "This broad middle class benefits significantly from TCJA extensions, enhanced Child Tax Credits, and new deductions for tips and overtime pay. Seniors in this range gain substantially from the additional $6,000 senior deduction. These households typically see Net Income increases from the tax provisions.",
       view: {
-        xDomain: [-15, 25],
+        xDomain: [-25, 25],
         yDomain: [50000, 200000],
         filter: d => d['Gross Income'] >= 50000 && d['Gross Income'] < 200000,
         highlightGroup: 'middle'
@@ -123,10 +168,13 @@
   });
 
   // Function to load dataset
-  async function loadDataset(datasetKey) {
+  async function loadDataset(datasetKey, preservedHouseholdIds = null) {
     loading = true;
     try {
       const response = await fetch(`/obbba-scatter/${datasets[datasetKey].filename}`);
+      if (!response.ok) {
+        throw new Error(`Failed to load CSV: ${response.status} ${response.statusText}`);
+      }
       const raw = await response.text();
       const result = Papa.parse(raw, {
         header: true,
@@ -178,9 +226,21 @@
 
           // Select random household for individual view (skip intro)
           if (baseIndex > 0) {
-            const randomHousehold = getRandomWeightedHousehold(filteredData);
-            if (randomHousehold) {
-              randomHouseholds[baseView.id] = randomHousehold;
+            let selectedHousehold = null;
+            
+            // Try to preserve the household from previous dataset
+            if (preservedHouseholdIds && preservedHouseholdIds[baseView.id]) {
+              const preservedId = preservedHouseholdIds[baseView.id];
+              selectedHousehold = filteredData.find(h => h.id === preservedId);
+            }
+            
+            // If no preserved household or not found, select random
+            if (!selectedHousehold) {
+              selectedHousehold = getRandomWeightedHousehold(filteredData);
+            }
+            
+            if (selectedHousehold) {
+              randomHouseholds[baseView.id] = selectedHousehold;
             }
           }
         }
@@ -210,14 +270,25 @@
       }, 500);
     } catch (error) {
       console.error('Error loading data:', error);
+      console.error('Dataset key:', datasetKey);
+      console.error('Filename:', datasets[datasetKey]?.filename);
+      console.error('Full URL:', `/obbba-scatter/${datasets[datasetKey]?.filename}`);
       loading = false;
     }
   }
 
   // Function to handle dataset switching
   function switchDataset(newDataset) {
+    // Store current household IDs before switching
+    const preservedHouseholdIds = {};
+    Object.keys(randomHouseholds).forEach(viewId => {
+      if (randomHouseholds[viewId]) {
+        preservedHouseholdIds[viewId] = randomHouseholds[viewId].id;
+      }
+    });
+    
     selectedDataset = newDataset;
-    loadDataset(newDataset);
+    loadDataset(newDataset, preservedHouseholdIds); // Pass preserved IDs
     
     // Update URL to reflect dataset change if there are existing URL params
     if (typeof window !== 'undefined') {
@@ -491,6 +562,7 @@
     animatedNumbers.set(elementId, animationId);
   }
 
+
   // Animate household emphasis (simple grow and fade back)
   function animateHouseholdEmphasis(householdId, duration = 600) {
     // Cancel existing animation if any
@@ -539,17 +611,17 @@
 
   // Formatting functions
   function formatCurrency(value) {
-    return '$' + Math.round(value).toLocaleString();
+    return fmtUSD.format(Math.round(value));
   }
 
   function formatPercentage(value) {
-    const sign = value >= 0 ? '+' : '';
-    return sign + value.toFixed(1) + '%';
+    const formatted = fmtPct.format(value / 100); // Convert to decimal for Intl formatter
+    return value >= 0 ? '+' + formatted : formatted;
   }
 
   function formatDollarChange(value) {
-    const sign = value >= 0 ? '+' : '';
-    return sign + '$' + Math.abs(Math.round(value)).toLocaleString();
+    const formatted = fmtUSD.format(Math.abs(Math.round(value)));
+    return value >= 0 ? '+' + formatted : '-' + formatted;
   }
 
   // Generate prose summary for a household
@@ -572,7 +644,7 @@
     
     const gainOrLoss = changeInNetIncome > 0 ? 'gains' : 'loses';
     
-    return `This household is a ${familyStructure} living in ${state}. The head of household is ${age} years old. Under the baseline tax system, this household has a Gross Income of $${income.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} and a Net Income of $${baselineNetIncome.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}. After the proposed tax reforms, this household ${gainOrLoss} $${Math.abs(changeInNetIncome).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} annually, representing a ${Math.abs(percentChange).toFixed(1)}% ${changeInNetIncome > 0 ? 'increase' : 'decrease'} in their net income.`;
+    return `This household is a ${familyStructure} living in ${state}. The head of household is ${age} years old. Under the baseline tax system, this household has a Gross Income of $${Math.round(income).toLocaleString()} and a Net Income of $${Math.round(baselineNetIncome).toLocaleString()}. After the proposed tax reforms, this household ${gainOrLoss} $${Math.round(Math.abs(changeInNetIncome)).toLocaleString()} annually, representing a ${Math.abs(percentChange).toFixed(1)}% ${changeInNetIncome > 0 ? 'increase' : 'decrease'} in their net income.`;
   }
 
   // Get provision breakdown for a household
@@ -761,8 +833,8 @@
     const xMin = d3.interpolate(currentView.xDomain[0], targetView.xDomain[0])(interpolationT);
     const xMax = d3.interpolate(currentView.xDomain[1], targetView.xDomain[1])(interpolationT);
     
-    // Clear canvas with NYT-style background
-    ctx.fillStyle = '#ffffff';
+    // Clear canvas with PolicyEngine background
+    ctx.fillStyle = COLORS.WHITE;
     ctx.fillRect(0, 0, width, height);
 
     // Don't filter data here - let points fade in/out during rendering
@@ -795,8 +867,8 @@
       .domain([yMin, yMax])
       .range([height - margin.bottom, margin.top]);
 
-    // Draw NYT-style grid lines
-    ctx.strokeStyle = '#DFDFDF';
+    // Draw grid lines
+    ctx.strokeStyle = COLORS.MEDIUM_DARK_GRAY;
     ctx.lineWidth = 0.5;
     ctx.setLineDash([]);
     
@@ -822,6 +894,30 @@
 
     // Clear rendered points for hit detection
     renderedPoints = [];
+
+    // Calculate min/max weights for visible households to scale opacity dynamically
+    let minWeight = Infinity;
+    let maxWeight = -Infinity;
+    
+    // First pass: find weight range for visible households
+    allRelevantData.forEach(d => {
+      const x = xScale(d['Percentage Change in Net Income']);
+      const y = yScale(d['Gross Income']);
+      
+      // Only consider points that will be visible on screen
+      if (x >= margin.left && x <= width - margin.right && 
+          y >= margin.top && y <= height - margin.bottom) {
+        const weight = d['Household weight'] || d['Household Weight'] || 1;
+        minWeight = Math.min(minWeight, weight);
+        maxWeight = Math.max(maxWeight, weight);
+      }
+    });
+    
+    // Ensure we have valid range
+    if (minWeight === Infinity || maxWeight === -Infinity || minWeight === maxWeight) {
+      minWeight = 1;
+      maxWeight = 100000;
+    }
 
     // Enhanced point rendering with smooth fade animations
     allRelevantData.forEach(d => {
@@ -861,15 +957,15 @@
         fadeOpacity = shouldBeVisible ? 1 : 0;
       }
 
-      // NYT color scheme
+      // PolicyEngine color scheme
       let color;
               const change = d['Percentage Change in Net Income'];
       if (Math.abs(change) < 0.1) {
-        color = '#999999'; // gray for no change
+        color = COLORS.MEDIUM_DARK_GRAY; // light gray for no change
       } else if (change > 0) {
-        color = '#1a9658'; // green for gains
+        color = COLORS.TEAL_MEDIUM; // medium teal for gains
       } else {
-        color = '#d75442'; // red for losses
+        color = COLORS.DARK_GRAY; // dark gray for losses
       }
 
       // Point sizing and final opacity with smooth transitions
@@ -898,11 +994,23 @@
       
       const isHighlighted = isGroupHighlighted || isIndividualHighlighted;
       
-      // Calculate radius based on household weight (area proportional to weight)
-      const weight = d['Household weight'] || 1;
-      const baseRadius = Math.sqrt(weight / Math.PI) * 0.02; // Much smaller scale factor
-      let radius = isHighlighted ? Math.max(baseRadius * 1.5, isIndividualHighlighted ? 6 : 4) : Math.max(baseRadius, 1.5);
-      let baseOpacity = isHighlighted ? 1 : 0.65;
+      // Use uniform radius for all points
+      const weight = d['Household weight'] || d['Household Weight'] || 1;
+      let radius = isHighlighted ? (isIndividualHighlighted ? 6 : 4) : 2;
+      
+      // Calculate opacity based on household weight using dynamic logarithmic scale
+      // Map weights from [minWeight, maxWeight] to opacity [0.3, 0.85] for non-highlighted points
+      const logWeight = Math.log10(weight + 1); // Add 1 to handle weight=0
+      const logMinWeight = Math.log10(minWeight + 1);
+      const logMaxWeight = Math.log10(maxWeight + 1);
+      const minOpacity = 0.3; // Increased minimum for better visibility
+      const maxOpacity = 0.85; // Slightly higher max for contrast
+      
+      // Normalize to 0-1 range based on visible data
+      const normalizedWeight = (logWeight - logMinWeight) / (logMaxWeight - logMinWeight);
+      const weightBasedOpacity = minOpacity + (maxOpacity - minOpacity) * normalizedWeight;
+      
+      let baseOpacity = isHighlighted ? 1 : Math.min(Math.max(weightBasedOpacity, minOpacity), maxOpacity);
       
       // Apply animation effects if this household is being animated
       const animationState = animatedHouseholds.get(d.id);
@@ -937,7 +1045,7 @@
         // Highlight stroke for featured points
         if (isHighlighted && finalOpacity > 0.5) {
           ctx.globalAlpha = finalOpacity;
-          ctx.strokeStyle = '#000000';
+          ctx.strokeStyle = COLORS.BLACK;
           ctx.lineWidth = 1;
           ctx.stroke();
         }
@@ -946,9 +1054,9 @@
 
     ctx.globalAlpha = 1;
 
-    // Draw zero line (NYT style)
+    // Draw zero line
     if (xMin <= 0 && xMax >= 0) {
-      ctx.strokeStyle = '#000000';
+      ctx.strokeStyle = COLORS.BLACK;
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(xScale(0), margin.top);
@@ -956,7 +1064,7 @@
       ctx.stroke();
     }
 
-    // Draw axes using SVG overlay (NYT style)
+    // Draw axes using SVG overlay
     if (svgRef) {
       const svg = d3.select(svgRef);
       svg.selectAll('*').remove();
@@ -967,35 +1075,35 @@
       const xAxis = g.append('g')
         .attr('transform', `translate(0,${height - margin.bottom})`)
         .call(d3.axisBottom(xScale).tickFormat(d => `${d > 0 ? '+' : ''}${d}%`))
-        .style('font-family', 'Roboto Mono, monospace')
+        .style('font-family', getFontFamily('sans'))
         .style('font-size', '10px')
-        .style('color', '#121212');
+        .style('color', COLORS.DARKEST_BLUE);
 
       // Y-axis with labels (no animation)
       const yAxis = g.append('g')
         .attr('transform', `translate(${margin.left},0)`)
         .call(d3.axisLeft(yScale).ticks(6).tickFormat(d => d3.format('$,')(d)))
-        .style('font-family', 'Roboto Mono, monospace')
+        .style('font-family', getFontFamily('sans'))
         .style('font-size', '10px')
-        .style('color', '#121212');
+        .style('color', COLORS.DARKEST_BLUE);
 
       // Style axes lines
-      xAxis.select('.domain').style('stroke', '#000000').style('stroke-width', 1);
-      yAxis.select('.domain').style('stroke', '#000000').style('stroke-width', 1);
+      xAxis.select('.domain').style('stroke', COLORS.BLACK).style('stroke-width', 1);
+      yAxis.select('.domain').style('stroke', COLORS.BLACK).style('stroke-width', 1);
       
       // Style tick lines
-      xAxis.selectAll('.tick line').style('stroke', '#000000').style('stroke-width', 0.5);
-      yAxis.selectAll('.tick line').style('stroke', '#000000').style('stroke-width', 0.5);
+      xAxis.selectAll('.tick line').style('stroke', COLORS.BLACK).style('stroke-width', 0.5);
+      yAxis.selectAll('.tick line').style('stroke', COLORS.BLACK).style('stroke-width', 0.5);
 
-      // Axis labels (NYT style)
+      // Axis labels
       g.append('text')
         .attr('x', width / 2)
         .attr('y', height - 15)
         .attr('text-anchor', 'middle')
-        .style('font-family', 'Roboto Serif, serif')
+        .style('font-family', getFontFamily('sans'))
         .style('font-size', '16px')
         .style('font-weight', '400')
-        .style('fill', '#666666')
+        .style('fill', COLORS.DARK_GRAY)
         .text('Change in income →');
 
       g.append('text')
@@ -1003,10 +1111,10 @@
         .attr('x', -height / 2)
         .attr('y', 25)
         .attr('text-anchor', 'middle')
-        .style('font-family', 'Roboto Serif, serif')
+        .style('font-family', getFontFamily('sans'))
         .style('font-size', '16px')
         .style('font-weight', '400')
-        .style('fill', '#666666')
+        .style('fill', COLORS.DARK_GRAY)
         .text('Annual household income →');
     }
   }
@@ -1038,6 +1146,61 @@
             const animationDuration = isCurrentSection ? 400 : 600; // Shorter duration for clicks
             
             // Animate the numbers with delay for smooth effect
+            setTimeout(() => {
+              createAnimatedNumber(
+                `household-id-${sectionIndex}`,
+                parseInt(previousHousehold.id),
+                parseInt(currentHousehold.id),
+                (val) => Math.round(val),
+                animationDuration
+              );
+            }, animationDelay - 100); // Start household ID first
+            
+            // Animate demographic values
+            setTimeout(() => {
+              createAnimatedNumber(
+                `num-dependents-${sectionIndex}`,
+                previousHousehold['Number of Dependents'] || previousHousehold['Dependents'] || 0,
+                currentHousehold['Number of Dependents'] || currentHousehold['Dependents'] || 0,
+                (val) => Math.round(val),
+                animationDuration
+              );
+            }, animationDelay);
+            
+            setTimeout(() => {
+              const prevAge = previousHousehold['Age of Head'] || previousHousehold['Age'];
+              const currAge = currentHousehold['Age of Head'] || currentHousehold['Age'];
+              if (typeof prevAge === 'number' && typeof currAge === 'number') {
+                createAnimatedNumber(
+                  `age-of-head-${sectionIndex}`,
+                  prevAge,
+                  currAge,
+                  (val) => Math.round(val),
+                  animationDuration
+                );
+              }
+            }, animationDelay);
+            
+            setTimeout(() => {
+              createAnimatedNumber(
+                `market-income-${sectionIndex}`,
+                previousHousehold['Market Income'] || previousHousehold['Gross Income'] || 0,
+                currentHousehold['Market Income'] || currentHousehold['Gross Income'] || 0,
+                formatCurrency,
+                animationDuration
+              );
+            }, animationDelay);
+            
+            setTimeout(() => {
+              createAnimatedNumber(
+                `baseline-net-${sectionIndex}`,
+                previousHousehold['Baseline Net Income'] || 0,
+                currentHousehold['Baseline Net Income'] || 0,
+                formatCurrency,
+                animationDuration
+              );
+            }, animationDelay);
+            
             setTimeout(() => {
               createAnimatedNumber(
                 `gross-income-${sectionIndex}`,
@@ -1099,20 +1262,28 @@
   let previousSelectedData = null;
   $: {
     if (typeof window !== 'undefined' && selectedData && previousSelectedData) {
+      // Use sophisticated timing like provision breakdown for "train station" effect
+      const animationDelay = 50;
+      const animationDuration = 400;
+      
       let index = 0;
       Object.entries(selectedData).forEach(([key, value]) => {
         if (key !== 'id' && key !== 'isAnnotated' && key !== 'sectionIndex' && key !== 'isHighlighted' && key !== 'highlightGroup' && key !== 'stateIndex') {
           if (typeof value === 'number') {
             const prevValue = previousSelectedData[key];
             if (typeof prevValue === 'number' && prevValue !== value) {
+              
+              // All values animate together simultaneously
+              const delay = animationDelay;
+              
               setTimeout(() => {
-                if (key.includes('Income') || key.includes('Taxes') || key.includes('Net Income Change')) {
+                if (key.includes('Income') || key.includes('Taxes') || key.includes('Tax Liability') || key.includes('Benefits') || key.includes('Gains') || key.includes('Interest') || key.includes('Medicaid') || key.includes('ACA') || key.includes('CHIP') || key.includes('SNAP') || key.toLowerCase().includes('change in') && !key.includes('Percentage')) {
                   createAnimatedNumber(
                     `table-value-${index}`,
                     prevValue,
                     value,
-                    (val) => '$' + Math.round(val).toLocaleString(),
-                    400
+                    (val) => (val < 0 ? '-' : '') + '$' + Math.abs(Math.round(val)).toLocaleString(),
+                    animationDuration
                   );
                 } else if (key.includes('Percentage')) {
                   createAnimatedNumber(
@@ -1120,7 +1291,15 @@
                     prevValue,
                     value,
                     (val) => (val > 0 ? '+' : '') + val.toFixed(2) + '%',
-                    400
+                    animationDuration
+                  );
+                } else if (key.includes('ID') || key.includes('Household')) {
+                  createAnimatedNumber(
+                    `table-value-${index}`,
+                    typeof prevValue === 'string' ? parseInt(prevValue) : prevValue,
+                    typeof value === 'string' ? parseInt(value) : value,
+                    (val) => Math.round(val),
+                    animationDuration
                   );
                 } else {
                   createAnimatedNumber(
@@ -1128,10 +1307,10 @@
                     prevValue,
                     value,
                     (val) => Math.round(val).toLocaleString(),
-                    400
+                    animationDuration
                   );
                 }
-              }, index * 50);
+              }, delay);
             }
           }
           index++;
@@ -1325,6 +1504,38 @@
     }
   }
 
+  // Function to copy household URL to clipboard
+  async function copyHouseholdUrl(household) {
+    const currentState = scrollStates[currentStateIndex];
+    const url = new URL(window.location.href);
+    
+    // Set household parameters
+    url.searchParams.set('household', household.id);
+    url.searchParams.set('dataset', selectedDataset);
+    if (currentState) {
+      url.searchParams.set('section', currentState.id);
+    }
+    
+    const fullUrl = url.toString();
+    
+    try {
+      await navigator.clipboard.writeText(fullUrl);
+      
+      // Show temporary success feedback
+      const button = event.target.closest('button');
+      const originalTitle = button.title;
+      button.title = 'Copied!';
+      button.classList.add('copied');
+      
+      setTimeout(() => {
+        button.title = originalTitle;
+        button.classList.remove('copied');
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy URL:', err);
+    }
+  }
+
   // Watch for text sections being bound
   $: if (textSections.length > 0 && textSections.every(el => el)) {
     setTimeout(() => {
@@ -1338,15 +1549,16 @@
   }
 
 
+
 </script>
 
 <svelte:head>
-  <title>NYT-Style Scatterplot</title>
+  <title>PolicyEngine Tax Impact Visualization</title>
   <style>
     body {
       margin: 0;
       padding: 0;
-      font-family: nyt-franklin, helvetica, arial, sans-serif;
+      font-family: 'Roboto', helvetica, arial, sans-serif;
     }
   </style>
 </svelte:head>
@@ -1361,8 +1573,36 @@
     </div>
   {/if}
 
-  <div class="nyt-container">
-    <!-- NYT-style layout: text on left, viz on right -->
+  <!-- Floating header -->
+  <header class="floating-header">
+    <div class="header-content">
+      <h1 class="app-title">OBBBA Household Explorer</h1>
+      <div class="baseline-selector-container">
+        <span class="baseline-label">Baseline:</span>
+        <div class="baseline-selector">
+          <button 
+            class="tab-button" 
+            class:active={selectedDataset === 'tcja-expiration'}
+            on:click={() => switchDataset('tcja-expiration')}
+            disabled={loading}
+          >
+            TCJA Expiration
+          </button>
+          <button 
+            class="tab-button" 
+            class:active={selectedDataset === 'tcja-extension'}
+            on:click={() => switchDataset('tcja-extension')}
+            disabled={loading}
+          >
+            TCJA Extension
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="main-container">
+    <!-- Layout: text on left, viz on right -->
     <div class="text-column" on:scroll={handleScroll}>
       {#each scrollStates as state, i}
         <section 
@@ -1376,28 +1616,6 @@
             <h2>{state.title}</h2>
             <p>{@html state.text}</p>
             
-            <!-- Dataset Selector for intro section -->
-            {#if state.id === 'intro'}
-              <div class="dataset-selector">
-                <div class="selector-header">
-                  <h3>Choose Scenario</h3>
-                  <p>Select which baseline to use for the analysis</p>
-                </div>
-                <div class="selector-buttons">
-                  {#each Object.entries(datasets) as [key, dataset]}
-                    <button 
-                      class="dataset-button" 
-                      class:active={selectedDataset === key}
-                      on:click={() => switchDataset(key)}
-                      disabled={loading}
-                      title={dataset.description}
-                    >
-                      {dataset.label}
-                    </button>
-                  {/each}
-                </div>
-              </div>
-            {/if}
             
             {#if state.viewType === 'individual'}
               {@const baseViewId = baseViews[Math.floor(i / 2)]?.id}
@@ -1406,14 +1624,21 @@
                 {@const provisionBreakdown = getProvisionBreakdown(randomHousehold)}
                 <div class="household-profile">
                   <h3>
-                    Individual household profile
+                    Household #<span id="household-id-{i}">{randomHousehold.id}</span>
                     <div class="header-buttons">
                       <button 
                         class="action-button random-button" 
                         on:click={pickRandomHousehold}
                         title="Pick a new random household"
                       >
-                        🎲
+                        🔀
+                      </button>
+                      <button 
+                        class="action-button link-button" 
+                        on:click={() => copyHouseholdUrl(randomHousehold)}
+                        title="Copy link to this household"
+                      >
+                        🔗
                       </button>
                       <button 
                         class="action-button info-button" 
@@ -1424,26 +1649,45 @@
                       </button>
                     </div>
                   </h3>
-                  <div class="household-summary">
-                    <p>{generateHouseholdSummary(randomHousehold)}</p>
-                  </div>
                   <div class="household-details">
                     <div class="detail-item">
-                                              <span class="label">Gross Income:</span>
-                      <span class="value" id="gross-income-{i}">
-                        {formatCurrency(randomHousehold['Gross Income'])}
+                      <span class="label">Marital Status:</span>
+                      <span class="value">{randomHousehold['Is Married'] ? 'Married' : 'Single'}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="label">State:</span>
+                      <span class="value">{randomHousehold['State'] || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="label"># Dependents:</span>
+                      <span class="value" id="num-dependents-{i}">{Math.round(randomHousehold['Number of Dependents'] || randomHousehold['Dependents'] || 0)}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="label">Age of Head:</span>
+                      <span class="value" id="age-of-head-{i}">{randomHousehold['Age of Head'] || randomHousehold['Age'] || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="label">Market Income:</span>
+                      <span class="value" id="market-income-{i}">
+                        {formatCurrency(randomHousehold['Market Income'] || randomHousehold['Gross Income'] || 0)}
                       </span>
                     </div>
                     <div class="detail-item">
-                      <span class="label">Net Income change:</span>
-                                  <span class="value {randomHousehold['Total Change in Net Income'] > 0 ? 'positive' : 'negative'}" id="net-change-{i}">
-              {formatDollarChange(randomHousehold['Total Change in Net Income'])}
+                      <span class="label">Baseline Net Income:</span>
+                      <span class="value" id="baseline-net-{i}">
+                        {formatCurrency(randomHousehold['Baseline Net Income'] || 0)}
                       </span>
                     </div>
                     <div class="detail-item">
-                                              <span class="label">Percentage Change:</span>
-                                  <span class="value {randomHousehold['Percentage Change in Net Income'] > 0 ? 'positive' : 'negative'}" id="percent-change-{i}">
-              {formatPercentage(randomHousehold['Percentage Change in Net Income'])}
+                      <span class="label">Net Income Change:</span>
+                      <span class="value {randomHousehold['Total Change in Net Income'] > 0 ? 'pos' : randomHousehold['Total Change in Net Income'] < 0 ? 'neg' : 'zero'}" id="net-change-{i}">
+                        {formatDollarChange(randomHousehold['Total Change in Net Income'])}
+                      </span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="label">% Change:</span>
+                      <span class="value {randomHousehold['Percentage Change in Net Income'] > 0 ? 'pos' : randomHousehold['Percentage Change in Net Income'] < 0 ? 'neg' : 'zero'}" id="percent-change-{i}">
+                        {formatPercentage(randomHousehold['Percentage Change in Net Income'])}
                       </span>
                     </div>
                   </div>
@@ -1455,7 +1699,7 @@
                         {#each provisionBreakdown as provision}
                           <div class="provision-item">
                             <span class="provision-name">{provision.name}:</span>
-                            <span class="provision-value {provision.value > 0 ? 'positive' : provision.value < 0 ? 'negative' : 'neutral'}" id="provision-{i}-{provision.index}">
+                            <span class="value {provision.value > 0 ? 'pos' : provision.value < 0 ? 'neg' : 'zero'}" id="provision-{i}-{provision.index}">
                               {formatDollarChange(provision.value)}
                             </span>
                           </div>
@@ -1498,7 +1742,8 @@
 
   <!-- Data table for selected point -->
   {#if selectedData}
-    <div class="data-table-container">
+    <div class="data-table-overlay" on:click={() => selectedData = null}>
+      <div class="data-table-container" on:click|stopPropagation>
       <h3>Selected Household Data</h3>
       <table class="data-table">
         <tbody>
@@ -1508,12 +1753,14 @@
                 <td class="key-column">{key}</td>
                 <td class="value-column">
                   {#if typeof value === 'number'}
-                    {#if key.includes('Income') || key.includes('Taxes') || key.includes('Net Income Change')}
-                      <span id="table-value-{index}">${value.toLocaleString()}</span>
+                    {#if key.includes('Income') || key.includes('Taxes') || key.includes('Tax Liability') || key.includes('Benefits') || key.includes('Gains') || key.includes('Interest') || key.includes('Medicaid') || key.includes('ACA') || key.includes('CHIP') || key.includes('SNAP') || key.toLowerCase().includes('change in') && !key.includes('Percentage')}
+                      <span id="table-value-{index}">{value < 0 ? '-' : ''}${Math.abs(Math.round(value)).toLocaleString()}</span>
                     {:else if key.includes('Percentage')}
                       <span id="table-value-{index}">{value > 0 ? '+' : ''}{value.toFixed(2)}%</span>
+                    {:else if key.includes('ID') || key.includes('Household')}
+                      <span id="table-value-{index}">{Math.round(value)}</span>
                     {:else}
-                      <span id="table-value-{index}">{value.toLocaleString()}</span>
+                      <span id="table-value-{index}">{Math.round(value).toLocaleString()}</span>
                     {/if}
                   {:else}
                     {value}
@@ -1524,33 +1771,74 @@
           {/each}
         </tbody>
       </table>
-      <button class="close-table" on:click={() => selectedData = null}>×</button>
+        <button class="close-table" on:click={() => selectedData = null}>×</button>
+      </div>
     </div>
   {/if}
 </div>
 
 <style>
   :root {
-    --nyt-background: #FFFFFF;
-    --nyt-text-primary: #121212;
-    --nyt-text-secondary: #666666;
-    --nyt-axis-grid: #000000;
-    --nyt-grid-lines: #DFDFDF;
-    --nyt-scatter-positive: #1a9658;
-    --nyt-scatter-negative: #d75442;
-    --nyt-scatter-neutral: #999999;
-    --nyt-border: #DFDFDF;
-    --nyt-hover: #EBEBEB;
-    --nyt-font-sans: 'Roboto', sans-serif;
-    --nyt-font-serif: 'Roboto Serif', serif;
-    --nyt-font-mono: 'Roboto Mono', monospace;
+    /* PolicyEngine Color Constants */
+    --black: #000000;
+    --blue-98: #F7FAFD;
+    --blue: #2C6496;
+    --blue-light: #D8E6F3;
+    --blue-pressed: #17354F;
+    --dark-blue-hover: #1d3e5e;
+    --dark-gray: #616161;
+    --dark-red: #b50d0d;
+    --darkest-blue: #0C1A27;
+    --gray: #808080;
+    --light-gray: #F2F2F2;
+    --medium-dark-gray: #D2D2D2;
+    --medium-light-gray: #BDBDBD;
+    --teal-accent: #39C6C0;
+    --teal-light: #F7FDFC;
+    --teal-medium: #2D9E99;
+    --teal-pressed: #227773;
+    --white: #FFFFFF;
+
+    /* Application Color Mappings */
+    --app-background: var(--white);
+    --text-primary: var(--darkest-blue);
+    --text-secondary: var(--dark-gray);
+    --axis-grid: var(--black);
+    --grid-lines: var(--medium-dark-gray);
+    --scatter-positive: var(--teal-medium);
+    --scatter-negative: var(--dark-gray);
+    --scatter-neutral: var(--medium-dark-gray);
+    --border: var(--medium-dark-gray);
+    --hover: var(--blue-98);
+    --font-sans: 'Roboto', sans-serif;
+    --font-serif: 'Roboto Serif', serif;
+    --font-mono: 'Roboto Mono', monospace;
+  }
+
+  /* Typography utility classes */
+  .font-serif {
+  }
+
+  .font-sans {
+    font-family: var(--font-sans);
+  }
+
+  .font-mono {
+  }
+
+  /* Default typography for common elements */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-sans);
+  }
+
+  p, span, div {
+    font-family: var(--font-sans);
   }
 
   .app {
     width: 100%;
     min-height: 100vh;
-    background: var(--nyt-background);
-    font-family: var(--nyt-font-serif);
+    background: var(--app-background);
   }
 
   .loading-overlay {
@@ -1571,17 +1859,16 @@
   }
 
   .loading-content p {
-    font-family: var(--nyt-font-serif);
     font-size: 14px;
-    color: var(--nyt-text-secondary);
+    color: var(--text-secondary);
     margin: 15px 0 0 0;
   }
 
   .spinner {
     width: 40px;
     height: 40px;
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid var(--nyt-text-secondary);
+    border: 3px solid var(--light-gray);
+    border-top: 3px solid var(--text-secondary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 0 auto 20px;
@@ -1592,7 +1879,7 @@
     100% { transform: rotate(360deg); }
   }
 
-  .nyt-container {
+  .main-container {
     display: flex;
     max-width: 1200px;
     margin: 0 auto;
@@ -1600,14 +1887,14 @@
 
   .text-column {
     flex: 0 0 40%;
-    background: var(--nyt-background);
+    background: var(--app-background);
     height: 100vh;
     overflow-y: auto;
   }
 
   .viz-column {
     flex: 0 0 60%;
-    background: var(--nyt-background);
+    background: var(--app-background);
   }
 
   .viz-sticky {
@@ -1622,8 +1909,8 @@
 
   /* Dataset Selector Styles */
   .dataset-selector {
-    background: var(--nyt-hover);
-    border: 1px solid var(--nyt-border);
+    background: var(--hover);
+    border: 1px solid var(--border);
     border-radius: 8px;
     padding: 20px;
     margin: 32px 0 16px 0;
@@ -1637,17 +1924,15 @@
   }
 
   .selector-header h3 {
-    font-family: var(--nyt-font-serif);
     font-size: 1.1rem;
     font-weight: 700;
-    color: var(--nyt-text-primary);
+    color: var(--text-primary);
     margin: 0 0 4px 0;
   }
 
   .selector-header p {
-    font-family: var(--nyt-font-serif);
     font-size: 14px;
-    color: var(--nyt-text-secondary);
+    color: var(--text-secondary);
     margin: 0;
   }
 
@@ -1658,14 +1943,13 @@
   }
 
   .dataset-button {
-    background: var(--nyt-background);
-    border: 2px solid var(--nyt-border);
+    background: var(--app-background);
+    border: 2px solid var(--border);
     border-radius: 6px;
     padding: 12px 20px;
-    font-family: var(--nyt-font-serif);
     font-size: 14px;
     font-weight: 600;
-    color: var(--nyt-text-secondary);
+    color: var(--text-secondary);
     cursor: pointer;
     transition: all 0.2s ease;
     position: relative;
@@ -1678,15 +1962,15 @@
   }
 
   .dataset-button:hover:not(:disabled) {
-    background: var(--nyt-hover);
-    border-color: var(--nyt-text-secondary);
-    color: var(--nyt-text-primary);
+    background: var(--hover);
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
   }
 
   .dataset-button.active {
-    background: var(--nyt-text-primary);
-    border-color: var(--nyt-text-primary);
-    color: var(--nyt-background);
+    background: var(--text-primary);
+    border-color: var(--text-primary);
+    color: var(--app-background);
   }
 
   .dataset-button:disabled {
@@ -1695,7 +1979,7 @@
   }
 
   .main-canvas {
-    background: var(--nyt-background);
+    background: var(--app-background);
     cursor: crosshair;
   }
 
@@ -1709,12 +1993,12 @@
     padding: 60px 40px;
     display: flex;
     align-items: center;
-    border-bottom: 1px solid var(--nyt-border);
+    border-bottom: 1px solid var(--border);
     transition: background-color 0.3s ease;
   }
 
   .text-section.active {
-    background: var(--nyt-hover);
+    background: var(--hover);
   }
 
   .section-content {
@@ -1722,39 +2006,40 @@
   }
 
   .text-section h2 {
-    font-family: var(--nyt-font-serif);
     font-size: 1.8rem;
     font-weight: 700;
     line-height: 1.2;
-    color: var(--nyt-text-primary);
+    color: var(--text-primary);
     margin: 0 0 1rem 0;
   }
 
   .text-section p {
-    font-family: var(--nyt-font-serif);
     font-size: 16px;
     line-height: 1.5;
-    color: var(--nyt-text-secondary);
+    color: var(--text-secondary);
     margin: 24px 0 0 0;
   }
 
   .household-profile {
     margin-top: 2rem;
     padding: 1.5rem;
-    background: var(--nyt-hover);
+    background: var(--hover);
     border-radius: 8px;
-    border: 1px solid var(--nyt-border);
+    border: 1px solid var(--border);
   }
 
   .household-profile h3 {
-    font-family: var(--nyt-font-serif);
     font-size: 1.2rem;
     font-weight: 700;
-    color: var(--nyt-text-primary);
+    color: var(--text-primary);
     margin: 0 0 1rem 0;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
+  }
+
+  .household-profile h3 .header-buttons {
+    margin-left: auto;
   }
 
   .header-buttons {
@@ -1765,47 +2050,43 @@
 
   .action-button {
     background: none;
-    border: 1px solid var(--nyt-border);
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
+    border: none;
+    padding: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
-    color: var(--nyt-text-secondary);
+    font-size: 16px;
     cursor: pointer;
     transition: all 0.2s ease;
     flex-shrink: 0;
+    opacity: 0.7;
   }
 
   .action-button:hover {
-    background-color: var(--nyt-hover);
-    color: var(--nyt-text-primary);
-    border-color: var(--nyt-text-secondary);
+    transform: scale(1.2);
+    opacity: 1;
+  }
+
+  .random-button:hover {
+    filter: hue-rotate(180deg) saturate(2);
+  }
+
+  .link-button:hover {
+    filter: hue-rotate(90deg) saturate(1.5);
+  }
+
+  .info-button:hover {
+    filter: hue-rotate(-90deg) saturate(1.5);
+  }
+
+  .action-button.copied {
+    filter: hue-rotate(120deg) saturate(2);
+    opacity: 1;
   }
 
   .action-button:active {
-    transform: scale(0.95);
+    transform: scale(1.1);
   }
-
-  .random-button {
-    font-size: 12px;
-  }
-
-  .household-summary {
-    margin-bottom: 1.5rem;
-  }
-
-  .household-summary p {
-    font-family: var(--nyt-font-serif);
-    font-size: 16px;
-    line-height: 1.5;
-    color: var(--nyt-text-secondary);
-    margin: 0;
-  }
-
-
 
   .household-details {
     display: flex;
@@ -1818,46 +2099,29 @@
     justify-content: space-between;
     align-items: center;
     padding: 0.5rem 0;
-    border-bottom: 1px solid var(--nyt-border);
-  }
-
-  .detail-item:last-child {
-    border-bottom: none;
   }
 
   .detail-item .label {
-    font-family: var(--nyt-font-mono);
     font-size: 12px;
-    color: var(--nyt-text-secondary);
+    color: var(--text-secondary);
     font-weight: 500;
   }
 
   .detail-item .value {
-    font-family: var(--nyt-font-mono);
     font-size: 13px;
     font-weight: 600;
-    color: var(--nyt-text-primary);
-  }
-
-  .detail-item .value.positive {
-    color: var(--nyt-scatter-positive);
-  }
-
-  .detail-item .value.negative {
-    color: var(--nyt-scatter-negative);
   }
 
   .provision-breakdown {
     margin-top: 1.5rem;
     padding-top: 1.5rem;
-    border-top: 1px solid var(--nyt-border);
+    border-top: 1px solid var(--border);
   }
 
   .provision-breakdown h4 {
-    font-family: var(--nyt-font-serif);
     font-size: 1rem;
     font-weight: 600;
-    color: var(--nyt-text-primary);
+    color: var(--text-primary);
     margin: 0 0 1rem 0;
   }
 
@@ -1876,35 +2140,16 @@
   }
 
   .provision-name {
-    font-family: var(--nyt-font-mono);
-    color: var(--nyt-text-secondary);
+    color: var(--text-secondary);
     font-weight: 400;
     flex: 1;
     margin-right: 0.5rem;
   }
 
-  .provision-value {
-    font-family: var(--nyt-font-mono);
-    font-weight: 600;
-    text-align: right;
-  }
-
-  .provision-value.positive {
-    color: var(--nyt-scatter-positive);
-  }
-
-  .provision-value.negative {
-    color: var(--nyt-scatter-negative);
-  }
-
-  .provision-value.neutral {
-    color: var(--nyt-text-secondary);
-  }
 
   .no-provisions {
-    font-family: var(--nyt-font-serif);
     font-size: 14px;
-    color: var(--nyt-text-secondary);
+    color: var(--text-secondary);
     font-style: italic;
     margin: 0;
   }
@@ -1915,7 +2160,7 @@
 
   /* Mobile responsive */
   @media (max-width: 768px) {
-    .nyt-container {
+    .main-container {
       flex-direction: column;
     }
     
@@ -1974,13 +2219,27 @@
   }
 
   /* Data table styles */
-  .data-table-container {
+  .data-table-overlay {
     position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--nyt-background);
-    border: 1px solid var(--nyt-border);
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 999;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 20px;
+  }
+
+  .data-table-container {
+    position: relative;
+    bottom: unset;
+    left: unset;
+    transform: unset;
+    background: var(--app-background);
+    border: 1px solid var(--border);
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     padding: 20px;
@@ -1991,10 +2250,9 @@
   }
 
   .data-table-container h3 {
-    font-family: var(--nyt-font-serif);
     font-size: 1.2rem;
     font-weight: 700;
-    color: var(--nyt-text-primary);
+    color: var(--text-primary);
     margin: 0 0 15px 0;
     padding-right: 30px;
   }
@@ -2002,12 +2260,11 @@
   .data-table {
     width: 100%;
     border-collapse: collapse;
-    font-family: var(--nyt-font-mono);
     font-size: 12px;
   }
 
   .data-table tr {
-    border-bottom: 1px solid var(--nyt-grid-lines);
+    border-bottom: 1px solid var(--grid-lines);
   }
 
   .data-table tr:last-child {
@@ -2016,7 +2273,7 @@
 
   .key-column {
     padding: 8px 12px 8px 0;
-    color: var(--nyt-text-secondary);
+    color: var(--text-secondary);
     vertical-align: top;
     font-weight: 500;
     width: 60%;
@@ -2024,7 +2281,7 @@
 
   .value-column {
     padding: 8px 0;
-    color: var(--nyt-text-primary);
+    color: var(--text-primary);
     font-weight: 600;
     text-align: right;
   }
@@ -2036,7 +2293,7 @@
     background: none;
     border: none;
     font-size: 20px;
-    color: var(--nyt-text-secondary);
+    color: var(--text-secondary);
     cursor: pointer;
     width: 25px;
     height: 25px;
@@ -2048,18 +2305,23 @@
   }
 
   .close-table:hover {
-    background-color: var(--nyt-hover);
-    color: var(--nyt-text-primary);
+    background-color: var(--hover);
+    color: var(--text-primary);
   }
 
   /* Mobile responsive for data table */
   @media (max-width: 768px) {
+    .data-table-overlay {
+      align-items: flex-end;
+      padding-bottom: 0;
+    }
+
     .data-table-container {
-      position: fixed;
+      position: relative;
       bottom: 0;
       left: 0;
       right: 0;
-      transform: none;
+      width: 100%;
       max-width: none;
       border-radius: 8px 8px 0 0;
       max-height: 50vh;
@@ -2075,6 +2337,166 @@
 
     .loading-content p {
       font-size: 13px;
+    }
+  }
+
+  /* Floating header styles */
+  .floating-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: var(--app-background);
+    border-bottom: 1px solid var(--border);
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .app-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  /* Baseline selector container */
+  .baseline-selector-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .baseline-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  /* Use sans-serif for UI elements */
+  .baseline-label,
+  .tab-button {
+    font-family: var(--font-sans);
+  }
+
+  /* Use monospace for data/numbers */
+  .data-table,
+  .value-column,
+  .key-column,
+  .detail-item .value,
+  .provision-breakdown,
+  .provision-breakdown .provision-name,
+  .provision-breakdown .value,
+  .household-details,
+  .household-details .label,
+  .household-details .value,
+  .household-profile h3,
+  .household-profile h3 span,
+  .provision-breakdown h4 {
+    font-family: var(--font-mono) !important;
+  }
+
+  /* Shared value styles for consistent number alignment */
+  .value {
+    font-family: "Roboto", sans-serif;
+    font-variant-numeric: tabular-nums lining-nums;
+    text-align: right;
+    white-space: nowrap;
+    letter-spacing: 0;   /* overrides global headings */
+    word-spacing: normal;
+  }
+
+  /* Color logic for positive/negative/zero values */
+  .value.pos { color: var(--teal-medium); }
+  .value.neg { color: var(--dark-gray); }
+
+  /* Align sign + currency + digits as one block */
+  .value > span { display: inline-block; }
+
+  /* Tabbed radio button styles */
+  .baseline-selector {
+    display: flex;
+    background: var(--grid-lines);
+    border-radius: 8px;
+    padding: 4px;
+    gap: 4px;
+  }
+
+  .tab-button {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+
+  .tab-button:hover:not(:disabled):not(.active) {
+    background: rgba(44, 100, 150, 0.08);
+    color: var(--text-primary);
+  }
+
+  .tab-button.active {
+    background: var(--app-background);
+    color: var(--policyengine-blue);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  }
+
+  .tab-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Adjust main container for header */
+  .main-container {
+    padding-top: 70px; /* Account for fixed header */
+  }
+
+  /* Mobile responsive header */
+  @media (max-width: 768px) {
+    .header-content {
+      padding: 12px 16px;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .app-title {
+      font-size: 20px;
+    }
+
+    .baseline-selector-container {
+      width: 100%;
+    }
+
+    .baseline-label {
+      font-size: 13px;
+    }
+
+    .baseline-selector {
+      flex: 1;
+      justify-content: center;
+    }
+
+    .tab-button {
+      flex: 1;
+      font-size: 13px;
+      padding: 6px 12px;
+    }
+
+    .main-container {
+      padding-top: 100px; /* More space for stacked header */
     }
   }
 
