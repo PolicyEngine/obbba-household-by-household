@@ -91,7 +91,7 @@
     {
       id: 'intro',
       title: "How tax changes affect every American household",
-      groupText: "Each dot represents a household, positioned by their income and how much they gain or lose under the proposed tax changes. Green dots show households that benefit, red shows those that face increases.",
+      groupText: "Each dot represents a household, positioned by their income and how much they gain or lose under the proposed tax changes. Teal dots show households that benefit, gray shows those that face increases.",
       view: {
         xDomain: [-15, 15],
         yDomain: [0, 350000],
@@ -168,10 +168,13 @@
   });
 
   // Function to load dataset
-  async function loadDataset(datasetKey) {
+  async function loadDataset(datasetKey, preservedHouseholdIds = null) {
     loading = true;
     try {
       const response = await fetch(`/obbba-scatter/${datasets[datasetKey].filename}`);
+      if (!response.ok) {
+        throw new Error(`Failed to load CSV: ${response.status} ${response.statusText}`);
+      }
       const raw = await response.text();
       const result = Papa.parse(raw, {
         header: true,
@@ -223,9 +226,21 @@
 
           // Select random household for individual view (skip intro)
           if (baseIndex > 0) {
-            const randomHousehold = getRandomWeightedHousehold(filteredData);
-            if (randomHousehold) {
-              randomHouseholds[baseView.id] = randomHousehold;
+            let selectedHousehold = null;
+            
+            // Try to preserve the household from previous dataset
+            if (preservedHouseholdIds && preservedHouseholdIds[baseView.id]) {
+              const preservedId = preservedHouseholdIds[baseView.id];
+              selectedHousehold = filteredData.find(h => h.id === preservedId);
+            }
+            
+            // If no preserved household or not found, select random
+            if (!selectedHousehold) {
+              selectedHousehold = getRandomWeightedHousehold(filteredData);
+            }
+            
+            if (selectedHousehold) {
+              randomHouseholds[baseView.id] = selectedHousehold;
             }
           }
         }
@@ -255,14 +270,25 @@
       }, 500);
     } catch (error) {
       console.error('Error loading data:', error);
+      console.error('Dataset key:', datasetKey);
+      console.error('Filename:', datasets[datasetKey]?.filename);
+      console.error('Full URL:', `/obbba-scatter/${datasets[datasetKey]?.filename}`);
       loading = false;
     }
   }
 
   // Function to handle dataset switching
   function switchDataset(newDataset) {
+    // Store current household IDs before switching
+    const preservedHouseholdIds = {};
+    Object.keys(randomHouseholds).forEach(viewId => {
+      if (randomHouseholds[viewId]) {
+        preservedHouseholdIds[viewId] = randomHouseholds[viewId].id;
+      }
+    });
+    
     selectedDataset = newDataset;
-    loadDataset(newDataset);
+    loadDataset(newDataset, preservedHouseholdIds); // Pass preserved IDs
     
     // Update URL to reflect dataset change if there are existing URL params
     if (typeof window !== 'undefined') {
@@ -869,6 +895,30 @@
     // Clear rendered points for hit detection
     renderedPoints = [];
 
+    // Calculate min/max weights for visible households to scale opacity dynamically
+    let minWeight = Infinity;
+    let maxWeight = -Infinity;
+    
+    // First pass: find weight range for visible households
+    allRelevantData.forEach(d => {
+      const x = xScale(d['Percentage Change in Net Income']);
+      const y = yScale(d['Gross Income']);
+      
+      // Only consider points that will be visible on screen
+      if (x >= margin.left && x <= width - margin.right && 
+          y >= margin.top && y <= height - margin.bottom) {
+        const weight = d['Household weight'] || d['Household Weight'] || 1;
+        minWeight = Math.min(minWeight, weight);
+        maxWeight = Math.max(maxWeight, weight);
+      }
+    });
+    
+    // Ensure we have valid range
+    if (minWeight === Infinity || maxWeight === -Infinity || minWeight === maxWeight) {
+      minWeight = 1;
+      maxWeight = 100000;
+    }
+
     // Enhanced point rendering with smooth fade animations
     allRelevantData.forEach(d => {
       const x = xScale(d['Percentage Change in Net Income']);
@@ -944,11 +994,23 @@
       
       const isHighlighted = isGroupHighlighted || isIndividualHighlighted;
       
-      // Calculate radius based on household weight (area proportional to weight)
-      const weight = d['Household weight'] || 1;
-      const baseRadius = Math.sqrt(weight / Math.PI) * 0.02; // Much smaller scale factor
-      let radius = isHighlighted ? Math.max(baseRadius * 1.5, isIndividualHighlighted ? 6 : 4) : Math.max(baseRadius, 1.5);
-      let baseOpacity = isHighlighted ? 1 : 0.65;
+      // Use uniform radius for all points
+      const weight = d['Household weight'] || d['Household Weight'] || 1;
+      let radius = isHighlighted ? (isIndividualHighlighted ? 6 : 4) : 2;
+      
+      // Calculate opacity based on household weight using dynamic logarithmic scale
+      // Map weights from [minWeight, maxWeight] to opacity [0.3, 0.85] for non-highlighted points
+      const logWeight = Math.log10(weight + 1); // Add 1 to handle weight=0
+      const logMinWeight = Math.log10(minWeight + 1);
+      const logMaxWeight = Math.log10(maxWeight + 1);
+      const minOpacity = 0.3; // Increased minimum for better visibility
+      const maxOpacity = 0.85; // Slightly higher max for contrast
+      
+      // Normalize to 0-1 range based on visible data
+      const normalizedWeight = (logWeight - logMinWeight) / (logMaxWeight - logMinWeight);
+      const weightBasedOpacity = minOpacity + (maxOpacity - minOpacity) * normalizedWeight;
+      
+      let baseOpacity = isHighlighted ? 1 : Math.min(Math.max(weightBasedOpacity, minOpacity), maxOpacity);
       
       // Apply animation effects if this household is being animated
       const animationState = animatedHouseholds.get(d.id);
