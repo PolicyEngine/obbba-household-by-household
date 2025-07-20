@@ -294,12 +294,25 @@
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.has('household') || urlParams.has('section')) {
-        // Keep existing household/section params but update dataset
-        urlParams.set('dataset', newDataset);
+        // Keep existing household/section params but update baseline
+        urlParams.set('baseline', newDataset);
         const url = new URL(window.location);
         url.search = urlParams.toString();
         goto(url.pathname + url.search, { replaceState: true, noScroll: true });
+        notifyParentOfUrlChange();
       }
+    }
+  }
+
+  // Helper function to notify parent window of URL changes
+  function notifyParentOfUrlChange() {
+    if (typeof window !== 'undefined' && window.parent !== window) {
+      // We're in an iframe, notify parent of URL change
+      const params = new URLSearchParams(window.location.search);
+      window.parent.postMessage({
+        type: 'urlUpdate',
+        params: params.toString()
+      }, '*');
     }
   }
 
@@ -316,8 +329,8 @@
       if (householdId) {
         url.searchParams.set('household', String(householdId));
         
-        // Always include the current dataset
-        url.searchParams.set('dataset', selectedDataset);
+        // Always include the current baseline
+        url.searchParams.set('baseline', selectedDataset);
         
         // Optionally include the section/view
         if (viewSection) {
@@ -326,11 +339,14 @@
       } else {
         url.searchParams.delete('household');
         url.searchParams.delete('section');
-        url.searchParams.delete('dataset');
+        url.searchParams.delete('baseline');
       }
       
       // Update URL without triggering navigation
       goto(url.pathname + url.search, { replaceState: true, noScroll: true });
+      
+      // Notify parent window of URL change
+      notifyParentOfUrlChange();
     }
   }
 
@@ -339,7 +355,7 @@
       const urlParams = new URLSearchParams(window.location.search);
       const householdId = String(urlParams.get('household') || ''); // Convert to string for consistent comparison
       const sectionParam = urlParams.get('section');
-      const datasetParam = urlParams.get('dataset');
+      const datasetParam = urlParams.get('baseline');
       
       console.log('🔗 Deep Link Check:', { 
         householdId, 
@@ -507,7 +523,7 @@
   // Reactive statement to watch for URL parameter changes
   $: if ($page?.url?.searchParams && data.length > 0 && !loading) {
     const currentHouseholdId = String($page.url.searchParams.get('household') || '');
-    const currentDatasetParam = $page.url.searchParams.get('dataset');
+    const currentDatasetParam = $page.url.searchParams.get('baseline');
     
     // Check if dataset changed
     if (currentDatasetParam && datasets[currentDatasetParam] && currentDatasetParam !== selectedDataset) {
@@ -1513,7 +1529,7 @@
     
     // Set household parameters
     url.searchParams.set('household', household.id);
-    url.searchParams.set('dataset', selectedDataset);
+    url.searchParams.set('baseline', selectedDataset);
     if (currentState) {
       url.searchParams.set('section', currentState.id);
     }
