@@ -1523,12 +1523,22 @@
   }
 
   // Function to copy household URL to clipboard
-  async function copyHouseholdUrl(household) {
+  async function copyHouseholdUrl(household, event) {
     const currentState = scrollStates[currentStateIndex];
     let url;
     
+    // Debug logging to understand the issue
+    const isInIframe = typeof window !== 'undefined' && window.parent !== window;
+    console.log('Copy URL debug:', {
+      isInIframe,
+      currentLocation: window.location.href,
+      household: household.id,
+      baseline: selectedDataset,
+      section: currentState?.id
+    });
+    
     // Check if we're in an iframe
-    if (typeof window !== 'undefined' && window.parent !== window) {
+    if (isInIframe) {
       // We're in an iframe - always use PolicyEngine URL
       url = new URL('https://policyengine.org/us/obbba-household-explorer');
     } else {
@@ -1544,22 +1554,37 @@
     }
     
     const fullUrl = url.toString();
+    console.log('Full URL to copy:', fullUrl);
     
     try {
       await navigator.clipboard.writeText(fullUrl);
       
       // Show temporary success feedback
-      const button = event.target.closest('button');
-      const originalTitle = button.title;
-      button.title = 'Copied!';
-      button.classList.add('copied');
+      if (event && event.target) {
+        const button = event.target.closest('button');
+        if (button) {
+          const originalTitle = button.title;
+          button.title = 'Copied!';
+          button.classList.add('copied');
+          
+          setTimeout(() => {
+            button.title = originalTitle;
+            button.classList.remove('copied');
+          }, 2000);
+        }
+      }
       
-      setTimeout(() => {
-        button.title = originalTitle;
-        button.classList.remove('copied');
-      }, 2000);
+      console.log('Successfully copied URL to clipboard');
     } catch (err) {
       console.error('Failed to copy URL:', err);
+      // Fallback: try to copy just the query string if full URL fails
+      try {
+        const fallbackUrl = url.search;
+        await navigator.clipboard.writeText(fallbackUrl);
+        console.log('Copied fallback URL (query string only):', fallbackUrl);
+      } catch (fallbackErr) {
+        console.error('Fallback copy also failed:', fallbackErr);
+      }
     }
   }
 
@@ -1662,7 +1687,7 @@
                       </button>
                       <button 
                         class="action-button link-button" 
-                        on:click={() => copyHouseholdUrl(randomHousehold)}
+                        on:click={(e) => copyHouseholdUrl(randomHousehold, e)}
                         title="Copy link to this household"
                       >
                         🔗
