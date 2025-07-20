@@ -1523,9 +1523,17 @@
   }
 
   // Function to copy household URL to clipboard
-  async function copyHouseholdUrl(household) {
+  async function copyHouseholdUrl(household, event) {
     const currentState = scrollStates[currentStateIndex];
     let url;
+    
+    // Debug logging
+    console.log('copyHouseholdUrl called:', {
+      inIframe: window.parent !== window,
+      household: household.id,
+      baseline: selectedDataset,
+      section: currentState?.id
+    });
     
     // Check if we're in an iframe
     if (typeof window !== 'undefined' && window.parent !== window) {
@@ -1544,22 +1552,28 @@
     }
     
     const fullUrl = url.toString();
+    console.log('URL to copy:', fullUrl);
     
     try {
       await navigator.clipboard.writeText(fullUrl);
       
       // Show temporary success feedback
-      const button = event.target.closest('button');
-      const originalTitle = button.title;
-      button.title = 'Copied!';
-      button.classList.add('copied');
-      
-      setTimeout(() => {
-        button.title = originalTitle;
-        button.classList.remove('copied');
-      }, 2000);
+      if (event && event.target) {
+        const button = event.target.closest('button');
+        if (button) {
+          const originalTitle = button.title;
+          button.title = 'Copied!';
+          button.classList.add('copied');
+          
+          setTimeout(() => {
+            button.title = originalTitle;
+            button.classList.remove('copied');
+          }, 2000);
+        }
+      }
     } catch (err) {
       console.error('Failed to copy URL:', err);
+      console.error('URL that failed to copy:', fullUrl);
     }
   }
 
@@ -1662,7 +1676,7 @@
                       </button>
                       <button 
                         class="action-button link-button" 
-                        on:click={() => copyHouseholdUrl(randomHousehold)}
+                        on:click={(e) => copyHouseholdUrl(randomHousehold, e)}
                         title="Copy link to this household"
                       >
                         🔗
