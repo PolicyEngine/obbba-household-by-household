@@ -978,7 +978,7 @@
       ctx.stroke();
     }
 
-    // Draw axes using SVG overlay (NYT style)
+    // Draw axes using SVG overlay
     if (svgRef) {
       const svg = d3.select(svgRef);
       svg.selectAll('*').remove();
@@ -1009,7 +1009,7 @@
       xAxis.selectAll('.tick line').style('stroke', COLORS.BLACK).style('stroke-width', 0.5);
       yAxis.selectAll('.tick line').style('stroke', COLORS.BLACK).style('stroke-width', 0.5);
 
-      // Axis labels (NYT style)
+      // Axis labels
       g.append('text')
         .attr('x', width / 2)
         .attr('y', height - 15)
@@ -1363,12 +1363,12 @@
 </script>
 
 <svelte:head>
-  <title>NYT-Style Scatterplot</title>
+  <title>PolicyEngine Tax Impact Visualization</title>
   <style>
     body {
       margin: 0;
       padding: 0;
-      font-family: nyt-franklin, helvetica, arial, sans-serif;
+      font-family: 'Roboto', helvetica, arial, sans-serif;
     }
   </style>
 </svelte:head>
@@ -1383,8 +1383,8 @@
     </div>
   {/if}
 
-  <div class="nyt-container">
-    <!-- NYT-style layout: text on left, viz on right -->
+  <div class="main-container">
+    <!-- Layout: text on left, viz on right -->
     <div class="text-column" on:scroll={handleScroll}>
       {#each scrollStates as state, i}
         <section 
@@ -1574,26 +1574,26 @@
     --white: #FFFFFF;
 
     /* Application Color Mappings */
-    --nyt-background: var(--white);
-    --nyt-text-primary: var(--darkest-blue);
-    --nyt-text-secondary: var(--dark-gray);
-    --nyt-axis-grid: var(--black);
-    --nyt-grid-lines: var(--medium-dark-gray);
-    --nyt-scatter-positive: var(--teal-medium);
-    --nyt-scatter-negative: var(--dark-gray);
-    --nyt-scatter-neutral: var(--medium-dark-gray);
-    --nyt-border: var(--medium-dark-gray);
-    --nyt-hover: var(--blue-98);
-    --nyt-font-sans: 'Roboto', sans-serif;
-    --nyt-font-serif: 'Roboto Serif', serif;
-    --nyt-font-mono: 'Roboto Mono', monospace;
+    --app-background: var(--white);
+    --text-primary: var(--darkest-blue);
+    --text-secondary: var(--dark-gray);
+    --axis-grid: var(--black);
+    --grid-lines: var(--medium-dark-gray);
+    --scatter-positive: var(--teal-medium);
+    --scatter-negative: var(--dark-gray);
+    --scatter-neutral: var(--medium-dark-gray);
+    --border: var(--medium-dark-gray);
+    --hover: var(--blue-98);
+    --font-sans: 'Roboto', sans-serif;
+    --font-serif: 'Roboto Serif', serif;
+    --font-mono: 'Roboto Mono', monospace;
   }
 
   .app {
     width: 100%;
     min-height: 100vh;
-    background: var(--nyt-background);
-    font-family: var(--nyt-font-serif);
+    background: var(--app-background);
+    font-family: var(--font-serif);
   }
 
   .loading-overlay {
@@ -1614,9 +1614,9 @@
   }
 
   .loading-content p {
-    font-family: var(--nyt-font-serif);
+    font-family: var(--font-serif);
     font-size: 14px;
-    color: var(--nyt-text-secondary);
+    color: var(--text-secondary);
     margin: 15px 0 0 0;
   }
 
@@ -1624,7 +1624,7 @@
     width: 40px;
     height: 40px;
     border: 3px solid var(--light-gray);
-    border-top: 3px solid var(--nyt-text-secondary);
+    border-top: 3px solid var(--text-secondary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 0 auto 20px;
@@ -1635,7 +1635,7 @@
     100% { transform: rotate(360deg); }
   }
 
-  .nyt-container {
+  .main-container {
     display: flex;
     max-width: 1200px;
     margin: 0 auto;
@@ -1643,14 +1643,14 @@
 
   .text-column {
     flex: 0 0 40%;
-    background: var(--nyt-background);
+    background: var(--app-background);
     height: 100vh;
     overflow-y: auto;
   }
 
   .viz-column {
     flex: 0 0 60%;
-    background: var(--nyt-background);
+    background: var(--app-background);
   }
 
   .viz-sticky {
@@ -1665,8 +1665,8 @@
 
   /* Dataset Selector Styles */
   .dataset-selector {
-    background: var(--nyt-hover);
-    border: 1px solid var(--nyt-border);
+    background: var(--hover);
+    border: 1px solid var(--border);
     border-radius: 8px;
     padding: 20px;
     margin: 32px 0 16px 0;
@@ -1680,17 +1680,17 @@
   }
 
   .selector-header h3 {
-    font-family: var(--nyt-font-serif);
+    font-family: var(--font-serif);
     font-size: 1.1rem;
     font-weight: 700;
-    color: var(--nyt-text-primary);
+    color: var(--text-primary);
     margin: 0 0 4px 0;
   }
 
   .selector-header p {
-    font-family: var(--nyt-font-serif);
+    font-family: var(--font-serif);
     font-size: 14px;
-    color: var(--nyt-text-secondary);
+    color: var(--text-secondary);
     margin: 0;
   }
 
@@ -1701,14 +1701,14 @@
   }
 
   .dataset-button {
-    background: var(--nyt-background);
-    border: 2px solid var(--nyt-border);
+    background: var(--app-background);
+    border: 2px solid var(--border);
     border-radius: 6px;
     padding: 12px 20px;
-    font-family: var(--nyt-font-serif);
+    font-family: var(--font-serif);
     font-size: 14px;
     font-weight: 600;
-    color: var(--nyt-text-secondary);
+    color: var(--text-secondary);
     cursor: pointer;
     transition: all 0.2s ease;
     position: relative;
@@ -1721,15 +1721,15 @@
   }
 
   .dataset-button:hover:not(:disabled) {
-    background: var(--nyt-hover);
-    border-color: var(--nyt-text-secondary);
-    color: var(--nyt-text-primary);
+    background: var(--hover);
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
   }
 
   .dataset-button.active {
-    background: var(--nyt-text-primary);
-    border-color: var(--nyt-text-primary);
-    color: var(--nyt-background);
+    background: var(--text-primary);
+    border-color: var(--text-primary);
+    color: var(--app-background);
   }
 
   .dataset-button:disabled {
@@ -1738,7 +1738,7 @@
   }
 
   .main-canvas {
-    background: var(--nyt-background);
+    background: var(--app-background);
     cursor: crosshair;
   }
 
@@ -1752,12 +1752,12 @@
     padding: 60px 40px;
     display: flex;
     align-items: center;
-    border-bottom: 1px solid var(--nyt-border);
+    border-bottom: 1px solid var(--border);
     transition: background-color 0.3s ease;
   }
 
   .text-section.active {
-    background: var(--nyt-hover);
+    background: var(--hover);
   }
 
   .section-content {
@@ -1765,35 +1765,35 @@
   }
 
   .text-section h2 {
-    font-family: var(--nyt-font-serif);
+    font-family: var(--font-serif);
     font-size: 1.8rem;
     font-weight: 700;
     line-height: 1.2;
-    color: var(--nyt-text-primary);
+    color: var(--text-primary);
     margin: 0 0 1rem 0;
   }
 
   .text-section p {
-    font-family: var(--nyt-font-serif);
+    font-family: var(--font-serif);
     font-size: 16px;
     line-height: 1.5;
-    color: var(--nyt-text-secondary);
+    color: var(--text-secondary);
     margin: 24px 0 0 0;
   }
 
   .household-profile {
     margin-top: 2rem;
     padding: 1.5rem;
-    background: var(--nyt-hover);
+    background: var(--hover);
     border-radius: 8px;
-    border: 1px solid var(--nyt-border);
+    border: 1px solid var(--border);
   }
 
   .household-profile h3 {
-    font-family: var(--nyt-font-serif);
+    font-family: var(--font-serif);
     font-size: 1.2rem;
     font-weight: 700;
-    color: var(--nyt-text-primary);
+    color: var(--text-primary);
     margin: 0 0 1rem 0;
     display: flex;
     align-items: center;
@@ -1808,7 +1808,7 @@
 
   .action-button {
     background: none;
-    border: 1px solid var(--nyt-border);
+    border: 1px solid var(--border);
     border-radius: 50%;
     width: 28px;
     height: 28px;
@@ -1816,16 +1816,16 @@
     align-items: center;
     justify-content: center;
     font-size: 14px;
-    color: var(--nyt-text-secondary);
+    color: var(--text-secondary);
     cursor: pointer;
     transition: all 0.2s ease;
     flex-shrink: 0;
   }
 
   .action-button:hover {
-    background-color: var(--nyt-hover);
-    color: var(--nyt-text-primary);
-    border-color: var(--nyt-text-secondary);
+    background-color: var(--hover);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
   }
 
   .action-button:active {
@@ -1841,10 +1841,10 @@
   }
 
   .household-summary p {
-    font-family: var(--nyt-font-serif);
+    font-family: var(--font-serif);
     font-size: 16px;
     line-height: 1.5;
-    color: var(--nyt-text-secondary);
+    color: var(--text-secondary);
     margin: 0;
   }
 
@@ -1861,7 +1861,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 0.5rem 0;
-    border-bottom: 1px solid var(--nyt-border);
+    border-bottom: 1px solid var(--border);
   }
 
   .detail-item:last-child {
@@ -1869,38 +1869,38 @@
   }
 
   .detail-item .label {
-    font-family: var(--nyt-font-mono);
+    font-family: var(--font-mono);
     font-size: 12px;
-    color: var(--nyt-text-secondary);
+    color: var(--text-secondary);
     font-weight: 500;
   }
 
   .detail-item .value {
-    font-family: var(--nyt-font-mono);
+    font-family: var(--font-mono);
     font-size: 13px;
     font-weight: 600;
-    color: var(--nyt-text-primary);
+    color: var(--text-primary);
   }
 
   .detail-item .value.positive {
-    color: var(--nyt-scatter-positive);
+    color: var(--scatter-positive);
   }
 
   .detail-item .value.negative {
-    color: var(--nyt-scatter-negative);
+    color: var(--scatter-negative);
   }
 
   .provision-breakdown {
     margin-top: 1.5rem;
     padding-top: 1.5rem;
-    border-top: 1px solid var(--nyt-border);
+    border-top: 1px solid var(--border);
   }
 
   .provision-breakdown h4 {
-    font-family: var(--nyt-font-serif);
+    font-family: var(--font-serif);
     font-size: 1rem;
     font-weight: 600;
-    color: var(--nyt-text-primary);
+    color: var(--text-primary);
     margin: 0 0 1rem 0;
   }
 
@@ -1919,35 +1919,35 @@
   }
 
   .provision-name {
-    font-family: var(--nyt-font-mono);
-    color: var(--nyt-text-secondary);
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
     font-weight: 400;
     flex: 1;
     margin-right: 0.5rem;
   }
 
   .provision-value {
-    font-family: var(--nyt-font-mono);
+    font-family: var(--font-mono);
     font-weight: 600;
     text-align: right;
   }
 
   .provision-value.positive {
-    color: var(--nyt-scatter-positive);
+    color: var(--scatter-positive);
   }
 
   .provision-value.negative {
-    color: var(--nyt-scatter-negative);
+    color: var(--scatter-negative);
   }
 
   .provision-value.neutral {
-    color: var(--nyt-text-secondary);
+    color: var(--text-secondary);
   }
 
   .no-provisions {
-    font-family: var(--nyt-font-serif);
+    font-family: var(--font-serif);
     font-size: 14px;
-    color: var(--nyt-text-secondary);
+    color: var(--text-secondary);
     font-style: italic;
     margin: 0;
   }
@@ -1958,7 +1958,7 @@
 
   /* Mobile responsive */
   @media (max-width: 768px) {
-    .nyt-container {
+    .main-container {
       flex-direction: column;
     }
     
@@ -2022,8 +2022,8 @@
     bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
-    background: var(--nyt-background);
-    border: 1px solid var(--nyt-border);
+    background: var(--app-background);
+    border: 1px solid var(--border);
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     padding: 20px;
@@ -2034,10 +2034,10 @@
   }
 
   .data-table-container h3 {
-    font-family: var(--nyt-font-serif);
+    font-family: var(--font-serif);
     font-size: 1.2rem;
     font-weight: 700;
-    color: var(--nyt-text-primary);
+    color: var(--text-primary);
     margin: 0 0 15px 0;
     padding-right: 30px;
   }
@@ -2045,12 +2045,12 @@
   .data-table {
     width: 100%;
     border-collapse: collapse;
-    font-family: var(--nyt-font-mono);
+    font-family: var(--font-mono);
     font-size: 12px;
   }
 
   .data-table tr {
-    border-bottom: 1px solid var(--nyt-grid-lines);
+    border-bottom: 1px solid var(--grid-lines);
   }
 
   .data-table tr:last-child {
@@ -2059,7 +2059,7 @@
 
   .key-column {
     padding: 8px 12px 8px 0;
-    color: var(--nyt-text-secondary);
+    color: var(--text-secondary);
     vertical-align: top;
     font-weight: 500;
     width: 60%;
@@ -2067,7 +2067,7 @@
 
   .value-column {
     padding: 8px 0;
-    color: var(--nyt-text-primary);
+    color: var(--text-primary);
     font-weight: 600;
     text-align: right;
   }
@@ -2079,7 +2079,7 @@
     background: none;
     border: none;
     font-size: 20px;
-    color: var(--nyt-text-secondary);
+    color: var(--text-secondary);
     cursor: pointer;
     width: 25px;
     height: 25px;
@@ -2091,8 +2091,8 @@
   }
 
   .close-table:hover {
-    background-color: var(--nyt-hover);
-    color: var(--nyt-text-primary);
+    background-color: var(--hover);
+    color: var(--text-primary);
   }
 
   /* Mobile responsive for data table */
