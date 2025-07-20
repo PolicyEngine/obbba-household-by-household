@@ -536,6 +536,7 @@
     animatedNumbers.set(elementId, animationId);
   }
 
+
   // Animate household emphasis (simple grow and fade back)
   function animateHouseholdEmphasis(householdId, duration = 600) {
     // Cancel existing animation if any
@@ -1085,6 +1086,61 @@
             // Animate the numbers with delay for smooth effect
             setTimeout(() => {
               createAnimatedNumber(
+                `household-id-${sectionIndex}`,
+                parseInt(previousHousehold.id),
+                parseInt(currentHousehold.id),
+                (val) => Math.round(val),
+                animationDuration
+              );
+            }, animationDelay - 100); // Start household ID first
+            
+            // Animate demographic values
+            setTimeout(() => {
+              createAnimatedNumber(
+                `num-dependents-${sectionIndex}`,
+                previousHousehold['Number of Dependents'] || previousHousehold['Dependents'] || 0,
+                currentHousehold['Number of Dependents'] || currentHousehold['Dependents'] || 0,
+                (val) => Math.round(val),
+                animationDuration
+              );
+            }, animationDelay);
+            
+            setTimeout(() => {
+              const prevAge = previousHousehold['Age of Head'] || previousHousehold['Age'];
+              const currAge = currentHousehold['Age of Head'] || currentHousehold['Age'];
+              if (typeof prevAge === 'number' && typeof currAge === 'number') {
+                createAnimatedNumber(
+                  `age-of-head-${sectionIndex}`,
+                  prevAge,
+                  currAge,
+                  (val) => Math.round(val),
+                  animationDuration
+                );
+              }
+            }, animationDelay);
+            
+            setTimeout(() => {
+              createAnimatedNumber(
+                `market-income-${sectionIndex}`,
+                previousHousehold['Market Income'] || previousHousehold['Gross Income'] || 0,
+                currentHousehold['Market Income'] || currentHousehold['Gross Income'] || 0,
+                formatCurrency,
+                animationDuration
+              );
+            }, animationDelay);
+            
+            setTimeout(() => {
+              createAnimatedNumber(
+                `baseline-net-${sectionIndex}`,
+                previousHousehold['Baseline Net Income'] || 0,
+                currentHousehold['Baseline Net Income'] || 0,
+                formatCurrency,
+                animationDuration
+              );
+            }, animationDelay);
+            
+            setTimeout(() => {
+              createAnimatedNumber(
                 `gross-income-${sectionIndex}`,
                 previousHousehold['Gross Income'],
                 currentHousehold['Gross Income'],
@@ -1144,12 +1200,20 @@
   let previousSelectedData = null;
   $: {
     if (typeof window !== 'undefined' && selectedData && previousSelectedData) {
+      // Use sophisticated timing like provision breakdown for "train station" effect
+      const animationDelay = 50;
+      const animationDuration = 400;
+      
       let index = 0;
       Object.entries(selectedData).forEach(([key, value]) => {
         if (key !== 'id' && key !== 'isAnnotated' && key !== 'sectionIndex' && key !== 'isHighlighted' && key !== 'highlightGroup' && key !== 'stateIndex') {
           if (typeof value === 'number') {
             const prevValue = previousSelectedData[key];
             if (typeof prevValue === 'number' && prevValue !== value) {
+              
+              // All values animate together simultaneously
+              const delay = animationDelay;
+              
               setTimeout(() => {
                 if (key.includes('Income') || key.includes('Taxes') || key.includes('Tax Liability') || key.includes('Benefits') || key.includes('Gains') || key.includes('Interest') || key.includes('Medicaid') || key.includes('ACA') || key.includes('CHIP') || key.includes('SNAP') || key.toLowerCase().includes('change in') && !key.includes('Percentage')) {
                   createAnimatedNumber(
@@ -1157,7 +1221,7 @@
                     prevValue,
                     value,
                     (val) => (val < 0 ? '-' : '') + '$' + Math.abs(Math.round(val)).toLocaleString(),
-                    400
+                    animationDuration
                   );
                 } else if (key.includes('Percentage')) {
                   createAnimatedNumber(
@@ -1165,15 +1229,15 @@
                     prevValue,
                     value,
                     (val) => (val > 0 ? '+' : '') + val.toFixed(2) + '%',
-                    400
+                    animationDuration
                   );
                 } else if (key.includes('ID') || key.includes('Household')) {
                   createAnimatedNumber(
                     `table-value-${index}`,
-                    prevValue,
-                    value,
+                    typeof prevValue === 'string' ? parseInt(prevValue) : prevValue,
+                    typeof value === 'string' ? parseInt(value) : value,
                     (val) => Math.round(val),
-                    400
+                    animationDuration
                   );
                 } else {
                   createAnimatedNumber(
@@ -1181,10 +1245,10 @@
                     prevValue,
                     value,
                     (val) => Math.round(val).toLocaleString(),
-                    400
+                    animationDuration
                   );
                 }
-              }, index * 50);
+              }, delay);
             }
           }
           index++;
@@ -1423,6 +1487,7 @@
   }
 
 
+
 </script>
 
 <svelte:head>
@@ -1497,7 +1562,7 @@
                 {@const provisionBreakdown = getProvisionBreakdown(randomHousehold)}
                 <div class="household-profile">
                   <h3>
-                    Random household
+                    Household #<span id="household-id-{i}">{randomHousehold.id}</span>
                     <div class="header-buttons">
                       <button 
                         class="action-button random-button" 
@@ -1522,32 +1587,51 @@
                       </button>
                     </div>
                   </h3>
-                  <div class="household-summary">
-                    <p>{generateHouseholdSummary(randomHousehold)}</p>
-                  </div>
                   <div class="household-details">
                     <div class="detail-item">
-                                              <span class="label">Gross Income:</span>
-                      <span class="value" id="gross-income-{i}">
-                        {formatCurrency(randomHousehold['Gross Income'])}
+                      <span class="label">Marital Status:</span>
+                      <span class="value">{randomHousehold['Is Married'] ? 'Married' : 'Single'}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="label">State:</span>
+                      <span class="value">{randomHousehold['State'] || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="label"># Dependents:</span>
+                      <span class="value" id="num-dependents-{i}">{Math.round(randomHousehold['Number of Dependents'] || randomHousehold['Dependents'] || 0)}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="label">Age of Head:</span>
+                      <span class="value" id="age-of-head-{i}">{randomHousehold['Age of Head'] || randomHousehold['Age'] || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="label">Market Income:</span>
+                      <span class="value" id="market-income-{i}">
+                        {formatCurrency(randomHousehold['Market Income'] || randomHousehold['Gross Income'] || 0)}
                       </span>
                     </div>
                     <div class="detail-item">
-                      <span class="label">Net Income change:</span>
-                                  <span class="value {randomHousehold['Total Change in Net Income'] > 0 ? 'pos' : randomHousehold['Total Change in Net Income'] < 0 ? 'neg' : 'zero'}" id="net-change-{i}">
-              {formatDollarChange(randomHousehold['Total Change in Net Income'])}
+                      <span class="label">Baseline Net Income:</span>
+                      <span class="value" id="baseline-net-{i}">
+                        {formatCurrency(randomHousehold['Baseline Net Income'] || 0)}
                       </span>
                     </div>
                     <div class="detail-item">
-                                              <span class="label">Percentage Change:</span>
-                                  <span class="value {randomHousehold['Percentage Change in Net Income'] > 0 ? 'pos' : randomHousehold['Percentage Change in Net Income'] < 0 ? 'neg' : 'zero'}" id="percent-change-{i}">
-              {formatPercentage(randomHousehold['Percentage Change in Net Income'])}
+                      <span class="label">Net Income Change:</span>
+                      <span class="value {randomHousehold['Total Change in Net Income'] > 0 ? 'pos' : randomHousehold['Total Change in Net Income'] < 0 ? 'neg' : 'zero'}" id="net-change-{i}">
+                        {formatDollarChange(randomHousehold['Total Change in Net Income'])}
+                      </span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="label">% Change:</span>
+                      <span class="value {randomHousehold['Percentage Change in Net Income'] > 0 ? 'pos' : randomHousehold['Percentage Change in Net Income'] < 0 ? 'neg' : 'zero'}" id="percent-change-{i}">
+                        {formatPercentage(randomHousehold['Percentage Change in Net Income'])}
                       </span>
                     </div>
                   </div>
                   
                   {#if provisionBreakdown.length > 0}
-                    <div class="provision-breakdown provision-table">
+                    <div class="provision-breakdown">
                       <h4>Breakdown by provision</h4>
                       <div class="provision-list">
                         {#each provisionBreakdown as provision}
@@ -1599,7 +1683,7 @@
     <div class="data-table-overlay" on:click={() => selectedData = null}>
       <div class="data-table-container" on:click|stopPropagation>
       <h3>Selected Household Data</h3>
-      <table class="data-table provision-table">
+      <table class="data-table">
         <tbody>
           {#each Object.entries(selectedData) as [key, value], index}
             {#if key !== 'id' && key !== 'isAnnotated' && key !== 'sectionIndex' && key !== 'isHighlighted' && key !== 'highlightGroup' && key !== 'stateIndex'}
@@ -1889,7 +1973,11 @@
     margin: 0 0 1rem 0;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
+  }
+
+  .household-profile h3 .header-buttons {
+    margin-left: auto;
   }
 
   .header-buttons {
@@ -1938,19 +2026,6 @@
     transform: scale(1.1);
   }
 
-  .household-summary {
-    margin-bottom: 1.5rem;
-  }
-
-  .household-summary p {
-    font-size: 16px;
-    line-height: 1.5;
-    color: var(--text-secondary);
-    margin: 0;
-  }
-
-
-
   .household-details {
     display: flex;
     flex-direction: column;
@@ -1962,11 +2037,6 @@
     justify-content: space-between;
     align-items: center;
     padding: 0.5rem 0;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .detail-item:last-child {
-    border-bottom: none;
   }
 
   .detail-item .label {
@@ -2259,14 +2329,17 @@
   .data-table,
   .value-column,
   .key-column,
-  .detail-item .value {
-    font-family: var(--font-mono);
-  }
-
-  /* Provision tables with tabular figures */
-  .provision-table {
-    font-family: "Roboto", sans-serif;
-    font-variant-numeric: tabular-nums lining-nums;
+  .detail-item .value,
+  .provision-breakdown,
+  .provision-breakdown .provision-name,
+  .provision-breakdown .value,
+  .household-details,
+  .household-details .label,
+  .household-details .value,
+  .household-profile h3,
+  .household-profile h3 span,
+  .provision-breakdown h4 {
+    font-family: var(--font-mono) !important;
   }
 
   /* Shared value styles for consistent number alignment */
