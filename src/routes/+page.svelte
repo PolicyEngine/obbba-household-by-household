@@ -594,7 +594,7 @@
     
     const gainOrLoss = changeInNetIncome > 0 ? 'gains' : 'loses';
     
-    return `This household is a ${familyStructure} living in ${state}. The head of household is ${age} years old. Under the baseline tax system, this household has a Gross Income of $${income.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} and a Net Income of $${baselineNetIncome.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}. After the proposed tax reforms, this household ${gainOrLoss} $${Math.abs(changeInNetIncome).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} annually, representing a ${Math.abs(percentChange).toFixed(1)}% ${changeInNetIncome > 0 ? 'increase' : 'decrease'} in their net income.`;
+    return `This household is a ${familyStructure} living in ${state}. The head of household is ${age} years old. Under the baseline tax system, this household has a Gross Income of $${Math.round(income).toLocaleString()} and a Net Income of $${Math.round(baselineNetIncome).toLocaleString()}. After the proposed tax reforms, this household ${gainOrLoss} $${Math.round(Math.abs(changeInNetIncome)).toLocaleString()} annually, representing a ${Math.abs(percentChange).toFixed(1)}% ${changeInNetIncome > 0 ? 'increase' : 'decrease'} in their net income.`;
   }
 
   // Get provision breakdown for a household
@@ -1531,7 +1531,7 @@
                 <td class="value-column">
                   {#if typeof value === 'number'}
                     {#if key.includes('Income') || key.includes('Taxes') || key.includes('Net Income Change')}
-                      <span id="table-value-{index}">${value.toLocaleString()}</span>
+                      <span id="table-value-{index}">${Math.round(value).toLocaleString()}</span>
                     {:else if key.includes('Percentage')}
                       <span id="table-value-{index}">{value > 0 ? '+' : ''}{value.toFixed(2)}%</span>
                     {:else}
