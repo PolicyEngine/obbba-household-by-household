@@ -1355,6 +1355,38 @@
     }
   }
 
+  // Function to copy household URL to clipboard
+  async function copyHouseholdUrl(household) {
+    const currentState = scrollStates[currentStateIndex];
+    const url = new URL(window.location.href);
+    
+    // Set household parameters
+    url.searchParams.set('household', household.id);
+    url.searchParams.set('dataset', selectedDataset);
+    if (currentState) {
+      url.searchParams.set('section', currentState.id);
+    }
+    
+    const fullUrl = url.toString();
+    
+    try {
+      await navigator.clipboard.writeText(fullUrl);
+      
+      // Show temporary success feedback
+      const button = event.target.closest('button');
+      const originalTitle = button.title;
+      button.title = 'Copied!';
+      button.classList.add('copied');
+      
+      setTimeout(() => {
+        button.title = originalTitle;
+        button.classList.remove('copied');
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy URL:', err);
+    }
+  }
+
   // Watch for text sections being bound
   $: if (textSections.length > 0 && textSections.every(el => el)) {
     setTimeout(() => {
@@ -1391,6 +1423,34 @@
     </div>
   {/if}
 
+  <!-- Floating header -->
+  <header class="floating-header">
+    <div class="header-content">
+      <h1 class="app-title">OBBBA Household Explorer</h1>
+      <div class="baseline-selector-container">
+        <span class="baseline-label">Baseline:</span>
+        <div class="baseline-selector">
+          <button 
+            class="tab-button" 
+            class:active={selectedDataset === 'tcja-expiration'}
+            on:click={() => switchDataset('tcja-expiration')}
+            disabled={loading}
+          >
+            TCJA Expiration
+          </button>
+          <button 
+            class="tab-button" 
+            class:active={selectedDataset === 'tcja-extension'}
+            on:click={() => switchDataset('tcja-extension')}
+            disabled={loading}
+          >
+            TCJA Extension
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
   <div class="main-container">
     <!-- Layout: text on left, viz on right -->
     <div class="text-column" on:scroll={handleScroll}>
@@ -1406,28 +1466,6 @@
             <h2>{state.title}</h2>
             <p>{@html state.text}</p>
             
-            <!-- Dataset Selector for intro section -->
-            {#if state.id === 'intro'}
-              <div class="dataset-selector">
-                <div class="selector-header">
-                  <h3>Choose Scenario</h3>
-                  <p>Select which baseline to use for the analysis</p>
-                </div>
-                <div class="selector-buttons">
-                  {#each Object.entries(datasets) as [key, dataset]}
-                    <button 
-                      class="dataset-button" 
-                      class:active={selectedDataset === key}
-                      on:click={() => switchDataset(key)}
-                      disabled={loading}
-                      title={dataset.description}
-                    >
-                      {dataset.label}
-                    </button>
-                  {/each}
-                </div>
-              </div>
-            {/if}
             
             {#if state.viewType === 'individual'}
               {@const baseViewId = baseViews[Math.floor(i / 2)]?.id}
@@ -1436,14 +1474,21 @@
                 {@const provisionBreakdown = getProvisionBreakdown(randomHousehold)}
                 <div class="household-profile">
                   <h3>
-                    Individual household profile
+                    Random household
                     <div class="header-buttons">
                       <button 
                         class="action-button random-button" 
                         on:click={pickRandomHousehold}
                         title="Pick a new random household"
                       >
-                        🎲
+                        🔀
+                      </button>
+                      <button 
+                        class="action-button link-button" 
+                        on:click={() => copyHouseholdUrl(randomHousehold)}
+                        title="Copy link to this household"
+                      >
+                        🔗
                       </button>
                       <button 
                         class="action-button info-button" 
@@ -1820,32 +1865,42 @@
 
   .action-button {
     background: none;
-    border: 1px solid var(--border);
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
+    border: none;
+    padding: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
-    color: var(--text-secondary);
+    font-size: 16px;
     cursor: pointer;
     transition: all 0.2s ease;
     flex-shrink: 0;
+    opacity: 0.7;
   }
 
   .action-button:hover {
-    background-color: var(--hover);
-    color: var(--text-primary);
-    border-color: var(--text-secondary);
+    transform: scale(1.2);
+    opacity: 1;
+  }
+
+  .random-button:hover {
+    filter: hue-rotate(180deg) saturate(2);
+  }
+
+  .link-button:hover {
+    filter: hue-rotate(90deg) saturate(1.5);
+  }
+
+  .info-button:hover {
+    filter: hue-rotate(-90deg) saturate(1.5);
+  }
+
+  .action-button.copied {
+    filter: hue-rotate(120deg) saturate(2);
+    opacity: 1;
   }
 
   .action-button:active {
-    transform: scale(0.95);
-  }
-
-  .random-button {
-    font-size: 12px;
+    transform: scale(1.1);
   }
 
   .household-summary {
@@ -2149,6 +2204,129 @@
 
     .loading-content p {
       font-size: 13px;
+    }
+  }
+
+  /* Floating header styles */
+  .floating-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: var(--app-background);
+    border-bottom: 1px solid var(--border);
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .app-title {
+    font-family: var(--font-serif);
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  /* Baseline selector container */
+  .baseline-selector-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .baseline-label {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  /* Tabbed radio button styles */
+  .baseline-selector {
+    display: flex;
+    background: var(--grid-lines);
+    border-radius: 8px;
+    padding: 4px;
+    gap: 4px;
+  }
+
+  .tab-button {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+
+  .tab-button:hover:not(:disabled):not(.active) {
+    background: rgba(44, 100, 150, 0.08);
+    color: var(--text-primary);
+  }
+
+  .tab-button.active {
+    background: var(--app-background);
+    color: var(--policyengine-blue);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  }
+
+  .tab-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Adjust main container for header */
+  .main-container {
+    padding-top: 70px; /* Account for fixed header */
+  }
+
+  /* Mobile responsive header */
+  @media (max-width: 768px) {
+    .header-content {
+      padding: 12px 16px;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .app-title {
+      font-size: 20px;
+    }
+
+    .baseline-selector-container {
+      width: 100%;
+    }
+
+    .baseline-label {
+      font-size: 13px;
+    }
+
+    .baseline-selector {
+      flex: 1;
+      justify-content: center;
+    }
+
+    .tab-button {
+      flex: 1;
+      font-size: 13px;
+      padding: 6px 12px;
+    }
+
+    .main-container {
+      padding-top: 100px; /* More space for stacked header */
     }
   }
 
