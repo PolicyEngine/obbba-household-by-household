@@ -1528,7 +1528,8 @@
 
   <!-- Data table for selected point -->
   {#if selectedData}
-    <div class="data-table-container">
+    <div class="data-table-overlay" on:click={() => selectedData = null}>
+      <div class="data-table-container" on:click|stopPropagation>
       <h3>Selected Household Data</h3>
       <table class="data-table">
         <tbody>
@@ -1556,7 +1557,8 @@
           {/each}
         </tbody>
       </table>
-      <button class="close-table" on:click={() => selectedData = null}>×</button>
+        <button class="close-table" on:click={() => selectedData = null}>×</button>
+      </div>
     </div>
   {/if}
 </div>
@@ -2027,11 +2029,25 @@
   }
 
   /* Data table styles */
-  .data-table-container {
+  .data-table-overlay {
     position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 999;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 20px;
+  }
+
+  .data-table-container {
+    position: relative;
+    bottom: unset;
+    left: unset;
+    transform: unset;
     background: var(--app-background);
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -2107,12 +2123,17 @@
 
   /* Mobile responsive for data table */
   @media (max-width: 768px) {
+    .data-table-overlay {
+      align-items: flex-end;
+      padding-bottom: 0;
+    }
+
     .data-table-container {
-      position: fixed;
+      position: relative;
       bottom: 0;
       left: 0;
       right: 0;
-      transform: none;
+      width: 100%;
       max-width: none;
       border-radius: 8px 8px 0 0;
       max-height: 50vh;
