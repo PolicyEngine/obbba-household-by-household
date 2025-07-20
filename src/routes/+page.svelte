@@ -1,5 +1,7 @@
 <script>
   import { onMount } from 'svelte';
+  import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
   import Papa from 'papaparse';
   import * as d3 from 'd3';
 
@@ -17,6 +19,28 @@
   let animatedNumbers = new Map(); // Store animated number references
   let animatedHouseholds = new Map(); // Store animated household emphasis
   let emphasisAnimationId = null; // Track current emphasis animation
+  
+  // Deep linking variables
+  let householdIdMap = new Map(); // Map household IDs to data objects
+  let urlSelectedHouseholdId = null;
+  let isUserInitiatedChange = false; // Flag to distinguish user clicks from URL navigation
+  
+  // Dataset selection state
+  let selectedDataset = 'tcja-expiration'; // 'tcja-expiration' or 'tcja-extension'
+  
+  // Dataset configuration
+  const datasets = {
+    'tcja-expiration': {
+      filename: 'household_tax_income_changes_senate_current_law_baseline.csv',
+      label: 'TCJA Expiration',
+      description: 'Analysis showing impact if TCJA provisions expire'
+    },
+    'tcja-extension': {
+      filename: 'household_tax_income_changes_senate_tcja_baseline.csv', 
+      label: 'TCJA Extension',
+      description: 'Analysis showing impact if TCJA provisions are extended'
+    }
+  };
 
   const baseViews = [
     {
@@ -98,10 +122,11 @@
     }
   });
 
-  // Load data
-  onMount(async () => {
+  // Function to load dataset
+  async function loadDataset(datasetKey) {
+    loading = true;
     try {
-      const response = await fetch('/obbba-scatter/household_tax_income_changes_senate_current_law_baseline.csv');
+      const response = await fetch(`/obbba-scatter/${datasets[datasetKey].filename}`);
       const raw = await response.text();
       const result = Papa.parse(raw, {
         header: true,
@@ -111,10 +136,20 @@
       
       data = result.data.map((d, i) => ({
         ...d,
-        id: i,
+        id: String(d['Household ID'] || i), // Convert to string for consistent comparison
+        householdId: d['Household ID'], // Keep original for reference
         isAnnotated: false,
         sectionIndex: null
       }));
+
+      // Build household ID map for quick lookups
+      data.forEach(household => {
+        householdIdMap.set(household.id, household);
+      });
+      
+      // Clear existing selections when switching datasets
+      selectedData = null;
+      randomHouseholds = {};
 
       // Find representative points for each scroll state and select random households
       baseViews.forEach((baseView, baseIndex) => {
@@ -152,11 +187,275 @@
       });
 
       loading = false;
+      
+      // Check for household ID in URL and restore state after everything is ready
+      setTimeout(() => {
+        // Wait for text sections to be bound
+        const waitForSections = () => {
+          const boundSections = textSections.filter(s => s).length;
+          const totalSections = scrollStates.length;
+          
+          console.log('⏳ Waiting for sections:', { boundSections, totalSections });
+          
+          if (boundSections >= totalSections || boundSections > 5) {
+            // Sections are ready or mostly ready
+            checkUrlParams();
+          } else {
+            // Wait a bit more
+            setTimeout(waitForSections, 100);
+          }
+        };
+        
+        waitForSections();
+      }, 500);
     } catch (error) {
       console.error('Error loading data:', error);
       loading = false;
     }
+  }
+
+  // Function to handle dataset switching
+  function switchDataset(newDataset) {
+    selectedDataset = newDataset;
+    loadDataset(newDataset);
+    
+    // Update URL to reflect dataset change if there are existing URL params
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('household') || urlParams.has('section')) {
+        // Keep existing household/section params but update dataset
+        urlParams.set('dataset', newDataset);
+        const url = new URL(window.location);
+        url.search = urlParams.toString();
+        goto(url.pathname + url.search, { replaceState: true, noScroll: true });
+      }
+    }
+  }
+
+  // Load data on mount
+  onMount(() => {
+    loadDataset(selectedDataset);
   });
+
+  // Deep linking functions
+  function updateUrlWithHousehold(householdId, viewSection = null) {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location);
+      
+      if (householdId) {
+        url.searchParams.set('household', String(householdId));
+        
+        // Always include the current dataset
+        url.searchParams.set('dataset', selectedDataset);
+        
+        // Optionally include the section/view
+        if (viewSection) {
+          url.searchParams.set('section', viewSection);
+        }
+      } else {
+        url.searchParams.delete('household');
+        url.searchParams.delete('section');
+        url.searchParams.delete('dataset');
+      }
+      
+      // Update URL without triggering navigation
+      goto(url.pathname + url.search, { replaceState: true, noScroll: true });
+    }
+  }
+
+  function checkUrlParams() {
+    if (typeof window !== 'undefined' && data.length > 0) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const householdId = String(urlParams.get('household') || ''); // Convert to string for consistent comparison
+      const sectionParam = urlParams.get('section');
+      const datasetParam = urlParams.get('dataset');
+      
+      console.log('🔗 Deep Link Check:', { 
+        householdId, 
+        sectionParam, 
+        datasetParam,
+        currentDataset: selectedDataset,
+        foundInMap: householdIdMap.has(householdId) 
+      });
+      
+      // Switch dataset if specified and different from current
+      if (datasetParam && datasets[datasetParam] && datasetParam !== selectedDataset) {
+        console.log('🔄 Switching dataset from URL:', datasetParam);
+        selectedDataset = datasetParam;
+        // Reload data with new dataset - this will trigger checkUrlParams again once loaded
+        loadDataset(datasetParam);
+      } else if (householdId && householdIdMap.has(householdId)) {
+        const household = householdIdMap.get(householdId);
+        
+        // Find appropriate section for this household
+        let targetSectionIndex = 0;
+        
+        if (sectionParam) {
+          // Try to find section by name first
+          const sectionIndex = scrollStates.findIndex(state => 
+            state.id === sectionParam || state.id.includes(sectionParam)
+          );
+          if (sectionIndex >= 0) {
+            targetSectionIndex = sectionIndex;
+          }
+        } else {
+          // Auto-determine best section based on household income
+          const income = household['Gross Income'] || 0;
+          if (income < 50000) {
+            targetSectionIndex = scrollStates.findIndex(state => state.id.includes('lower-income'));
+          } else if (income < 200000) {
+            targetSectionIndex = scrollStates.findIndex(state => state.id.includes('middle-income'));
+          } else if (income < 1000000) {
+            targetSectionIndex = scrollStates.findIndex(state => state.id.includes('upper-income'));
+          } else {
+            targetSectionIndex = scrollStates.findIndex(state => state.id.includes('highest-income'));
+          }
+          
+          // Prefer individual view if available
+          const individualIndex = targetSectionIndex + 1;
+          if (individualIndex < scrollStates.length && scrollStates[individualIndex]?.viewType === 'individual') {
+            targetSectionIndex = individualIndex;
+          }
+        }
+        
+        console.log('🎯 Navigating to section:', targetSectionIndex);
+        
+        if (targetSectionIndex >= 0) {
+          // Set the household for the appropriate section
+          const baseViewId = baseViews[Math.floor(targetSectionIndex / 2)]?.id;
+          if (baseViewId) {
+            randomHouseholds[baseViewId] = household;
+            // Trigger reactivity
+            randomHouseholds = { ...randomHouseholds };
+          }
+          
+          // Disable intersection observer temporarily to prevent conflicts
+          if (intersectionObserver) {
+            intersectionObserver.disconnect();
+          }
+          
+          // Navigate to the section immediately
+          currentStateIndex = targetSectionIndex;
+          isTransitioning = true;
+          
+          // Wait for DOM to be ready, then scroll and re-enable observer
+          setTimeout(() => {
+            renderVisualization();
+            
+            // Force scroll to the correct section with multiple attempts
+            const scrollToSection = () => {
+              const section = textSections[targetSectionIndex];
+              const textColumn = document.querySelector('.text-column');
+              
+              console.log('📜 Attempting scroll to section:', {
+                targetSectionIndex,
+                sectionExists: !!section,
+                textSectionsLength: textSections.length,
+                boundSections: textSections.filter(s => s).length,
+                textColumnExists: !!textColumn
+              });
+              
+              // If sections aren't bound yet, try alternative approach
+              if (!section && textColumn) {
+                const fallbackSection = textColumn.querySelector(`[data-section-id="${scrollStates[targetSectionIndex]?.id}"]`);
+                if (fallbackSection) {
+                  console.log('📜 Using fallback section selection');
+                  fallbackSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  return true;
+                }
+              }
+              
+              if (section && textColumn) {
+                // Get section position relative to the text column
+                const sectionRect = section.getBoundingClientRect();
+                const columnRect = textColumn.getBoundingClientRect();
+                const currentScrollTop = textColumn.scrollTop;
+                
+                // Calculate target scroll position
+                const sectionTopInColumn = sectionRect.top - columnRect.top + currentScrollTop;
+                const containerHeight = textColumn.clientHeight;
+                const targetScrollTop = sectionTopInColumn - containerHeight / 2 + section.offsetHeight / 2;
+                
+                console.log('📍 Scroll calculation:', {
+                  sectionTopInColumn,
+                  containerHeight,
+                  targetScrollTop,
+                  currentScrollTop
+                });
+                
+                // Smooth scroll to target
+                textColumn.scrollTo({
+                  top: Math.max(0, targetScrollTop),
+                  behavior: 'smooth'
+                });
+                
+                return true; // Success
+              }
+              return false; // Failed, try again
+            };
+            
+            // Try scrolling immediately, then retry if needed
+            if (!scrollToSection()) {
+              setTimeout(() => {
+                if (!scrollToSection()) {
+                  // Final attempt after more time with DOM query fallback
+                  setTimeout(() => {
+                    if (!scrollToSection()) {
+                      // Last resort: scroll by section index
+                      const textColumn = document.querySelector('.text-column');
+                      const allSections = textColumn?.querySelectorAll('.text-section');
+                      if (allSections && allSections[targetSectionIndex]) {
+                        console.log('📜 Using DOM query fallback');
+                        allSections[targetSectionIndex].scrollIntoView({ 
+                          behavior: 'smooth', 
+                          block: 'center' 
+                        });
+                      }
+                    }
+                  }, 500);
+                }
+              }, 100);
+            }
+            
+            // Re-enable intersection observer
+            setTimeout(() => {
+              isTransitioning = false;
+              setupIntersectionObserver();
+              console.log('✅ Deep link navigation complete');
+            }, 800);
+          }, 300);
+        } else {
+          console.log('❌ No valid section found for household');
+        }
+        
+        urlSelectedHouseholdId = householdId;
+      }
+    }
+  }
+
+  // Reactive statement to watch for URL parameter changes
+  $: if ($page?.url?.searchParams && data.length > 0 && !loading) {
+    const currentHouseholdId = String($page.url.searchParams.get('household') || '');
+    const currentDatasetParam = $page.url.searchParams.get('dataset');
+    
+    // Check if dataset changed
+    if (currentDatasetParam && datasets[currentDatasetParam] && currentDatasetParam !== selectedDataset) {
+      // Dataset changed via URL - switch dataset
+      selectedDataset = currentDatasetParam;
+      loadDataset(currentDatasetParam);
+    } else if (currentHouseholdId !== urlSelectedHouseholdId && !isTransitioning) {
+      // Only process household changes if dataset hasn't changed
+      urlSelectedHouseholdId = currentHouseholdId;
+      
+      // Only trigger deep link navigation if this is NOT a user-initiated change
+      if (currentHouseholdId && householdIdMap.has(currentHouseholdId) && !isUserInitiatedChange) {
+        setTimeout(() => checkUrlParams(), 100);
+      }
+      
+      // Reset the flag after processing
+      isUserInitiatedChange = false;
+    }
+  }
 
   // Animated number utility functions
   function createAnimatedNumber(elementId, startValue, endValue, formatter, duration = 800) {
@@ -343,7 +642,7 @@
           }
         });
 
-        if (mostVisibleEntry && mostVisibleEntry.index !== currentStateIndex && !isTransitioning) {
+        if (mostVisibleEntry && mostVisibleEntry.index !== currentStateIndex && !isTransitioning && !urlSelectedHouseholdId) {
           transitionToState(mostVisibleEntry.index);
         }
       },
@@ -362,7 +661,7 @@
     });
   }
 
-  function transitionToState(newIndex) {
+  function transitionToState(newIndex, skipRandomHousehold = false) {
     if (newIndex === currentStateIndex || isTransitioning) return;
     
     isTransitioning = true;
@@ -370,8 +669,8 @@
     const fromState = scrollStates[currentStateIndex];
     const toState = scrollStates[newIndex];
     
-    // Pick new random household when transitioning to individual view
-    if (toState.viewType === 'individual') {
+    // Pick new random household when transitioning to individual view (unless skipped for deep linking)
+    if (toState.viewType === 'individual' && !skipRandomHousehold) {
       const baseViewId = baseViews[Math.floor(newIndex / 2)]?.id;
       const filteredData = data.filter(baseViews[Math.floor(newIndex / 2)]?.view?.filter || (() => true));
       if (filteredData.length > 0) {
@@ -846,9 +1145,21 @@
   onMount(() => {
     textSections = new Array(scrollStates.length);
     
-    // Set up intersection observer after DOM is ready
+    // Set up intersection observer after DOM is ready, but only if no URL params
     setTimeout(() => {
-      setupIntersectionObserver();
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasHouseholdParam = urlParams.has('household');
+      
+      console.log('🔧 OnMount setup:', {
+        hasHouseholdParam,
+        scrollStatesLength: scrollStates.length,
+        textSectionsLength: textSections.length
+      });
+      
+      if (!hasHouseholdParam) {
+        setupIntersectionObserver();
+      }
+      
       // Initial render
       if (data.length && canvasRef) {
         renderVisualization();
@@ -949,6 +1260,10 @@
           randomHouseholds[baseViewId] = closestPoint.data;
           // Trigger reactivity
           randomHouseholds = { ...randomHouseholds };
+          
+          // Update URL with selected household (mark as user-initiated)
+          isUserInitiatedChange = true;
+          updateUrlWithHousehold(closestPoint.data.id, currentState.id);
         }
       }
     }
@@ -960,6 +1275,8 @@
       selectedData = household;
     }
   }
+
+
 
   // Weighted random sampling function
   function getRandomWeightedHousehold(filteredData) {
@@ -999,6 +1316,10 @@
           randomHouseholds[baseView.id] = newHousehold;
           // Trigger reactivity
           randomHouseholds = { ...randomHouseholds };
+          
+          // Update URL with new household (mark as user-initiated)
+          isUserInitiatedChange = true;
+          updateUrlWithHousehold(newHousehold.id, currentState.id);
         }
       }
     }
@@ -1007,9 +1328,16 @@
   // Watch for text sections being bound
   $: if (textSections.length > 0 && textSections.every(el => el)) {
     setTimeout(() => {
-      setupIntersectionObserver();
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasHouseholdParam = urlParams.has('household');
+      
+      if (!hasHouseholdParam) {
+        setupIntersectionObserver();
+      }
     }, 50);
   }
+
+
 </script>
 
 <svelte:head>
@@ -1025,9 +1353,11 @@
 
 <div class="app">
   {#if loading}
-    <div class="loading">
-      <div class="spinner"></div>
-      <p>Loading data...</p>
+    <div class="loading-overlay">
+      <div class="loading-content">
+        <div class="spinner"></div>
+        <p>Loading {datasets[selectedDataset].label} data...</p>
+      </div>
     </div>
   {/if}
 
@@ -1040,10 +1370,34 @@
           class:active={i === currentStateIndex}
           bind:this={textSections[i]}
           data-index={i}
+          data-section-id={state.id}
         >
           <div class="section-content">
             <h2>{state.title}</h2>
             <p>{@html state.text}</p>
+            
+            <!-- Dataset Selector for intro section -->
+            {#if state.id === 'intro'}
+              <div class="dataset-selector">
+                <div class="selector-header">
+                  <h3>Choose Scenario</h3>
+                  <p>Select which baseline to use for the analysis</p>
+                </div>
+                <div class="selector-buttons">
+                  {#each Object.entries(datasets) as [key, dataset]}
+                    <button 
+                      class="dataset-button" 
+                      class:active={selectedDataset === key}
+                      on:click={() => switchDataset(key)}
+                      disabled={loading}
+                      title={dataset.description}
+                    >
+                      {dataset.label}
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            {/if}
             
             {#if state.viewType === 'individual'}
               {@const baseViewId = baseViews[Math.floor(i / 2)]?.id}
@@ -1199,17 +1553,28 @@
     font-family: var(--nyt-font-serif);
   }
 
-  .loading {
+  .loading-overlay {
     position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.7);
     z-index: 1000;
-    background: rgba(255, 255, 255, 0.95);
-    padding: 40px;
-    border-radius: 4px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .loading-content {
+    text-align: center;
+  }
+
+  .loading-content p {
+    font-family: var(--nyt-font-serif);
+    font-size: 14px;
+    color: var(--nyt-text-secondary);
+    margin: 15px 0 0 0;
   }
 
   .spinner {
@@ -1253,6 +1618,80 @@
     align-items: center;
     justify-content: center;
     padding: 20px;
+  }
+
+  /* Dataset Selector Styles */
+  .dataset-selector {
+    background: var(--nyt-hover);
+    border: 1px solid var(--nyt-border);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 32px 0 16px 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  .selector-header {
+    margin-bottom: 16px;
+  }
+
+  .selector-header h3 {
+    font-family: var(--nyt-font-serif);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--nyt-text-primary);
+    margin: 0 0 4px 0;
+  }
+
+  .selector-header p {
+    font-family: var(--nyt-font-serif);
+    font-size: 14px;
+    color: var(--nyt-text-secondary);
+    margin: 0;
+  }
+
+  .selector-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-start;
+  }
+
+  .dataset-button {
+    background: var(--nyt-background);
+    border: 2px solid var(--nyt-border);
+    border-radius: 6px;
+    padding: 12px 20px;
+    font-family: var(--nyt-font-serif);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--nyt-text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    white-space: nowrap;
+  }
+
+  .dataset-button:hover:not(:disabled) {
+    background: var(--nyt-hover);
+    border-color: var(--nyt-text-secondary);
+    color: var(--nyt-text-primary);
+  }
+
+  .dataset-button.active {
+    background: var(--nyt-text-primary);
+    border-color: var(--nyt-text-primary);
+    color: var(--nyt-background);
+  }
+
+  .dataset-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   .main-canvas {
@@ -1366,6 +1805,8 @@
     margin: 0;
   }
 
+
+
   .household-details {
     display: flex;
     flex-direction: column;
@@ -1468,6 +1909,10 @@
     margin: 0;
   }
 
+
+
+
+
   /* Mobile responsive */
   @media (max-width: 768px) {
     .nyt-container {
@@ -1488,6 +1933,25 @@
       position: relative;
       top: 0;
       height: 50vh;
+    }
+    
+    .dataset-selector {
+      padding: 16px;
+      margin: 24px 0 12px 0;
+    }
+    
+    .selector-header h3 {
+      font-size: 1rem;
+    }
+    
+    .selector-header p {
+      font-size: 13px;
+    }
+    
+    .dataset-button {
+      padding: 10px 14px;
+      font-size: 13px;
+      min-height: 40px;
     }
     
     .main-canvas {
@@ -1607,6 +2071,10 @@
 
     .key-column {
       width: 55%;
+    }
+
+    .loading-content p {
+      font-size: 13px;
     }
   }
 
