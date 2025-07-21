@@ -45,6 +45,9 @@
   // Track if we need to scroll to a household on load
   let pendingScrollToHousehold = null;
   
+  // Flag to prevent URL subscription from triggering during internal updates
+  let isInternalUpdate = false;
+  
   // Draggable state
   let draggingSectionIndex = null;
   let dragOffset = { x: 0, y: 0 };
@@ -266,6 +269,9 @@
       return;
     }
     
+    // Preserve current scroll position
+    const currentScrollTop = scrollContainer?.scrollTop || 0;
+    
     selectedDataset = dataset;
     
     // Remember current household ID if one is selected
@@ -308,12 +314,20 @@
       }
     }
     
-    // Update URL
+    // Update URL with internal flag to prevent re-triggering
+    isInternalUpdate = true;
     updateUrlWithHousehold(selectedHousehold?.id, dataset);
     
     // Force chart re-render
     if (chartComponent?.renderVisualization) {
       chartComponent.renderVisualization();
+    }
+    
+    // Restore scroll position after a brief delay to allow for any layout changes
+    if (scrollContainer && currentScrollTop > 0) {
+      requestAnimationFrame(() => {
+        scrollContainer.scrollTop = currentScrollTop;
+      });
     }
   }
   
@@ -406,6 +420,11 @@
     
     // Listen for URL changes
     const unsubscribe = page.subscribe(() => {
+      // Skip if this is an internal update
+      if (isInternalUpdate) {
+        isInternalUpdate = false;
+        return;
+      }
       handleUrlParams();
     });
     
