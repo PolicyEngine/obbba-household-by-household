@@ -54,6 +54,17 @@ export const baseViews = [
       filter: d => d['Market Income'] >= 1000000,
       highlightGroup: 'highest'
     }
+  },
+  {
+    id: 'all-households',
+    title: "All households",
+    groupText: "Overall, OBBBA affects {totalPercentage}% of households. The median household experiences a {medianImpact}% change in net income.<br><br>Visit <a href='https://policyengine.org' target='_blank' style='color: var(--primary-blue); text-decoration: underline;'>PolicyEngine.org</a> to explore more of our free, open source tools and policy research. Calculate your own tax impact, design custom reforms, and analyze their effects on poverty, inequality, and government revenues.",
+    view: {
+      xDomain: [-20, 20],
+      yDomain: [0, 10000000],
+      filter: d => true,
+      highlightGroup: null
+    }
   }
 ];
 

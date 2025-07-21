@@ -343,9 +343,9 @@
   .household-profile {
     margin-top: 2rem;
     padding: 1.5rem;
-    background: var(--hover);
+    background: rgba(247, 250, 252, 0.85);
     border-radius: 8px;
-    border: 1px solid var(--border);
+    border: 1px solid rgba(226, 232, 240, 0.7);
   }
 
   .household-profile h3 {

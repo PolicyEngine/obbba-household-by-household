@@ -42,13 +42,20 @@
   let scrollContainer = null;
   let chartComponent = null;
   
+  // Draggable state
+  let draggingSectionIndex = null;
+  let dragOffset = { x: 0, y: 0 };
+  let sectionPositions = {};
+  
   // Calculate statistics for a section
-  function calculateSectionStats(sectionData) {
+  function calculateSectionStats(sectionData, includeMedian = false) {
     if (!sectionData || sectionData.length === 0) return null;
     
     let totalWeight = 0;
     let positiveWeight = 0;
     let negativeWeight = 0;
+    let affectedWeight = 0;
+    const percentChanges = [];
     
     sectionData.forEach(d => {
       const weight = d['Household weight'] || d['Household Weight'] || 1;
@@ -57,24 +64,56 @@
       totalWeight += weight;
       if (percentChange > 0) {
         positiveWeight += weight;
+        affectedWeight += weight;
       } else if (percentChange < 0) {
         negativeWeight += weight;
+        affectedWeight += weight;
+      }
+      
+      // For median calculation
+      if (includeMedian) {
+        percentChanges.push({ change: percentChange, weight: weight });
       }
     });
     
     const positivePercent = totalWeight > 0 ? Math.round((positiveWeight / totalWeight) * 100) : 0;
     const negativePercent = totalWeight > 0 ? Math.round((negativeWeight / totalWeight) * 100) : 0;
+    const affectedPercent = totalWeight > 0 ? Math.round((affectedWeight / totalWeight) * 100) : 0;
     
     // Format total households in millions with one decimal place
     const totalMillions = totalWeight / 1000000;
     const totalFormatted = totalMillions.toFixed(1);
     
-    return {
+    const stats = {
       total: totalFormatted,
       totalRaw: totalWeight,
       positivePercent,
-      negativePercent
+      negativePercent,
+      affectedPercent
     };
+    
+    // Calculate weighted median if requested
+    if (includeMedian && percentChanges.length > 0) {
+      // Sort by percent change
+      percentChanges.sort((a, b) => a.change - b.change);
+      
+      // Find weighted median
+      let cumulativeWeight = 0;
+      const halfWeight = totalWeight / 2;
+      let medianChange = 0;
+      
+      for (const item of percentChanges) {
+        cumulativeWeight += item.weight;
+        if (cumulativeWeight >= halfWeight) {
+          medianChange = item.change;
+          break;
+        }
+      }
+      
+      stats.medianChange = medianChange.toFixed(1);
+    }
+    
+    return stats;
   }
   
   // Initialize or update random households for visible sections
@@ -93,12 +132,42 @@
   // Get current state
   $: currentState = scrollStates[$currentStateIndex] || scrollStates[0];
   
+  // Re-render chart whenever transition values change
+  $: if (chartComponent && ($isTransitioning || $currentInterpolationT)) {
+    chartComponent.renderVisualization();
+  }
+  
   // Handle section changes
   function handleSectionChange() {
-    // Force chart re-render when section changes
-    if (chartComponent?.renderVisualization) {
-      chartComponent.renderVisualization();
-    }
+    // This is called when a new section becomes active
+    // The continuous animation is handled by the reactive statement above
+  }
+  
+  // Drag handling
+  function startDrag(event, index) {
+    draggingSectionIndex = index;
+    const currentPos = sectionPositions[index] || { x: 0, y: 0 };
+    dragOffset = {
+      x: event.clientX - currentPos.x,
+      y: event.clientY - currentPos.y
+    };
+    event.preventDefault();
+  }
+  
+  function handleDrag(event) {
+    if (draggingSectionIndex === null) return;
+    
+    const newPos = {
+      x: event.clientX - dragOffset.x,
+      y: event.clientY - dragOffset.y
+    };
+    
+    sectionPositions[draggingSectionIndex] = newPos;
+    sectionPositions = sectionPositions; // Trigger reactivity
+  }
+  
+  function endDrag() {
+    draggingSectionIndex = null;
   }
   
   // Handle household selection
@@ -318,16 +387,18 @@
     
     // Add wheel event listener to enable scrolling from anywhere
     function handleWheel(event) {
-      // Check if the event target is not inside the scrollable area
-      if (!scrollContainer?.contains(event.target)) {
-        if (scrollContainer) {
-          scrollContainer.scrollTop += event.deltaY;
-          event.preventDefault();
-        }
+      // Always scroll the container when wheel event happens
+      if (scrollContainer) {
+        scrollContainer.scrollTop += event.deltaY;
+        event.preventDefault();
       }
     }
     
     window.addEventListener('wheel', handleWheel, { passive: false });
+    
+    // Add drag event listeners
+    window.addEventListener('mousemove', handleDrag);
+    window.addEventListener('mouseup', endDrag);
     
     // Notify parent we're ready
     notifyParentOfUrlChange();
@@ -336,6 +407,8 @@
       unsubscribe();
       window.removeEventListener('message', handleMessage);
       window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('mousemove', handleDrag);
+      window.removeEventListener('mouseup', endDrag);
       cleanupScrollObserver(scrollObserver);
       cleanupAnimations();
     };
@@ -382,10 +455,14 @@
           <section 
             class="text-section"
             class:active={$currentStateIndex === i}
+            class:dragging={draggingSectionIndex === i}
             data-index={i}
             bind:this={textSections[i]}
+            style="transform: translate({sectionPositions[i]?.x || 0}px, {sectionPositions[i]?.y || 0}px)"
+            on:mousedown={(e) => startDrag(e, i)}
           >
             <div class="section-content">
+              <div class="drag-handle" title="Drag to move">⋮⋮</div>
               <h2>{state.title}</h2>
               
               <!-- Dynamic content for income sections -->
@@ -401,11 +478,14 @@
                     <p>Of the {stats.total} million households with market income between $200,000 and $1 million, OBBBA will increase the net income of {stats.positivePercent}% and reduce the net income of {stats.negativePercent}%. Let's take a look at one of them at random. You can also click on a dot to view information about a household.</p>
                   {:else if state.id === 'highest-income'}
                     <p>Of the {stats.total} million households with market income over $1 million, OBBBA will increase the net income of {stats.positivePercent}% and reduce the net income of {stats.negativePercent}%. Let's take a look at one of them at random. You can also click on a dot to view information about a household.</p>
+                  {:else if state.id === 'all-households'}
+                    {@const allStats = calculateSectionStats(sectionData, true)}
+                    <p>{@html state.description.replace('{totalPercentage}', allStats.affectedPercent).replace('{medianImpact}', allStats.medianChange)}</p>
                   {/if}
                 {/if}
                 
-                <!-- Integrated household profile for all income sections -->
-                {#if randomHouseholds[state.id]}
+                <!-- Integrated household profile for all income sections except all-households -->
+                {#if randomHouseholds[state.id] && state.id !== 'all-households'}
                   <div class="integrated-household-profile">
                     <HouseholdProfile
                       household={randomHouseholds[state.id]}
@@ -514,16 +594,17 @@
     z-index: 1;
   }
   
-  /* Scrollable content overlay on the left only */
+  /* Scrollable content overlay - full width to allow dragging anywhere */
   .content-overlay {
     position: absolute;
     top: 60px; /* Account for header */
     left: 0;
-    width: 40%;
-    max-width: 680px;
+    width: 100%; /* Full width for dragging */
     bottom: 0;
     overflow-y: auto;
+    overflow-x: hidden; /* Prevent horizontal scroll */
     z-index: 10; /* Higher than chart but lower than header */
+    pointer-events: none; /* Allow clicks through except on text sections */
     
     /* Hide scrollbar while keeping functionality */
     scrollbar-width: none; /* Firefox */
@@ -593,24 +674,35 @@
   
   .text-section {
     margin-bottom: 100vh;
-    opacity: 0.4;
-    transition: all 0.5s ease;
+    transition: transform 0.1s ease, box-shadow 0.5s ease, background 0.5s ease;
     min-height: 200px;
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
     border-radius: 12px;
     padding: 1.5rem;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(226, 232, 240, 0.5);
     pointer-events: auto;
     position: relative;
+    cursor: move;
+    user-select: none;
+    z-index: 15;
   }
   
+  .text-section:not(.active) {
+    background: rgba(255, 255, 255, 0.5);
+  }
   
-  .text-section:global(.active) {
-    opacity: 1;
-    background: rgba(255, 255, 255, 0.95);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  .text-section.dragging {
+    background: rgba(255, 255, 255, 0.65);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+  }
+  
+  .text-section.active {
+    background: rgba(255, 255, 255, 0.7);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   }
   
   .text-section h2 {
@@ -629,6 +721,28 @@
   
   .section-content {
     padding: 0;
+    position: relative;
+  }
+  
+  .drag-handle {
+    position: absolute;
+    top: -0.5rem;
+    right: 0.5rem;
+    color: var(--text-secondary);
+    opacity: 0.3;
+    font-size: 20px;
+    cursor: grab;
+    transition: opacity 0.2s;
+    user-select: none;
+  }
+  
+  .text-section:hover .drag-handle {
+    opacity: 0.6;
+  }
+  
+  .text-section.dragging .drag-handle {
+    cursor: grabbing;
+    opacity: 0.8;
   }
   
   

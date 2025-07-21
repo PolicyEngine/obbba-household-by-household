@@ -126,6 +126,10 @@
   }
   
   function drawGridLines(ctx, xScale, yScale, xMin, xMax, yMin, yMax) {
+    // Fade grid lines during transitions for smoother effect
+    const gridOpacity = isTransitioning ? 0.3 + (interpolationT * 0.7) : 1;
+    ctx.globalAlpha = gridOpacity;
+    
     ctx.strokeStyle = COLORS.MEDIUM_DARK_GRAY;
     ctx.lineWidth = 0.5;
     ctx.setLineDash([]);
@@ -149,6 +153,8 @@
       ctx.lineTo(width - margin.right, y);
       ctx.stroke();
     });
+    
+    ctx.globalAlpha = 1;
     
     // Draw zero line
     if (xMin <= 0 && xMax >= 0) {

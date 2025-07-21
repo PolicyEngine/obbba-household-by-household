@@ -9,7 +9,7 @@ export const currentInterpolationT = writable(0);
 
 // Track transition state
 let transitionStartTime = null;
-let transitionDuration = 800; // ms
+let transitionDuration = 1200; // ms - longer for smoother zoom effect
 
 // Animation frame ID for smooth transitions
 let animationFrameId = null;
@@ -60,14 +60,15 @@ export function startTransition(targetIndex, onComplete) {
   function animate(currentTime) {
     const elapsed = currentTime - transitionStartTime;
     const t = Math.min(elapsed / transitionDuration, 1);
-    transitionT.set(t);
     
-    // Use easing function
+    // Update both raw and eased values
+    transitionT.set(t);
     currentInterpolationT.set(easeInOutCubic(t));
     
     if (t < 1) {
       animationFrameId = requestAnimationFrame(animate);
     } else {
+      // Ensure final values are set
       isTransitioning.set(false);
       transitionT.set(1);
       currentInterpolationT.set(1);
@@ -78,9 +79,12 @@ export function startTransition(targetIndex, onComplete) {
   animationFrameId = requestAnimationFrame(animate);
 }
 
-// Easing function
+// Easing function - smoother for zoom transitions
 function easeInOutCubic(t) {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  // Use a smoother easing for better zoom effect
+  return t < 0.5 
+    ? 2 * t * t 
+    : 1 - Math.pow(-2 * t + 2, 2) / 2;
 }
 
 // Check active section based on scroll position
