@@ -1,12 +1,45 @@
 <script>
+  import { onMount } from 'svelte';
   import { DATASETS } from '../config/datasets.js';
   
   export let selectedDataset = 'tcja-expiration';
   export let loading = false;
   export let onDatasetChange = () => {};
+  
+  let headerEl;
+  let isInIframe = false;
+  
+  onMount(() => {
+    // Check if we're in an iframe
+    isInIframe = window.self !== window.top;
+    
+    // If in iframe, ensure header stays visible on scroll
+    if (isInIframe && headerEl) {
+      // Force the header to stay at the top of the viewport
+      const ensureHeaderVisible = () => {
+        if (headerEl) {
+          headerEl.style.position = 'fixed';
+          headerEl.style.top = '0';
+          headerEl.style.transform = 'translateY(0)';
+        }
+      };
+      
+      // Monitor for any changes that might hide the header
+      window.addEventListener('scroll', ensureHeaderVisible, true);
+      window.addEventListener('resize', ensureHeaderVisible);
+      
+      // Initial call
+      ensureHeaderVisible();
+      
+      return () => {
+        window.removeEventListener('scroll', ensureHeaderVisible, true);
+        window.removeEventListener('resize', ensureHeaderVisible);
+      };
+    }
+  });
 </script>
 
-<header class="floating-header">
+<header class="floating-header" bind:this={headerEl}>
   <div class="header-content">
     <h1 class="app-title">OBBBA Household Explorer</h1>
     <div class="baseline-selector-container">
@@ -122,28 +155,34 @@
   /* Mobile responsive header */
   @media (max-width: 768px) {
     header {
-      height: 50px; /* Smaller header on mobile */
+      height: auto; /* Allow height to grow for stacked layout */
     }
     
     .header-content {
-      padding: 8px 12px;
-      flex-direction: row; /* Keep horizontal layout */
-      align-items: center;
-      gap: 8px;
+      padding: 12px;
+      flex-direction: column; /* Stack vertically */
+      align-items: stretch;
+      gap: 10px;
     }
 
     .app-title {
-      font-size: 16px;
-      flex: 0 0 auto;
+      font-size: 18px;
+      text-align: center;
+      margin: 0;
     }
 
     .baseline-selector-container {
-      flex: 1;
-      min-width: 0; /* Allow shrinking */
+      width: 100%;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 4px;
     }
 
     .baseline-label {
-      display: none; /* Hide label to save space */
+      font-size: 11px;
+      text-align: center;
+      color: var(--text-secondary);
+      margin: 0;
     }
 
     .baseline-selector {
@@ -154,8 +193,8 @@
     }
 
     .tab-button {
-      font-size: 11px;
-      padding: 4px 8px;
+      font-size: 12px;
+      padding: 6px 12px;
     }
   }
   

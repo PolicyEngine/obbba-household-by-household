@@ -806,7 +806,7 @@
     .content-overlay {
       width: 100%;
       max-width: none;
-      top: 50px; /* Smaller header on mobile */
+      top: 90px; /* Account for multi-row header */
     }
     
     .text-content {
@@ -851,7 +851,7 @@
     }
     
     .chart-background {
-      top: 50px; /* Match header height */
+      top: 90px; /* Match multi-row header height */
     }
   }
   

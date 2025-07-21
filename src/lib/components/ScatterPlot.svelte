@@ -28,9 +28,9 @@
   function updateMargins() {
     const viewportWidth = window.innerWidth;
     if (viewportWidth <= 480) {
-      margin = { top: 40, right: 20, bottom: 60, left: 60 };
+      margin = { top: 40, right: 15, bottom: 50, left: 50 };
     } else if (viewportWidth <= 768) {
-      margin = { top: 50, right: 40, bottom: 80, left: 80 };
+      margin = { top: 50, right: 30, bottom: 70, left: 65 };
     } else {
       margin = { top: 60, right: 100, bottom: 100, left: 120 };
     }
@@ -343,11 +343,21 @@
       .style('color', COLORS.DARKEST_BLUE);
     
     // Y-axis
+    const isMobile = window.innerWidth <= 768;
+    const yAxisFontSize = isMobile ? '10px' : '14px';
     const yAxis = g.append('g')
       .attr('transform', `translate(${margin.left},0)`)
-      .call(d3.axisLeft(yScale).ticks(6).tickFormat(d => d3.format('$,')(d)))
+      .call(d3.axisLeft(yScale).ticks(isMobile ? 4 : 6).tickFormat(d => {
+        // Shorter format on mobile
+        if (isMobile) {
+          if (d >= 1000000) return d3.format('$,.0s')(d).replace('M', 'M');
+          if (d >= 1000) return d3.format('$,.0s')(d).replace('k', 'K');
+          return d3.format('$,')(d);
+        }
+        return d3.format('$,')(d);
+      }))
       .style('font-family', getFontFamily('sans'))
-      .style('font-size', '14px')
+      .style('font-size', yAxisFontSize)
       .style('color', COLORS.DARKEST_BLUE);
     
     // Style axes
@@ -370,13 +380,13 @@
     g.append('text')
       .attr('transform', 'rotate(-90)')
       .attr('x', -height / 2)
-      .attr('y', 25)
+      .attr('y', isMobile ? 15 : 25)
       .attr('text-anchor', 'middle')
       .style('font-family', getFontFamily('sans'))
-      .style('font-size', '16px')
+      .style('font-size', isMobile ? '12px' : '16px')
       .style('font-weight', '400')
       .style('fill', COLORS.DARK_GRAY)
-      .text('Annual household market income →');
+      .text(isMobile ? 'Annual income →' : 'Annual household market income →');
   }
   
   // Handle resize
