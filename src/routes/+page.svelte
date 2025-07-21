@@ -206,17 +206,21 @@
       
       // Create a scroll handler that maintains position
       const maintainScroll = (e) => {
+        // Cancel the event to prevent scrolling
+        e.preventDefault();
+        e.stopPropagation();
+        
         if (scrollContainer.scrollTop !== savedScrollTop) {
           scrollContainer.scrollTop = savedScrollTop;
         }
       };
       
-      // Add scroll listener to maintain position
-      scrollContainer.addEventListener('scroll', maintainScroll, { passive: false });
+      // Add scroll listener with capture to intercept early
+      scrollContainer.addEventListener('scroll', maintainScroll, { capture: true, passive: false });
       
       // Remove listener after animations complete
       setTimeout(() => {
-        scrollContainer.removeEventListener('scroll', maintainScroll);
+        scrollContainer.removeEventListener('scroll', maintainScroll, { capture: true });
       }, 1000); // Match the longest animation duration
     }
     
