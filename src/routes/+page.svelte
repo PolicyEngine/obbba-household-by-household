@@ -336,16 +336,17 @@
   
   // Handle URL parameters
   async function handleUrlParams() {
-    const { householdId, baseline } = parseUrlParams();
-    console.log('handleUrlParams called with:', { householdId, baseline });
-    
-    // Update baseline if provided
-    if (baseline && baseline !== selectedDataset) {
-      selectedDataset = baseline;
-    }
-    
-    // Load all datasets if needed
-    if (Object.keys(allDatasets).length === 0) {
+    try {
+      const { householdId, baseline } = parseUrlParams();
+      console.log('handleUrlParams called with:', { householdId, baseline });
+      
+      // Update baseline if provided
+      if (baseline && baseline !== selectedDataset) {
+        selectedDataset = baseline;
+      }
+      
+      // Load all datasets if needed
+      if (Object.keys(allDatasets).length === 0) {
       isLoading = true;
       try {
         console.log('Loading all datasets...');
@@ -399,11 +400,25 @@
         }
       }
     }
+    } catch (error) {
+      console.error('Error in handleUrlParams:', error);
+      loadError = `Failed to load data: ${error.message}`;
+    }
   }
   
   // Lifecycle
   onMount(async () => {
     console.log('Component mounted, starting initialization...');
+    
+    // Add global error handler
+    const handleError = (event) => {
+      console.error('Global error caught:', event.error);
+      loadError = `An error occurred: ${event.error?.message || 'Unknown error'}`;
+      event.preventDefault();
+    };
+    
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleError);
     
     // Check if we're in an iframe and get URL params from parent if needed
     const isInIframe = window.self !== window.top;
@@ -473,6 +488,8 @@
       window.removeEventListener('wheel', handleWheel);
       window.removeEventListener('mousemove', handleDrag);
       window.removeEventListener('mouseup', endDrag);
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleError);
       cleanupScrollObserver(scrollObserver);
       cleanupAnimations();
     };

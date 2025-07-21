@@ -72,10 +72,14 @@
   export function renderVisualization() {
     if (!canvasRef || !data.length) return;
     
-    const ctx = canvasRef.getContext('2d');
-    const currentState = scrollStates[currentStateIndex];
-    const fromState = isTransitioning ? scrollStates[previousStateIndex] : currentState;
-    const toState = currentState;
+    try {
+      const ctx = canvasRef.getContext('2d', { 
+        alpha: false, // Disable transparency for better performance
+        desynchronized: true // Better performance on some browsers
+      });
+      const currentState = scrollStates[currentStateIndex];
+      const fromState = isTransitioning ? scrollStates[previousStateIndex] : currentState;
+      const toState = currentState;
     
     // Get current view bounds
     const currentView = currentState;
@@ -141,6 +145,14 @@
     
     // Draw axes
     drawAxes(xScale, yScale);
+    } catch (error) {
+      console.error('Error rendering visualization:', error);
+      // Clear the canvas to prevent partial renders
+      if (canvasRef) {
+        const ctx = canvasRef.getContext('2d');
+        ctx.clearRect(0, 0, width, height);
+      }
+    }
   }
   
   function drawGridLines(ctx, xScale, yScale, xMin, xMax, yMin, yMax) {
@@ -212,7 +224,12 @@
   function renderPoints(ctx, data, xScale, yScale, weightRange, currentState, fromState) {
     const { minWeight, maxWeight } = weightRange;
     
-    data.forEach(d => {
+    // Limit rendering for performance on Safari
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const maxPointsToRender = isSafari ? 10000 : data.length;
+    const dataToRender = data.slice(0, maxPointsToRender);
+    
+    dataToRender.forEach(d => {
       let x = xScale(d['Percentage Change in Net Income']);
       let y = yScale(d['Gross Income']);
       
