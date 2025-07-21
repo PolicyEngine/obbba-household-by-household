@@ -199,43 +199,25 @@
   
   // Handle household selection
   function selectHousehold(household, shouldScroll = true) {
-    // If not scrolling, save and restore the exact position
-    let savedScrollTop = null;
-    let savedWindowScrollY = null;
-    let originalOverflow = null;
-    
+    // If not scrolling, lock the scroll position
     if (!shouldScroll && scrollContainer) {
       // Save current scroll position
-      savedScrollTop = scrollContainer.scrollTop;
-      savedWindowScrollY = window.scrollY;
+      const savedScrollTop = scrollContainer.scrollTop;
       
-      // Temporarily disable scrolling
-      originalOverflow = scrollContainer.style.overflow;
-      scrollContainer.style.overflow = 'hidden';
-      document.body.style.overflow = 'hidden';
-      
-      // Use requestAnimationFrame to restore position after any DOM updates
-      const restorePosition = () => {
-        if (scrollContainer && savedScrollTop !== null) {
+      // Create a scroll handler that maintains position
+      const maintainScroll = (e) => {
+        if (scrollContainer.scrollTop !== savedScrollTop) {
           scrollContainer.scrollTop = savedScrollTop;
-          window.scrollTo(0, savedWindowScrollY);
         }
       };
       
-      // Re-enable scrolling and restore position
-      const cleanup = () => {
-        if (scrollContainer && originalOverflow !== null) {
-          scrollContainer.style.overflow = originalOverflow;
-          document.body.style.overflow = '';
-        }
-        restorePosition();
-      };
+      // Add scroll listener to maintain position
+      scrollContainer.addEventListener('scroll', maintainScroll, { passive: false });
       
-      // Restore position multiple times to combat any async scrolling
-      requestAnimationFrame(restorePosition);
-      setTimeout(restorePosition, 0);
-      setTimeout(restorePosition, 50);
-      setTimeout(cleanup, 200);
+      // Remove listener after animations complete
+      setTimeout(() => {
+        scrollContainer.removeEventListener('scroll', maintainScroll);
+      }, 1000); // Match the longest animation duration
     }
     
     selectedHousehold = household;

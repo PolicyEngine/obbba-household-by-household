@@ -379,6 +379,9 @@
     min-height: 350px;
     /* Prevent being used as scroll anchor */
     overflow-anchor: none;
+    /* Prevent layout shifts during animations */
+    contain: layout style;
+    will-change: contents;
   }
 
   .household-profile h3 {
