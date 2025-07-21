@@ -9,7 +9,7 @@ export async function loadDataset(datasetKey) {
   }
 
   try {
-    const response = await fetch(`/obbba-scatter/${dataset.filename}`);
+    const response = await fetch(`/${dataset.filename}`);
     if (!response.ok) {
       throw new Error(`Failed to load CSV: ${response.status} ${response.statusText}`);
     }
@@ -30,7 +30,7 @@ export async function loadDataset(datasetKey) {
     console.error('Error loading data:', error);
     console.error('Dataset key:', datasetKey);
     console.error('Filename:', dataset?.filename);
-    console.error('Full URL:', `/obbba-scatter/${dataset?.filename}`);
+    console.error('Full URL:', `/${dataset?.filename}`);
     throw error;
   }
 }

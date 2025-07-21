@@ -327,7 +327,7 @@
   {/if}
   
   {#if isLoading}
-    <LoadingOverlay message="Loading {DATASETS[selectedDataset].name} data..." />
+    <LoadingOverlay message="Loading {DATASETS[selectedDataset].label} data..." />
   {/if}
   
   {#if loadError}

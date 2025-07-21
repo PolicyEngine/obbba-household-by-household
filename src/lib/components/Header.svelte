@@ -8,7 +8,10 @@
 
 <header class="floating-header">
   <div class="header-content">
-    <h1 class="app-title">OBBBA Household Explorer</h1>
+    <div class="title-group">
+      <h1 class="app-title">Winners and Losers from the Trump Tax Cuts</h1>
+      <span class="subtitle">by PolicyEngine</span>
+    </div>
     <div class="baseline-selector-container">
       <span class="baseline-label">Baseline:</span>
       <div class="baseline-selector">
@@ -48,12 +51,24 @@
     max-width: 1400px;
     margin: 0 auto;
   }
+  
+  .title-group {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
 
   .app-title {
     font-size: 24px;
     font-weight: 700;
     color: var(--text-primary);
     margin: 0;
+  }
+  
+  .subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-left: 8px;
   }
 
   /* Baseline selector container */
@@ -78,7 +93,7 @@
   /* Tabbed radio button styles */
   .baseline-selector {
     display: flex;
-    background: var(--grid-lines);
+    background: var(--medium-dark-gray, #D1D5DB);
     border-radius: 8px;
     padding: 4px;
     gap: 4px;
@@ -104,7 +119,7 @@
 
   .tab-button.active {
     background: var(--app-background);
-    color: var(--policyengine-blue);
+    color: var(--primary-blue, #5B9BD5);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
   }
 
