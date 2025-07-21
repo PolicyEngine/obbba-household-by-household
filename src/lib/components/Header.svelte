@@ -34,11 +34,14 @@
     top: 0;
     left: 0;
     right: 0;
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
-    z-index: 1000;
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+    z-index: 9999; /* Very high z-index to ensure it stays on top */
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transform: translateZ(0); /* Force GPU acceleration for better performance */
+    will-change: transform; /* Optimize for animations */
   }
 
   .header-content {
@@ -118,27 +121,47 @@
 
   /* Mobile responsive header */
   @media (max-width: 768px) {
+    header {
+      height: 50px; /* Smaller header on mobile */
+    }
+    
     .header-content {
-      padding: 12px 16px 12px calc(60px + 24px); /* Match mobile text content margin + padding */
-      flex-direction: column;
-      gap: 12px;
+      padding: 8px 12px;
+      flex-direction: row; /* Keep horizontal layout */
+      align-items: center;
+      gap: 8px;
     }
 
     .app-title {
-      font-size: 20px;
+      font-size: 16px;
+      flex: 0 0 auto;
     }
 
     .baseline-selector-container {
-      width: 100%;
+      flex: 1;
+      min-width: 0; /* Allow shrinking */
     }
 
     .baseline-label {
-      font-size: 13px;
+      display: none; /* Hide label to save space */
     }
 
     .baseline-selector {
       flex: 1;
       justify-content: center;
+      border-radius: 20px;
+      padding: 2px;
+    }
+
+    .tab-button {
+      font-size: 11px;
+      padding: 4px 8px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .app-title {
+      font-size: 14px;
     }
 
     .tab-button {

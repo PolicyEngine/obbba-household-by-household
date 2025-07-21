@@ -20,15 +20,33 @@
   let renderedPoints = [];
   
   // Chart dimensions
-  const margin = { top: 60, right: 100, bottom: 100, left: 120 };
+  let margin = { top: 60, right: 100, bottom: 100, left: 120 };
   let width = 900;
   let height = 600;
   
-  // Mouse interaction
+  // Responsive margins
+  function updateMargins() {
+    const viewportWidth = window.innerWidth;
+    if (viewportWidth <= 480) {
+      margin = { top: 40, right: 20, bottom: 60, left: 60 };
+    } else if (viewportWidth <= 768) {
+      margin = { top: 50, right: 40, bottom: 80, left: 80 };
+    } else {
+      margin = { top: 60, right: 100, bottom: 100, left: 120 };
+    }
+  }
+  
+  // Mouse and touch interaction
   function handleCanvasClick(event) {
     const rect = canvasRef.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    // Handle both mouse and touch events
+    const clientX = event.clientX || (event.touches && event.touches[0]?.clientX);
+    const clientY = event.clientY || (event.touches && event.touches[0]?.clientY);
+    
+    if (!clientX || !clientY) return;
+    
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
     
     // Find closest point
     let closestPoint = null;
@@ -367,6 +385,7 @@
       const container = canvasRef.parentElement;
       width = container.clientWidth;
       height = container.clientHeight;
+      updateMargins(); // Update margins based on viewport
       canvasRef.width = width;
       canvasRef.height = height;
       svgRef.setAttribute('width', width);
@@ -395,7 +414,8 @@
     bind:this={canvasRef}
     class="main-canvas"
     on:click={handleCanvasClick}
-  />
+    on:touchstart={handleCanvasClick}
+  ></canvas>
   <svg
     bind:this={svgRef}
     class="overlay-svg"
