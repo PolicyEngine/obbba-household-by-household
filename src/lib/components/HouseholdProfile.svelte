@@ -27,6 +27,9 @@
   
   let showHouseholdDetails = false;
   let showProvisionDetails = false;
+  let isTransitioning = false;
+  let profileElement = null;
+  let savedPosition = null;
   
   // Animated values with train station board effect
   const householdId = tweened(0, { 
@@ -65,6 +68,18 @@
   
   // Update animated values when household changes or dataset changes
   $: if (household && (household.id !== previousHouseholdId || selectedDataset !== previousDataset)) {
+    // Save current position before update
+    if (profileElement && !isTransitioning) {
+      const rect = profileElement.getBoundingClientRect();
+      savedPosition = {
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height
+      };
+      isTransitioning = true;
+    }
+    
     console.log('HouseholdProfile updating:', {
       householdId: household.id,
       dataset: selectedDataset,
@@ -102,6 +117,12 @@
     obbbaNetIncome.set((household['Baseline Net Income'] || 0) + (household['Total Change in Net Income'] || household['Change in Household Net Income'] || 0));
     absoluteImpact.set(household['Total Change in Net Income'] || household['Change in Household Net Income'] || 0);
     relativeImpact.set(household['Percentage Change in Net Income'] || 0);
+    
+    // Reset position after animation completes
+    setTimeout(() => {
+      isTransitioning = false;
+      savedPosition = null;
+    }, 950); // Slightly longer than longest animation
   }
   
   // State abbreviation to full name mapping
@@ -223,7 +244,17 @@
 </script>
 
 {#if household}
-  <div class="household-profile">
+  <div 
+    class="household-profile" 
+    class:transitioning={isTransitioning}
+    bind:this={profileElement}
+    style={isTransitioning && savedPosition ? `
+      position: fixed !important;
+      top: ${savedPosition.top}px !important;
+      left: ${savedPosition.left}px !important;
+      width: ${savedPosition.width}px !important;
+      z-index: 1000;
+    ` : ''}>
     <h3>
       Household #{Math.round($householdId)}
       <div class="header-buttons">
@@ -377,6 +408,12 @@
     border: 1px solid rgba(226, 232, 240, 0.7);
     /* Maintain stable layout */
     min-height: 350px;
+    position: relative;
+    transition: none;
+  }
+  
+  .household-profile.transitioning {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
   .household-profile h3 {

@@ -199,13 +199,36 @@
   
   // Handle household selection
   function selectHousehold(household, shouldScroll = true) {
+    // If not scrolling, prevent all scroll behavior
+    if (!shouldScroll) {
+      // Disable scroll events temporarily
+      const preventScroll = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      };
+      
+      // Add listeners to block scroll
+      window.addEventListener('scroll', preventScroll, { capture: true });
+      scrollContainer?.addEventListener('scroll', preventScroll, { capture: true });
+      
+      // Remove listeners after update
+      setTimeout(() => {
+        window.removeEventListener('scroll', preventScroll, { capture: true });
+        scrollContainer?.removeEventListener('scroll', preventScroll, { capture: true });
+      }, 300);
+    }
+    
     selectedHousehold = household;
     
     // If we're in a group view, update the random household for that section
     const currentState = scrollStates[$currentStateIndex];
     if (currentState && currentState.viewType === 'group') {
-      // Update the random household for this section
-      randomHouseholds[currentState.id] = household;
+      // Update the random household for this section - use object spread
+      randomHouseholds = {
+        ...randomHouseholds,
+        [currentState.id]: household
+      };
       
       // Only scroll if explicitly requested (not when randomizing)
       if (shouldScroll) {
@@ -221,7 +244,10 @@
     } else if (currentState && currentState.viewType === 'individual') {
       // Update the random household for the base section
       const baseViewId = currentState.id.replace('-individual', '');
-      randomHouseholds[baseViewId] = household;
+      randomHouseholds = {
+        ...randomHouseholds,
+        [baseViewId]: household
+      };
       
       // Update household display
       const sectionIndex = Math.floor($currentStateIndex / 2);
@@ -253,59 +279,17 @@
     const state = scrollStates.find(s => s.id === baseViewId);
     
     if (state && data.length > 0) {
-      // Preserve scroll position and disable scroll anchoring
-      const currentScrollTop = scrollContainer?.scrollTop || 0;
-      const currentScrollLeft = scrollContainer?.scrollLeft || 0;
-      
-      // Temporarily disable scroll anchoring to prevent browser intervention
-      if (scrollContainer) {
-        scrollContainer.style.overflowAnchor = 'none';
-      }
-      
-      // Store the current active element to restore focus
-      const activeElement = document.activeElement;
-      
       const filteredData = data.filter(d => state.filter(d));
       const newHousehold = getRandomWeightedHousehold(filteredData);
       
       if (newHousehold) {
-        // Create new object to trigger Svelte reactivity properly
-        randomHouseholds = {
-          ...randomHouseholds,
-          [baseViewId]: newHousehold
-        };
-        selectHousehold(newHousehold, false); // Don't scroll when randomizing
+        // Don't scroll when randomizing
+        selectHousehold(newHousehold, false);
         
         // Re-trigger animations
         const sectionIndex = Math.floor($currentStateIndex / 2);
         createAnimatedNumber(`household-id-${sectionIndex}`, 
           selectedHousehold?.id || 0, newHousehold.id, d => Math.round(d), 600);
-        
-        // Immediately restore scroll position (synchronously)
-        if (scrollContainer) {
-          scrollContainer.scrollTop = currentScrollTop;
-          scrollContainer.scrollLeft = currentScrollLeft;
-        }
-        
-        // Use rAF to ensure position is maintained after all updates
-        requestAnimationFrame(() => {
-          if (scrollContainer) {
-            scrollContainer.scrollTop = currentScrollTop;
-            scrollContainer.scrollLeft = currentScrollLeft;
-            
-            // Re-enable scroll anchoring after a delay
-            setTimeout(() => {
-              if (scrollContainer) {
-                scrollContainer.style.overflowAnchor = '';
-              }
-            }, 100);
-          }
-          
-          // Restore focus if it was lost
-          if (activeElement && activeElement !== document.body) {
-            activeElement.focus({ preventScroll: true });
-          }
-        });
       }
     }
   }
@@ -610,7 +594,7 @@
       interpolationT={$currentInterpolationT}
       {randomHouseholds}
       {selectedHousehold}
-      onPointClick={selectHousehold}
+      onPointClick={(household) => selectHousehold(household, false)}
     />
   </div>
   
