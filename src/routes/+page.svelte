@@ -170,8 +170,14 @@
     if (data.length === 0) {
       isLoading = true;
       try {
+        console.log('Loading datasets in handleUrlParams...');
         const datasets = await loadDatasets();
+        console.log('Loaded datasets:', Object.keys(datasets), 'lengths:', {
+          'tcja-expiration': datasets['tcja-expiration']?.length,
+          'tcja-extension': datasets['tcja-extension']?.length
+        });
         data = datasets[selectedDataset];
+        console.log('Selected dataset:', selectedDataset, 'length:', data.length);
         initializeRandomHouseholds();
       } catch (error) {
         console.error('Error loading data:', error);
@@ -204,6 +210,8 @@
   
   // Lifecycle
   onMount(async () => {
+    console.log('Component mounted, starting initialization...');
+    
     // Handle initial URL parameters
     await handleUrlParams();
     
@@ -273,11 +281,8 @@
             bind:this={textSections[i]}
           >
             <h2>{state.title}</h2>
-            {#if state.description}
-              <p>{@html state.description}</p>
-            {/if}
-            {#if state.content}
-              <p>{@html state.content}</p>
+            {#if state.text}
+              <p>{@html state.text}</p>
             {/if}
           </section>
         {:else if state.viewType === 'individual'}
@@ -391,6 +396,7 @@
     display: flex;
     overflow: hidden;
     position: relative;
+    margin-top: 60px; /* Account for fixed header */
   }
   
   .text-content {
