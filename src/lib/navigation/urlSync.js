@@ -13,20 +13,15 @@ export function notifyParentOfUrlChange() {
 }
 
 // Update URL with household selection
-export function updateUrlWithHousehold(householdId, selectedDataset, viewSection = null) {
+export function updateUrlWithHousehold(householdId, selectedDataset) {
   if (typeof window !== 'undefined') {
     const url = new URL(window.location);
     
     if (householdId) {
       url.searchParams.set('household', String(householdId));
       url.searchParams.set('baseline', selectedDataset);
-      
-      if (viewSection) {
-        url.searchParams.set('section', viewSection);
-      }
     } else {
       url.searchParams.delete('household');
-      url.searchParams.delete('section');
       url.searchParams.delete('baseline');
     }
     
@@ -42,11 +37,10 @@ export function parseUrlParams() {
     const urlParams = new URLSearchParams(window.location.search);
     return {
       householdId: String(urlParams.get('household') || ''),
-      section: urlParams.get('section'),
       baseline: urlParams.get('baseline')
     };
   }
-  return { householdId: '', section: null, baseline: null };
+  return { householdId: '', baseline: null };
 }
 
 // Find appropriate section index for a household

@@ -1,9 +1,9 @@
 import Papa from 'papaparse';
-import { datasets } from '../config/datasets.js';
+import { DATASETS } from '../config/datasets.js';
 
 // Load dataset from CSV file
 export async function loadDataset(datasetKey) {
-  const dataset = datasets[datasetKey];
+  const dataset = DATASETS[datasetKey];
   if (!dataset) {
     throw new Error(`Unknown dataset: ${datasetKey}`);
   }

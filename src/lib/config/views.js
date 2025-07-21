@@ -67,7 +67,7 @@ export function generateScrollStates() {
       id: baseView.id,
       ...baseView.view,
       title: baseView.title,
-      text: baseView.groupText,
+      description: baseView.groupText,
       viewType: 'group'
     });
     
@@ -77,7 +77,7 @@ export function generateScrollStates() {
         id: baseView.id + '-individual',
         ...baseView.view,
         title: baseView.title + ' — individual profile',
-        text: 'Meet a specific household affected by these changes.',
+        description: 'Meet a specific household affected by these changes.',
         viewType: 'individual'
       });
     }

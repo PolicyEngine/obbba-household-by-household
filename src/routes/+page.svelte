@@ -23,13 +23,11 @@
   import LoadingOverlay from '$lib/components/LoadingOverlay.svelte';
   import Header from '$lib/components/Header.svelte';
   import HouseholdProfile from '$lib/components/HouseholdProfile.svelte';
-  import DataTable from '$lib/components/DataTable.svelte';
   import ScatterPlot from '$lib/components/ScatterPlot.svelte';
   
   // Data state
   let data = [];
   let selectedHousehold = null;
-  let showDataTable = false;
   let isLoading = false;
   let loadError = null;
   let selectedDataset = 'tcja-expiration';
@@ -105,9 +103,8 @@
     // Animate the household point
     animateHouseholdEmphasis(household.id);
     
-    // Update URL with current section
-    const sectionName = currentState?.id?.replace('-individual', '');
-    updateUrlWithHousehold(household.id, selectedDataset, sectionName);
+    // Update URL
+    updateUrlWithHousehold(household.id, selectedDataset);
   }
   
   // Randomize household for current section
@@ -136,6 +133,9 @@
     selectedDataset = dataset;
     isLoading = true;
     
+    // Remember current household ID if one is selected
+    const currentHouseholdId = selectedHousehold?.id;
+    
     try {
       const datasets = await loadDatasets();
       data = datasets[dataset];
@@ -144,10 +144,25 @@
       randomHouseholds = {};
       initializeRandomHouseholds();
       
-      // Update URL
-      if (selectedHousehold) {
-        const sectionName = currentState?.id?.replace('-individual', '');
-        updateUrlWithHousehold(selectedHousehold.id, dataset, sectionName);
+      // Try to find the same household in the new dataset
+      if (currentHouseholdId) {
+        const household = data.find(d => String(d.id) === String(currentHouseholdId));
+        if (household) {
+          selectedHousehold = household;
+          updateUrlWithHousehold(household.id, dataset);
+          
+          // Animate emphasis on the household
+          animateHouseholdEmphasis(household.id);
+        } else {
+          // Household not found in new dataset, clear selection
+          selectedHousehold = null;
+          updateUrlWithHousehold(null, dataset);
+        }
+      }
+      
+      // Force chart re-render
+      if (chartComponent?.renderVisualization) {
+        chartComponent.renderVisualization();
       }
     } catch (error) {
       console.error('Error loading dataset:', error);
@@ -261,7 +276,7 @@
 </script>
 
 <svelte:head>
-  <title>Winners and Losers from the Trump Tax Cuts | Open Budget and Ballot Box Analytics</title>
+  <title>OBBBA Household Explorer</title>
   <meta name="description" content="Interactive visualization showing how different American households are affected by tax policy changes">
 </svelte:head>
 
@@ -271,23 +286,47 @@
     onDatasetChange={handleDatasetChange}
   />
   
-  <div class="content-wrapper" bind:this={scrollContainer}>
+  <!-- Full-screen chart background -->
+  <div class="chart-background">
+    <ScatterPlot
+      bind:this={chartComponent}
+      {data}
+      {scrollStates}
+      currentStateIndex={$currentStateIndex}
+      previousStateIndex={$previousStateIndex}
+      isTransitioning={$isTransitioning}
+      interpolationT={$currentInterpolationT}
+      {randomHouseholds}
+      {selectedHousehold}
+      onPointClick={selectHousehold}
+    />
+  </div>
+  
+  <!-- Scrollable content overlay -->
+  <div class="content-overlay" bind:this={scrollContainer}>
     <div class="text-content">
       {#each scrollStates as state, i}
         {#if state.viewType === 'group'}
           <section 
             class="text-section"
+            class:active={$currentStateIndex === i}
             data-index={i}
             bind:this={textSections[i]}
           >
-            <h2>{state.title}</h2>
-            {#if state.text}
-              <p>{@html state.text}</p>
-            {/if}
+            <div class="section-content">
+              <h2>{state.title}</h2>
+              {#if state.description}
+                <p>{@html state.description}</p>
+              {/if}
+              {#if state.content}
+                <p>{@html state.content}</p>
+              {/if}
+            </div>
           </section>
         {:else if state.viewType === 'individual'}
           <section 
             class="text-section individual-section"
+            class:active={$currentStateIndex === i}
             data-index={i}
             bind:this={textSections[i]}
           >
@@ -297,42 +336,17 @@
               currentState={state}
               sectionIndex={Math.floor(i / 2)}
               onRandomize={randomizeHousehold}
-              onShowDetails={(household) => {
-                selectedHousehold = household;
-                showDataTable = true;
-              }}
             />
           </section>
         {/if}
       {/each}
     </div>
-    
-    <div class="chart-content">
-      <div class="chart-container">
-        <ScatterPlot
-          bind:this={chartComponent}
-          {data}
-          {scrollStates}
-          currentStateIndex={$currentStateIndex}
-          previousStateIndex={$previousStateIndex}
-          isTransitioning={$isTransitioning}
-          interpolationT={$currentInterpolationT}
-          {randomHouseholds}
-          onPointClick={selectHousehold}
-        />
-      </div>
-    </div>
+    <!-- Transparent area for chart interaction -->
+    <div class="chart-interaction-area"></div>
   </div>
   
-  {#if showDataTable && selectedHousehold}
-    <DataTable 
-      household={selectedHousehold}
-      onClose={() => showDataTable = false}
-    />
-  {/if}
-  
   {#if isLoading}
-    <LoadingOverlay message="Loading {DATASETS[selectedDataset].label} data..." />
+    <LoadingOverlay message="Loading {DATASETS[selectedDataset].label} baseline..." />
   {/if}
   
   {#if loadError}
@@ -354,8 +368,8 @@
     --text-secondary: #606F7B;
     --border: #E2E8F0;
     --hover: #F7FAFC;
-    --scatter-positive: #10B981;
-    --scatter-negative: #EF4444;
+    --scatter-positive: #2D9E99; /* Teal */
+    --scatter-negative: #616161; /* Dark Gray */
     --button-bg: #3B82F6;
     --button-hover: #2563EB;
     
@@ -365,10 +379,12 @@
     --lightest-blue: #ECF5FC;
     --dark-gray: #6B7280;
     --medium-dark-gray: #D1D5DB;
+    --policyengine-blue: #5B9BD5;
+    --grid-lines: #D1D5DB;
     
     /* Fonts */
     --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-mono: 'Menlo', 'Monaco', 'Courier New', monospace;
+    --font-mono: 'Roboto Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
   }
   
   :global(body) {
@@ -389,33 +405,64 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    position: relative;
   }
   
-  .content-wrapper {
-    flex: 1;
-    display: flex;
-    overflow: hidden;
-    position: relative;
-    margin-top: 60px; /* Account for fixed header */
+  /* Full-screen chart background */
+  .chart-background {
+    position: fixed; /* Fixed to viewport */
+    top: 60px; /* Account for header */
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+  }
+  
+  /* Scrollable overlay only on the left side */
+  .content-overlay {
+    position: absolute;
+    top: 60px; /* Account for header */
+    left: 0;
+    width: 40%;
+    max-width: 680px; /* 600px + 80px margin */
+    bottom: 0;
+    overflow-y: auto;
+    z-index: 2;
   }
   
   .text-content {
-    width: 40%;
-    overflow-y: auto;
     padding: 2rem 3rem 50vh 3rem;
-    background: var(--app-background);
-    border-right: 1px solid var(--border);
+    margin-left: 80px; /* Space for y-axis */
+  }
+  
+  /* Make text sections interactive */
+  .text-section {
+    pointer-events: auto;
+  }
+  
+  /* Transparent area for chart interaction - remove this as it's blocking */
+  .chart-interaction-area {
+    display: none;
   }
   
   .text-section {
     margin-bottom: 100vh;
-    opacity: 0.3;
-    transition: opacity 0.5s ease;
+    opacity: 0.4;
+    transition: all 0.5s ease;
     min-height: 200px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    pointer-events: auto;
   }
   
   .text-section:global(.active) {
     opacity: 1;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   }
   
   .text-section h2 {
@@ -432,23 +479,20 @@
     margin: 0 0 1rem 0;
   }
   
+  .section-content {
+    padding: 0;
+  }
+  
+  
   .individual-section {
     margin-bottom: 80vh;
+    background: rgba(255, 255, 255, 0.9);
   }
   
-  .chart-content {
-    flex: 1;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    overflow: hidden;
+  .individual-section:global(.active) {
+    background: rgba(255, 255, 255, 0.98);
   }
   
-  .chart-container {
-    width: 100%;
-    height: 100%;
-    position: relative;
-  }
   
   .error-overlay {
     position: fixed;
@@ -493,21 +537,14 @@
   
   /* Responsive design */
   @media (max-width: 768px) {
-    .content-wrapper {
-      flex-direction: column;
+    .content-overlay {
+      width: 100%;
+      max-width: none;
     }
     
     .text-content {
-      width: 100%;
-      height: 50vh;
       padding: 1rem 1.5rem 20vh 1.5rem;
-      border-right: none;
-      border-bottom: 1px solid var(--border);
-    }
-    
-    .chart-content {
-      height: 50vh;
-      position: relative;
+      margin-left: 40px; /* Less space needed on mobile */
     }
     
     .text-section {

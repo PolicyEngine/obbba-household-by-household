@@ -1,5 +1,5 @@
 <script>
-  import { datasets } from '../config/datasets.js';
+  import { DATASETS } from '../config/datasets.js';
   
   export let selectedDataset = 'tcja-expiration';
   export let loading = false;
@@ -8,14 +8,11 @@
 
 <header class="floating-header">
   <div class="header-content">
-    <div class="title-group">
-      <h1 class="app-title">Winners and Losers from the Trump Tax Cuts</h1>
-      <span class="subtitle">by PolicyEngine</span>
-    </div>
+    <h1 class="app-title">OBBBA Household Explorer</h1>
     <div class="baseline-selector-container">
       <span class="baseline-label">Baseline:</span>
       <div class="baseline-selector">
-        {#each Object.entries(datasets) as [key, dataset]}
+        {#each Object.entries(DATASETS) as [key, dataset]}
           <button 
             class="tab-button" 
             class:active={selectedDataset === key}
@@ -37,9 +34,10 @@
     top: 0;
     left: 0;
     right: 0;
-    background: var(--app-background);
-    border-bottom: 1px solid var(--border);
-    z-index: 100;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+    z-index: 1000;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   }
 
@@ -52,23 +50,12 @@
     margin: 0 auto;
   }
   
-  .title-group {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-  }
 
   .app-title {
     font-size: 24px;
     font-weight: 700;
     color: var(--text-primary);
     margin: 0;
-  }
-  
-  .subtitle {
-    font-size: 14px;
-    color: var(--text-secondary);
-    margin-left: 8px;
   }
 
   /* Baseline selector container */
@@ -93,7 +80,7 @@
   /* Tabbed radio button styles */
   .baseline-selector {
     display: flex;
-    background: var(--medium-dark-gray, #D1D5DB);
+    background: var(--grid-lines);
     border-radius: 8px;
     padding: 4px;
     gap: 4px;
@@ -119,7 +106,7 @@
 
   .tab-button.active {
     background: var(--app-background);
-    color: var(--primary-blue, #5B9BD5);
+    color: var(--text-primary);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
   }
 

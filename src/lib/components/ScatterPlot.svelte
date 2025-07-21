@@ -12,6 +12,7 @@
   export let isTransitioning = false;
   export let interpolationT = 0;
   export let randomHouseholds = {};
+  export let selectedHousehold = null;
   export let onPointClick = () => {};
   
   let canvasRef;
@@ -67,8 +68,21 @@
     // Interpolate between views
     const yMin = d3.interpolate(fromState.yDomain[0], targetView.yDomain[0])(interpolationT);
     const yMax = d3.interpolate(fromState.yDomain[1], targetView.yDomain[1])(interpolationT);
-    const xMin = d3.interpolate(fromState.xDomain[0], targetView.xDomain[0])(interpolationT);
-    const xMax = d3.interpolate(fromState.xDomain[1], targetView.xDomain[1])(interpolationT);
+    // Calculate symmetric x domain around 0
+    const xMinTarget = targetView.xDomain[0];
+    const xMaxTarget = targetView.xDomain[1];
+    const xAbsMax = Math.max(Math.abs(xMinTarget), Math.abs(xMaxTarget));
+    const xMinSymmetric = -xAbsMax;
+    const xMaxSymmetric = xAbsMax;
+    
+    const xMinFrom = fromState.xDomain[0];
+    const xMaxFrom = fromState.xDomain[1];
+    const xAbsMaxFrom = Math.max(Math.abs(xMinFrom), Math.abs(xMaxFrom));
+    const xMinFromSymmetric = -xAbsMaxFrom;
+    const xMaxFromSymmetric = xAbsMaxFrom;
+    
+    const xMin = d3.interpolate(xMinFromSymmetric, xMinSymmetric)(interpolationT);
+    const xMax = d3.interpolate(xMaxFromSymmetric, xMaxSymmetric)(interpolationT);
     
     // Clear canvas
     ctx.fillStyle = COLORS.WHITE;
@@ -206,11 +220,12 @@
       const isIndividualHighlighted = currentState?.viewType === 'individual' && 
                                      currentRandomHousehold && 
                                      d.id === currentRandomHousehold.id;
-      const isHighlighted = isGroupHighlighted || isIndividualHighlighted;
+      const isSelectedHousehold = selectedHousehold && d.id === selectedHousehold.id;
+      const isHighlighted = isGroupHighlighted || isIndividualHighlighted || isSelectedHousehold;
       
       // Set radius
       const weight = d['Household weight'] || d['Household Weight'] || 1;
-      let radius = isHighlighted ? (isIndividualHighlighted ? 6 : 4) : 2;
+      let radius = isHighlighted ? (isIndividualHighlighted || isSelectedHousehold ? 6 : 4) : 2;
       
       // Calculate opacity based on weight
       const logWeight = Math.log10(weight + 1);
@@ -281,9 +296,9 @@
     
     // Style axes
     xAxis.select('.domain').style('stroke', COLORS.BLACK).style('stroke-width', 1);
-    yAxis.select('.domain').style('stroke', COLORS.BLACK).style('stroke-width', 1);
+    yAxis.select('.domain').style('stroke', 'none'); // Hide y-axis line
     xAxis.selectAll('.tick line').style('stroke', COLORS.BLACK).style('stroke-width', 0.5);
-    yAxis.selectAll('.tick line').style('stroke', COLORS.BLACK).style('stroke-width', 0.5);
+    yAxis.selectAll('.tick line').style('stroke', COLORS.GRID_LINES).style('stroke-width', 0.5).style('opacity', 0.3);
     
     // Axis labels
     g.append('text')

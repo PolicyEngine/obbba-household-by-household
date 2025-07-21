@@ -1,11 +1,15 @@
 <script>
-  export let dataset = { label: 'data' };
+  export let message = 'Loading data...';
+  export let dataset = null; // For backwards compatibility
+  
+  // Use message if provided, otherwise fallback to dataset format
+  $: displayMessage = message || (dataset ? `Loading ${dataset.label} data...` : 'Loading data...');
 </script>
 
 <div class="loading-overlay">
   <div class="loading-content">
     <div class="spinner"></div>
-    <p>Loading {dataset.label} data...</p>
+    <p>{displayMessage}</p>
   </div>
 </div>
 
