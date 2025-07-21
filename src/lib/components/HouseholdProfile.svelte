@@ -61,10 +61,12 @@
   });
   
   let previousHouseholdId = null;
+  let previousDataset = null;
   
-  // Update animated values when household changes
-  $: if (household && household.id !== previousHouseholdId) {
+  // Update animated values when household changes or dataset changes
+  $: if (household && (household.id !== previousHouseholdId || selectedDataset !== previousDataset)) {
     previousHouseholdId = household.id;
+    previousDataset = selectedDataset;
     
     // If this is the first household, start from random values for dramatic effect
     if ($householdId === 0) {
