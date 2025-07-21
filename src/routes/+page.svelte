@@ -3,7 +3,7 @@
   import { page } from '$app/stores';
   import { DATASETS } from '$lib/config/datasets.js';
   import { scrollStates } from '$lib/config/views.js';
-  import { loadDatasets } from '$lib/data/dataLoader.js';
+  import { loadDatasets, loadDatasetsProgressive } from '$lib/data/dataLoader.js';
   import { 
     parseUrlParams, 
     updateUrlWithHousehold, 
@@ -32,6 +32,7 @@
   let isLoading = false;
   let loadError = null;
   let selectedDataset = 'tcja-expiration';
+  let secondDatasetLoading = false; // Track background loading
   
   // Random households for each section
   let randomHouseholds = {};
@@ -204,11 +205,18 @@
       // Save current scroll position
       const savedScrollTop = scrollContainer.scrollTop;
       
-      // Create a scroll handler that maintains position
+      // Use a debounced scroll handler to avoid vibration
+      let scrollTimeout;
       const maintainScroll = (e) => {
-        if (scrollContainer.scrollTop !== savedScrollTop) {
-          scrollContainer.scrollTop = savedScrollTop;
-        }
+        // Clear any pending position restore
+        clearTimeout(scrollTimeout);
+        
+        // Restore position after a tiny delay to avoid fighting with browser
+        scrollTimeout = setTimeout(() => {
+          if (scrollContainer && Math.abs(scrollContainer.scrollTop - savedScrollTop) > 1) {
+            scrollContainer.scrollTop = savedScrollTop;
+          }
+        }, 10);
       };
       
       // Add scroll listener to maintain position
@@ -216,6 +224,7 @@
       
       // Remove listener after animations complete
       setTimeout(() => {
+        clearTimeout(scrollTimeout);
         scrollContainer.removeEventListener('scroll', maintainScroll);
       }, 1000); // Match the longest animation duration
     }
@@ -420,19 +429,55 @@
       if (Object.keys(allDatasets).length === 0) {
       isLoading = true;
       try {
-        console.log('Loading all datasets...');
-        allDatasets = await loadDatasets();
-        console.log('Loaded datasets:', Object.keys(allDatasets), 'lengths:', {
+        console.log('Loading datasets progressively...');
+        
+        // Load datasets progressively
+        allDatasets = await loadDatasetsProgressive(
+          // First dataset loaded callback
+          (partialDatasets) => {
+            // Callback when first dataset is loaded
+            console.log('First dataset loaded:', Object.keys(partialDatasets));
+            allDatasets = { ...partialDatasets };
+            
+            // If current selection is TCJA expiration, show it immediately
+            if (selectedDataset === 'tcja-expiration' && partialDatasets['tcja-expiration']) {
+              data = partialDatasets['tcja-expiration'];
+              initializeRandomHouseholds();
+              isLoading = false; // Stop showing loading overlay
+              secondDatasetLoading = true; // But indicate background loading
+            }
+          },
+          // Second dataset loaded callback
+          (completeDatasets) => {
+            console.log('Second dataset loaded in background');
+            allDatasets = { ...completeDatasets };
+            secondDatasetLoading = false;
+            
+            // If user switched to extension dataset while it was loading, update now
+            if (selectedDataset === 'tcja-extension' && completeDatasets['tcja-extension']) {
+              handleDatasetChange('tcja-extension');
+            }
+          }
+        );
+        
+        // All datasets are now loaded
+        console.log('All datasets loaded:', Object.keys(allDatasets), 'lengths:', {
           'tcja-expiration': allDatasets['tcja-expiration']?.length,
           'tcja-extension': allDatasets['tcja-extension']?.length
         });
-        data = allDatasets[selectedDataset];
-        console.log('Selected dataset:', selectedDataset, 'length:', data.length);
-        initializeRandomHouseholds();
+        
+        // Update data if not already set
+        if (!data.length && allDatasets[selectedDataset]) {
+          data = allDatasets[selectedDataset];
+          initializeRandomHouseholds();
+        }
+        
+        secondDatasetLoading = false;
       } catch (error) {
         console.error('Error loading data:', error);
         loadError = error.message;
         isLoading = false;
+        secondDatasetLoading = false;
         return;
       }
       isLoading = false;
@@ -580,6 +625,8 @@
 <div class="app-container">
   <Header 
     {selectedDataset} 
+    {secondDatasetLoading}
+    {allDatasets}
     onDatasetChange={handleDatasetChange}
   />
   
