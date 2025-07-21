@@ -235,7 +235,7 @@
             e.stopPropagation();
             
             // Blur the button to prevent focus-related scrolling
-            e.currentTarget.blur();
+            e.currentTarget.blur({ preventScroll: true });
             
             // Call the randomize function
             onRandomize();
@@ -377,6 +377,11 @@
     border: 1px solid rgba(226, 232, 240, 0.7);
     /* Maintain stable layout */
     min-height: 350px;
+    /* Prevent being used as scroll anchor */
+    overflow-anchor: none;
+    /* Prevent layout shifts during animations */
+    contain: layout style;
+    will-change: contents;
   }
 
   .household-profile h3 {

@@ -199,13 +199,37 @@
   
   // Handle household selection
   function selectHousehold(household, shouldScroll = true) {
+    // If not scrolling, lock the scroll position
+    if (!shouldScroll && scrollContainer) {
+      // Save current scroll position
+      const savedScrollTop = scrollContainer.scrollTop;
+      
+      // Create a scroll handler that maintains position
+      const maintainScroll = (e) => {
+        if (scrollContainer.scrollTop !== savedScrollTop) {
+          scrollContainer.scrollTop = savedScrollTop;
+        }
+      };
+      
+      // Add scroll listener to maintain position
+      scrollContainer.addEventListener('scroll', maintainScroll, { passive: false });
+      
+      // Remove listener after animations complete
+      setTimeout(() => {
+        scrollContainer.removeEventListener('scroll', maintainScroll);
+      }, 1000); // Match the longest animation duration
+    }
+    
     selectedHousehold = household;
     
     // If we're in a group view, update the random household for that section
     const currentState = scrollStates[$currentStateIndex];
     if (currentState && currentState.viewType === 'group') {
-      // Update the random household for this section
-      randomHouseholds[currentState.id] = household;
+      // Update the random household for this section - use object spread
+      randomHouseholds = {
+        ...randomHouseholds,
+        [currentState.id]: household
+      };
       
       // Only scroll if explicitly requested (not when randomizing)
       if (shouldScroll) {
@@ -221,7 +245,10 @@
     } else if (currentState && currentState.viewType === 'individual') {
       // Update the random household for the base section
       const baseViewId = currentState.id.replace('-individual', '');
-      randomHouseholds[baseViewId] = household;
+      randomHouseholds = {
+        ...randomHouseholds,
+        [baseViewId]: household
+      };
       
       // Update household display
       const sectionIndex = Math.floor($currentStateIndex / 2);
@@ -253,59 +280,17 @@
     const state = scrollStates.find(s => s.id === baseViewId);
     
     if (state && data.length > 0) {
-      // Preserve scroll position and disable scroll anchoring
-      const currentScrollTop = scrollContainer?.scrollTop || 0;
-      const currentScrollLeft = scrollContainer?.scrollLeft || 0;
-      
-      // Temporarily disable scroll anchoring to prevent browser intervention
-      if (scrollContainer) {
-        scrollContainer.style.overflowAnchor = 'none';
-      }
-      
-      // Store the current active element to restore focus
-      const activeElement = document.activeElement;
-      
       const filteredData = data.filter(d => state.filter(d));
       const newHousehold = getRandomWeightedHousehold(filteredData);
       
       if (newHousehold) {
-        // Create new object to trigger Svelte reactivity properly
-        randomHouseholds = {
-          ...randomHouseholds,
-          [baseViewId]: newHousehold
-        };
-        selectHousehold(newHousehold, false); // Don't scroll when randomizing
+        // Don't scroll when randomizing
+        selectHousehold(newHousehold, false);
         
         // Re-trigger animations
         const sectionIndex = Math.floor($currentStateIndex / 2);
         createAnimatedNumber(`household-id-${sectionIndex}`, 
           selectedHousehold?.id || 0, newHousehold.id, d => Math.round(d), 600);
-        
-        // Immediately restore scroll position (synchronously)
-        if (scrollContainer) {
-          scrollContainer.scrollTop = currentScrollTop;
-          scrollContainer.scrollLeft = currentScrollLeft;
-        }
-        
-        // Use rAF to ensure position is maintained after all updates
-        requestAnimationFrame(() => {
-          if (scrollContainer) {
-            scrollContainer.scrollTop = currentScrollTop;
-            scrollContainer.scrollLeft = currentScrollLeft;
-            
-            // Re-enable scroll anchoring after a delay
-            setTimeout(() => {
-              if (scrollContainer) {
-                scrollContainer.style.overflowAnchor = '';
-              }
-            }, 100);
-          }
-          
-          // Restore focus if it was lost
-          if (activeElement && activeElement !== document.body) {
-            activeElement.focus({ preventScroll: true });
-          }
-        });
       }
     }
   }
@@ -610,7 +595,7 @@
       interpolationT={$currentInterpolationT}
       {randomHouseholds}
       {selectedHousehold}
-      onPointClick={selectHousehold}
+      onPointClick={(household) => selectHousehold(household, false)}
     />
   </div>
   
@@ -773,6 +758,9 @@
     z-index: 10; /* Higher than chart but much lower than header (9999) */
     pointer-events: none; /* Allow clicks through except on text sections */
     -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    /* Prevent automatic scroll adjustments */
+    overflow-anchor: none;
+    scroll-behavior: auto;
     
     /* Prevent scroll snap behavior */
     scroll-snap-type: none !important;
@@ -928,6 +916,8 @@
     /* Prevent layout shifts by maintaining minimum height */
     min-height: 400px;
     position: relative;
+    /* Prevent being used as scroll anchor */
+    overflow-anchor: none;
   }
   
   
