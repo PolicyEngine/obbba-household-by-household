@@ -1,9 +1,11 @@
-// Scroll state management
-export let currentStateIndex = 0;
-export let previousStateIndex = 0;
-export let isTransitioning = false;
-export let transitionT = 0;
-export let currentInterpolationT = 0;
+import { writable, get } from 'svelte/store';
+
+// Scroll state management stores
+export const currentStateIndex = writable(0);
+export const previousStateIndex = writable(0);
+export const isTransitioning = writable(false);
+export const transitionT = writable(0);
+export const currentInterpolationT = writable(0);
 
 // Track transition state
 let transitionStartTime = null;
@@ -24,7 +26,7 @@ export function createIntersectionObserver(textSections, onSectionChange) {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         const index = parseInt(entry.target.dataset.index);
-        if (!isNaN(index) && index !== currentStateIndex) {
+        if (!isNaN(index) && index !== get(currentStateIndex)) {
           startTransition(index, onSectionChange);
         }
       }
@@ -41,12 +43,12 @@ export function createIntersectionObserver(textSections, onSectionChange) {
 
 // Start transition to new state
 export function startTransition(targetIndex, onComplete) {
-  if (isTransitioning || targetIndex === currentStateIndex) return;
+  if (get(isTransitioning) || targetIndex === get(currentStateIndex)) return;
   
-  previousStateIndex = currentStateIndex;
-  currentStateIndex = targetIndex;
-  isTransitioning = true;
-  transitionT = 0;
+  previousStateIndex.set(get(currentStateIndex));
+  currentStateIndex.set(targetIndex);
+  isTransitioning.set(true);
+  transitionT.set(0);
   transitionStartTime = performance.now();
   
   // Cancel any existing animation
@@ -57,18 +59,19 @@ export function startTransition(targetIndex, onComplete) {
   // Animate transition
   function animate(currentTime) {
     const elapsed = currentTime - transitionStartTime;
-    transitionT = Math.min(elapsed / transitionDuration, 1);
+    const t = Math.min(elapsed / transitionDuration, 1);
+    transitionT.set(t);
     
     // Use easing function
-    currentInterpolationT = easeInOutCubic(transitionT);
+    currentInterpolationT.set(easeInOutCubic(t));
     
-    if (transitionT < 1) {
+    if (t < 1) {
       animationFrameId = requestAnimationFrame(animate);
     } else {
-      isTransitioning = false;
-      transitionT = 1;
-      currentInterpolationT = 1;
-      if (onComplete) onComplete(currentStateIndex);
+      isTransitioning.set(false);
+      transitionT.set(1);
+      currentInterpolationT.set(1);
+      if (onComplete) onComplete(get(currentStateIndex));
     }
   }
   
@@ -82,14 +85,14 @@ function easeInOutCubic(t) {
 
 // Check active section based on scroll position
 export function checkActiveSection(container, textSections) {
-  if (isTransitioning || !textSections.length) return;
+  if (get(isTransitioning) || !textSections.length) return;
   
   const scrollTop = container.scrollTop;
   const containerHeight = container.clientHeight;
   const scrollCenter = scrollTop + containerHeight / 2;
   
   // Find which section is at the center of the viewport
-  let newIndex = currentStateIndex;
+  let newIndex = get(currentStateIndex);
   let minDistance = Infinity;
   
   textSections.forEach((section, index) => {

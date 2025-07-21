@@ -13,3 +13,6 @@ export const datasets = {
 };
 
 export const defaultDataset = 'tcja-expiration';
+
+// Export DATASETS as an alias for compatibility
+export const DATASETS = datasets;
