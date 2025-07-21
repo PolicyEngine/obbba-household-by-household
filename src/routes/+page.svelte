@@ -42,6 +42,9 @@
   let scrollContainer = null;
   let chartComponent = null;
   
+  // Track if we need to scroll to a household on load
+  let pendingScrollToHousehold = null;
+  
   // Draggable state
   let draggingSectionIndex = null;
   let dragOffset = { x: 0, y: 0 };
@@ -135,6 +138,24 @@
   // Re-render chart whenever transition values change
   $: if (chartComponent && ($isTransitioning || $currentInterpolationT)) {
     chartComponent.renderVisualization();
+  }
+  
+  // Handle pending scroll to household when sections are ready
+  $: if (pendingScrollToHousehold && textSections.length > 0 && textSections[pendingScrollToHousehold.targetIndex]) {
+    const { household, targetIndex } = pendingScrollToHousehold;
+    
+    // Ensure the household is selected
+    selectedHousehold = household;
+    
+    // Scroll to the section
+    setTimeout(() => {
+      if (textSections[targetIndex]) {
+        textSections[targetIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 200);
+    
+    // Clear the pending scroll
+    pendingScrollToHousehold = null;
   }
   
   // Handle section changes
@@ -299,6 +320,7 @@
   // Handle URL parameters
   async function handleUrlParams() {
     const { householdId, baseline } = parseUrlParams();
+    console.log('handleUrlParams called with:', { householdId, baseline });
     
     // Update baseline if provided
     if (baseline && baseline !== selectedDataset) {
@@ -332,12 +354,15 @@
     
     // Handle household selection
     if (householdId && data.length > 0) {
+      console.log('Looking for household:', householdId, 'in', data.length, 'households');
       const household = data.find(d => String(d.id) === householdId);
       if (household) {
+        console.log('Found household:', household);
         selectedHousehold = household;
         
         // Find appropriate section
         const targetIndex = findSectionForHousehold(household, scrollStates);
+        console.log('Target index:', targetIndex, 'textSections length:', textSections.length);
         
         // Update the random household for the appropriate section
         const baseViewId = scrollStates[targetIndex]?.id?.replace('-individual', '') || scrollStates[targetIndex]?.id;
@@ -351,6 +376,9 @@
           setTimeout(() => {
             textSections[targetIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
           }, 100);
+        } else {
+          // If sections aren't ready yet, store for later
+          pendingScrollToHousehold = { household, targetIndex };
         }
       }
     }
@@ -359,6 +387,14 @@
   // Lifecycle
   onMount(async () => {
     console.log('Component mounted, starting initialization...');
+    
+    // Check if we're in an iframe and get URL params from parent if needed
+    const isInIframe = window.self !== window.top;
+    if (isInIframe) {
+      // Check if parent passed parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      console.log('In iframe, URL params:', urlParams.toString());
+    }
     
     // Handle initial URL parameters
     await handleUrlParams();
@@ -609,8 +645,9 @@
     bottom: 0;
     overflow-y: auto;
     overflow-x: hidden; /* Prevent horizontal scroll */
-    z-index: 10; /* Higher than chart but lower than header */
+    z-index: 10; /* Higher than chart but much lower than header (9999) */
     pointer-events: none; /* Allow clicks through except on text sections */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
     
     /* Hide scrollbar while keeping functionality */
     scrollbar-width: none; /* Firefox */
@@ -805,23 +842,72 @@
     .content-overlay {
       width: 100%;
       max-width: none;
+      top: 90px; /* Account for multi-row header */
     }
     
     .text-content {
-      padding: 1rem 1.5rem 20vh 1.5rem;
-      margin-left: 60px; /* Less space needed on mobile */
+      padding: 1rem 1rem 30vh 1rem;
+      margin-left: 0; /* Full width on mobile */
+      max-width: 100%;
     }
     
     .text-section {
+      margin-bottom: 60vh;
+      padding: 1rem;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    
+    .text-section h2 {
+      font-size: 1.25rem;
+      line-height: 1.3;
+      margin-bottom: 0.75rem;
+    }
+    
+    .text-section p {
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+    
+    .drag-handle {
+      display: none; /* Hide drag handle on mobile */
+    }
+    
+    .integrated-household-profile {
+      margin-top: 1rem;
+      padding-top: 1rem;
+    }
+    
+    .scroll-indicator {
+      font-size: 12px;
+      margin-top: 1rem;
+      padding-top: 0.75rem;
+    }
+    
+    .chart-background {
+      top: 90px; /* Match multi-row header height */
+    }
+  }
+  
+  /* Small mobile devices */
+  @media (max-width: 480px) {
+    .text-content {
+      padding: 0.75rem 0.75rem 20vh 0.75rem;
+    }
+    
+    .text-section {
+      padding: 0.875rem;
       margin-bottom: 50vh;
     }
     
     .text-section h2 {
-      font-size: 1.5rem;
+      font-size: 1.125rem;
     }
     
     .text-section p {
-      font-size: 1rem;
+      font-size: 0.8125rem;
     }
   }
 </style>

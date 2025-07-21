@@ -20,15 +20,33 @@
   let renderedPoints = [];
   
   // Chart dimensions
-  const margin = { top: 60, right: 100, bottom: 100, left: 120 };
+  let margin = { top: 60, right: 100, bottom: 100, left: 120 };
   let width = 900;
   let height = 600;
   
-  // Mouse interaction
+  // Responsive margins
+  function updateMargins() {
+    const viewportWidth = window.innerWidth;
+    if (viewportWidth <= 480) {
+      margin = { top: 40, right: 15, bottom: 50, left: 50 };
+    } else if (viewportWidth <= 768) {
+      margin = { top: 50, right: 30, bottom: 70, left: 65 };
+    } else {
+      margin = { top: 60, right: 100, bottom: 100, left: 120 };
+    }
+  }
+  
+  // Mouse and touch interaction
   function handleCanvasClick(event) {
     const rect = canvasRef.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    // Handle both mouse and touch events
+    const clientX = event.clientX || (event.touches && event.touches[0]?.clientX);
+    const clientY = event.clientY || (event.touches && event.touches[0]?.clientY);
+    
+    if (!clientX || !clientY) return;
+    
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
     
     // Find closest point
     let closestPoint = null;
@@ -316,20 +334,35 @@
     
     const g = svg.append('g');
     
+    // Responsive settings
+    const isMobile = window.innerWidth <= 768;
+    const xAxisFontSize = isMobile ? '10px' : '14px';
+    const yAxisFontSize = isMobile ? '10px' : '14px';
+    
     // X-axis
     const xAxis = g.append('g')
       .attr('transform', `translate(0,${height - margin.bottom})`)
-      .call(d3.axisBottom(xScale).tickFormat(d => `${d > 0 ? '+' : ''}${d}%`))
+      .call(d3.axisBottom(xScale)
+        .ticks(isMobile ? 5 : 10)
+        .tickFormat(d => `${d > 0 ? '+' : ''}${d}%`))
       .style('font-family', getFontFamily('sans'))
-      .style('font-size', '14px')
+      .style('font-size', xAxisFontSize)
       .style('color', COLORS.DARKEST_BLUE);
     
     // Y-axis
     const yAxis = g.append('g')
       .attr('transform', `translate(${margin.left},0)`)
-      .call(d3.axisLeft(yScale).ticks(6).tickFormat(d => d3.format('$,')(d)))
+      .call(d3.axisLeft(yScale).ticks(isMobile ? 4 : 6).tickFormat(d => {
+        // Shorter format on mobile
+        if (isMobile) {
+          if (d >= 1000000) return d3.format('$,.0s')(d).replace('M', 'M');
+          if (d >= 1000) return d3.format('$,.0s')(d).replace('k', 'K');
+          return d3.format('$,')(d);
+        }
+        return d3.format('$,')(d);
+      }))
       .style('font-family', getFontFamily('sans'))
-      .style('font-size', '14px')
+      .style('font-size', yAxisFontSize)
       .style('color', COLORS.DARKEST_BLUE);
     
     // Style axes
@@ -341,24 +374,24 @@
     // Axis labels
     g.append('text')
       .attr('x', width / 2)
-      .attr('y', height - 30)
+      .attr('y', height - (isMobile ? 5 : 30))
       .attr('text-anchor', 'middle')
       .style('font-family', getFontFamily('sans'))
-      .style('font-size', '16px')
+      .style('font-size', isMobile ? '12px' : '16px')
       .style('font-weight', '400')
       .style('fill', COLORS.DARK_GRAY)
-      .text('Change in net income →');
+      .text(isMobile ? 'Change in income →' : 'Change in net income →');
     
     g.append('text')
       .attr('transform', 'rotate(-90)')
       .attr('x', -height / 2)
-      .attr('y', 25)
+      .attr('y', isMobile ? 15 : 25)
       .attr('text-anchor', 'middle')
       .style('font-family', getFontFamily('sans'))
-      .style('font-size', '16px')
+      .style('font-size', isMobile ? '12px' : '16px')
       .style('font-weight', '400')
       .style('fill', COLORS.DARK_GRAY)
-      .text('Annual household market income →');
+      .text(isMobile ? 'Annual income →' : 'Annual household market income →');
   }
   
   // Handle resize
@@ -367,6 +400,7 @@
       const container = canvasRef.parentElement;
       width = container.clientWidth;
       height = container.clientHeight;
+      updateMargins(); // Update margins based on viewport
       canvasRef.width = width;
       canvasRef.height = height;
       svgRef.setAttribute('width', width);
@@ -395,7 +429,8 @@
     bind:this={canvasRef}
     class="main-canvas"
     on:click={handleCanvasClick}
-  />
+    on:touchstart={handleCanvasClick}
+  ></canvas>
   <svg
     bind:this={svgRef}
     class="overlay-svg"

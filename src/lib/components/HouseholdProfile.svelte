@@ -518,4 +518,103 @@
   .value.impact {
     font-weight: 700;
   }
+  
+  /* Mobile responsive styles */
+  @media (max-width: 768px) {
+    .household-profile {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 6px;
+    }
+    
+    .household-profile h3 {
+      font-size: 1rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    .header-buttons {
+      gap: 0.25rem;
+    }
+    
+    .action-button {
+      font-size: 14px;
+      padding: 2px;
+    }
+    
+    .detail-item {
+      padding: 0.375rem 0;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+    }
+    
+    .detail-item .label {
+      font-size: 11px;
+      flex: 1 1 auto;
+      min-width: 120px;
+    }
+    
+    .detail-item .value {
+      font-size: 12px;
+      text-align: right;
+      flex: 0 0 auto;
+    }
+    
+    .impact-section h4 {
+      font-size: 0.95rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    .expand-button {
+      font-size: 0.75rem;
+      padding: 0.375rem 0;
+      margin-top: 0.375rem;
+    }
+    
+    .expand-icon {
+      width: 14px;
+      height: 14px;
+      font-size: 12px;
+    }
+    
+    .household-section,
+    .impact-section {
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+    }
+    
+    .expandable-details {
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+    }
+    
+    .no-provisions {
+      font-size: 12px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .household-profile {
+      padding: 0.875rem;
+    }
+    
+    .household-profile h3 {
+      font-size: 0.875rem;
+    }
+    
+    .detail-item .label {
+      font-size: 10px;
+    }
+    
+    .detail-item .value {
+      font-size: 11px;
+    }
+    
+    .impact-section h4 {
+      font-size: 0.875rem;
+    }
+    
+    .expand-button {
+      font-size: 0.7rem;
+    }
+  }
 </style>

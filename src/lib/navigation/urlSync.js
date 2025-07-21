@@ -48,7 +48,8 @@ export function parseUrlParams() {
 export function findSectionForHousehold(household, scrollStates) {
   let targetSectionIndex = 0;
   
-  const income = household['Market Income'] || household['Gross Income'];
+  const income = household['Market Income'] || household['Gross Income'] || 0;
+  console.log('Finding section for household with income:', income);
   
   // Determine which income bracket
   if (income < 50000) {
@@ -61,10 +62,10 @@ export function findSectionForHousehold(household, scrollStates) {
     targetSectionIndex = scrollStates.findIndex(s => s.id === 'highest-income');
   }
   
-  // If we found a group view, advance to individual view
-  if (targetSectionIndex >= 0 && scrollStates[targetSectionIndex + 1]?.viewType === 'individual') {
-    targetSectionIndex++;
-  }
+  console.log('Target section index:', targetSectionIndex, 'for section:', scrollStates[targetSectionIndex]?.id);
+  
+  // Since we removed individual views, we don't need to advance
+  // Just return the group view index
   
   return Math.max(0, targetSectionIndex);
 }

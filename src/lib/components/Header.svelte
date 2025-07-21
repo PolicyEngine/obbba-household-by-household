@@ -1,12 +1,45 @@
 <script>
+  import { onMount } from 'svelte';
   import { DATASETS } from '../config/datasets.js';
   
   export let selectedDataset = 'tcja-expiration';
   export let loading = false;
   export let onDatasetChange = () => {};
+  
+  let headerEl;
+  let isInIframe = false;
+  
+  onMount(() => {
+    // Check if we're in an iframe
+    isInIframe = window.self !== window.top;
+    
+    // If in iframe, ensure header stays visible on scroll
+    if (isInIframe && headerEl) {
+      // Force the header to stay at the top of the viewport
+      const ensureHeaderVisible = () => {
+        if (headerEl) {
+          headerEl.style.position = 'fixed';
+          headerEl.style.top = '0';
+          headerEl.style.transform = 'translateY(0)';
+        }
+      };
+      
+      // Monitor for any changes that might hide the header
+      window.addEventListener('scroll', ensureHeaderVisible, true);
+      window.addEventListener('resize', ensureHeaderVisible);
+      
+      // Initial call
+      ensureHeaderVisible();
+      
+      return () => {
+        window.removeEventListener('scroll', ensureHeaderVisible, true);
+        window.removeEventListener('resize', ensureHeaderVisible);
+      };
+    }
+  });
 </script>
 
-<header class="floating-header">
+<header class="floating-header" bind:this={headerEl}>
   <div class="header-content">
     <h1 class="app-title">OBBBA Household Explorer</h1>
     <div class="baseline-selector-container">
@@ -34,11 +67,14 @@
     top: 0;
     left: 0;
     right: 0;
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
-    z-index: 1000;
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+    z-index: 9999; /* Very high z-index to ensure it stays on top */
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transform: translateZ(0); /* Force GPU acceleration for better performance */
+    will-change: transform; /* Optimize for animations */
   }
 
   .header-content {
@@ -118,33 +154,66 @@
 
   /* Mobile responsive header */
   @media (max-width: 768px) {
+    header {
+      height: auto; /* Allow height to grow for stacked layout */
+    }
+    
     .header-content {
-      padding: 12px 16px 12px calc(60px + 24px); /* Match mobile text content margin + padding */
-      flex-direction: column;
-      gap: 12px;
+      padding: 12px;
+      flex-direction: column; /* Stack vertically */
+      align-items: stretch;
+      gap: 10px;
     }
 
     .app-title {
-      font-size: 20px;
+      font-size: 18px;
+      text-align: center;
+      margin: 0;
     }
 
     .baseline-selector-container {
       width: 100%;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 4px;
     }
 
     .baseline-label {
-      font-size: 13px;
+      font-size: 11px;
+      text-align: center;
+      color: var(--text-secondary);
+      margin: 0;
     }
 
     .baseline-selector {
-      flex: 1;
+      flex: 0 1 auto;
       justify-content: center;
+      border-radius: 20px;
+      padding: 2px;
+      margin: 0 auto; /* Center the selector */
+      max-width: 280px; /* Limit width */
+    }
+
+    .tab-button {
+      font-size: 11px;
+      padding: 4px 8px;
+      min-width: 0; /* Allow buttons to shrink */
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .app-title {
+      font-size: 14px;
+    }
+
+    .baseline-selector {
+      max-width: 240px; /* Even narrower on small screens */
     }
 
     .tab-button {
       flex: 1;
-      font-size: 13px;
-      padding: 6px 12px;
+      font-size: 10px;
+      padding: 4px 6px;
     }
   }
 </style>
