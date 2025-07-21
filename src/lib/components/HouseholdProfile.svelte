@@ -282,7 +282,7 @@
       {#if showHouseholdDetails}
         <div class="expandable-details">
           <div class="detail-item">
-            <span class="label">Filing status:</span>
+            <span class="label">Marital status:</span>
             <span class="value">{household['Is Married'] ? 'Married' : 'Single'}</span>
           </div>
           {#if household['Baseline Net Income']}

@@ -228,7 +228,7 @@
       // Update the random household for this section - use object spread
       randomHouseholds = {
         ...randomHouseholds,
-        [currentState.id]: household
+        [currentState.id]: { ...household }
       };
       
       // Only scroll if explicitly requested (not when randomizing)
@@ -247,7 +247,7 @@
       const baseViewId = currentState.id.replace('-individual', '');
       randomHouseholds = {
         ...randomHouseholds,
-        [baseViewId]: household
+        [baseViewId]: { ...household }
       };
       
       // Update household display
@@ -285,7 +285,7 @@
       
       if (newHousehold) {
         // Don't scroll when randomizing
-        selectHousehold(newHousehold, false);
+        selectHousehold({ ...newHousehold }, false);
         
         // Re-trigger animations
         const sectionIndex = Math.floor($currentStateIndex / 2);
