@@ -48,10 +48,35 @@
   // Flag to prevent URL subscription from triggering during internal updates
   let isInternalUpdate = false;
   
+  // Scroll lock mechanism
+  let scrollLocked = false;
+  let lockedScrollPosition = 0;
+  
   // Draggable state
   let draggingSectionIndex = null;
   let dragOffset = { x: 0, y: 0 };
   let sectionPositions = {};
+  
+  // Lock scrolling at current position
+  function lockScroll() {
+    if (scrollContainer) {
+      scrollLocked = true;
+      lockedScrollPosition = scrollContainer.scrollTop;
+      // Force position
+      scrollContainer.style.overflow = 'hidden';
+      scrollContainer.scrollTop = lockedScrollPosition;
+    }
+  }
+  
+  // Unlock scrolling
+  function unlockScroll() {
+    if (scrollContainer && scrollLocked) {
+      scrollLocked = false;
+      scrollContainer.style.overflow = '';
+      // Ensure we're still at the locked position
+      scrollContainer.scrollTop = lockedScrollPosition;
+    }
+  }
   
   // Calculate statistics for a section
   function calculateSectionStats(sectionData, includeMedian = false, sectionId = null) {
@@ -146,6 +171,11 @@
     chartComponent.renderVisualization();
   }
   
+  // Enforce scroll lock when active
+  $: if (scrollLocked && scrollContainer && scrollContainer.scrollTop !== lockedScrollPosition) {
+    scrollContainer.scrollTop = lockedScrollPosition;
+  }
+  
   // Handle pending scroll to household when sections are ready
   $: if (pendingScrollToHousehold && textSections.length > 0 && textSections[pendingScrollToHousehold.targetIndex]) {
     const { household, targetIndex } = pendingScrollToHousehold;
@@ -199,13 +229,21 @@
   
   // Handle household selection
   function selectHousehold(household, shouldScroll = true) {
+    // Lock scroll if we shouldn't scroll
+    if (!shouldScroll) {
+      lockScroll();
+    }
+    
     selectedHousehold = household;
     
     // If we're in a group view, update the random household for that section
     const currentState = scrollStates[$currentStateIndex];
     if (currentState && currentState.viewType === 'group') {
-      // Update the random household for this section
-      randomHouseholds[currentState.id] = household;
+      // Update the random household for this section - use object spread
+      randomHouseholds = {
+        ...randomHouseholds,
+        [currentState.id]: household
+      };
       
       // Only scroll if explicitly requested (not when randomizing)
       if (shouldScroll) {
@@ -221,7 +259,10 @@
     } else if (currentState && currentState.viewType === 'individual') {
       // Update the random household for the base section
       const baseViewId = currentState.id.replace('-individual', '');
-      randomHouseholds[baseViewId] = household;
+      randomHouseholds = {
+        ...randomHouseholds,
+        [baseViewId]: household
+      };
       
       // Update household display
       const sectionIndex = Math.floor($currentStateIndex / 2);
@@ -245,6 +286,13 @@
     if (chartComponent?.renderVisualization) {
       chartComponent.renderVisualization();
     }
+    
+    // Unlock scroll after a delay if we locked it
+    if (!shouldScroll) {
+      setTimeout(() => {
+        unlockScroll();
+      }, 100);
+    }
   }
   
   // Randomize household for current section
@@ -253,17 +301,8 @@
     const state = scrollStates.find(s => s.id === baseViewId);
     
     if (state && data.length > 0) {
-      // Preserve scroll position and disable scroll anchoring
-      const currentScrollTop = scrollContainer?.scrollTop || 0;
-      const currentScrollLeft = scrollContainer?.scrollLeft || 0;
-      
-      // Temporarily disable scroll anchoring to prevent browser intervention
-      if (scrollContainer) {
-        scrollContainer.style.overflowAnchor = 'none';
-      }
-      
-      // Store the current active element to restore focus
-      const activeElement = document.activeElement;
+      // Lock scroll immediately
+      lockScroll();
       
       const filteredData = data.filter(d => state.filter(d));
       const newHousehold = getRandomWeightedHousehold(filteredData);
@@ -280,33 +319,12 @@
         const sectionIndex = Math.floor($currentStateIndex / 2);
         createAnimatedNumber(`household-id-${sectionIndex}`, 
           selectedHousehold?.id || 0, newHousehold.id, d => Math.round(d), 600);
-        
-        // Immediately restore scroll position (synchronously)
-        if (scrollContainer) {
-          scrollContainer.scrollTop = currentScrollTop;
-          scrollContainer.scrollLeft = currentScrollLeft;
-        }
-        
-        // Use rAF to ensure position is maintained after all updates
-        requestAnimationFrame(() => {
-          if (scrollContainer) {
-            scrollContainer.scrollTop = currentScrollTop;
-            scrollContainer.scrollLeft = currentScrollLeft;
-            
-            // Re-enable scroll anchoring after a delay
-            setTimeout(() => {
-              if (scrollContainer) {
-                scrollContainer.style.overflowAnchor = '';
-              }
-            }, 100);
-          }
-          
-          // Restore focus if it was lost
-          if (activeElement && activeElement !== document.body) {
-            activeElement.focus({ preventScroll: true });
-          }
-        });
       }
+      
+      // Unlock after animations complete
+      setTimeout(() => {
+        unlockScroll();
+      }, 200);
     }
   }
   
@@ -552,6 +570,13 @@
     
     // Add wheel event listener to enable scrolling from anywhere
     function handleWheel(event) {
+      // Block scrolling if locked
+      if (scrollLocked) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      
       // Always scroll the container when wheel event happens
       if (scrollContainer) {
         scrollContainer.scrollTop += event.deltaY;
@@ -610,7 +635,7 @@
       interpolationT={$currentInterpolationT}
       {randomHouseholds}
       {selectedHousehold}
-      onPointClick={selectHousehold}
+      onPointClick={(household) => selectHousehold(household, false)}
     />
   </div>
   
