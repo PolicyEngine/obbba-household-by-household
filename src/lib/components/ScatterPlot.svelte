@@ -397,7 +397,7 @@
       .style('font-size', isMobile ? '12px' : '16px')
       .style('font-weight', '400')
       .style('fill', COLORS.DARK_GRAY)
-      .text(isMobile ? 'Change in income →' : 'Change in net income →');
+      .text(isMobile ? 'Change in income (2026) →' : 'Change in net income (2026) →');
     
     g.append('text')
       .attr('transform', 'rotate(-90)')
