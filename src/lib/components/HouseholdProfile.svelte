@@ -229,7 +229,17 @@
       <div class="header-buttons">
         <button 
           class="action-button random-button" 
-          on:click={onRandomize}
+          on:click|preventDefault|stopPropagation={(e) => {
+            // Prevent any default scroll behavior
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Blur the button to prevent focus-related scrolling
+            e.currentTarget.blur();
+            
+            // Call the randomize function
+            onRandomize();
+          }}
           title="Pick a new random household"
         >
           🔀

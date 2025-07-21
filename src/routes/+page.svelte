@@ -54,7 +54,7 @@
   let sectionPositions = {};
   
   // Calculate statistics for a section
-  function calculateSectionStats(sectionData, includeMedian = false) {
+  function calculateSectionStats(sectionData, includeMedian = false, sectionId = null) {
     if (!sectionData || sectionData.length === 0) return null;
     
     let totalWeight = 0;
@@ -86,9 +86,12 @@
     const negativePercent = totalWeight > 0 ? Math.round((negativeWeight / totalWeight) * 100) : 0;
     const affectedPercent = totalWeight > 0 ? Math.round((affectedWeight / totalWeight) * 100) : 0;
     
-    // Format total households in millions with one decimal place
+    // Format total households in millions
     const totalMillions = totalWeight / 1000000;
-    const totalFormatted = totalMillions.toFixed(1);
+    // Show one decimal place only for highest income group, round others to nearest million
+    const totalFormatted = sectionId === 'highest-income' 
+      ? totalMillions.toFixed(1) 
+      : Math.round(totalMillions).toString();
     
     const stats = {
       total: totalFormatted,
@@ -250,13 +253,17 @@
     const state = scrollStates.find(s => s.id === baseViewId);
     
     if (state && data.length > 0) {
-      // Preserve scroll position before any DOM changes
+      // Preserve scroll position and disable scroll anchoring
       const currentScrollTop = scrollContainer?.scrollTop || 0;
+      const currentScrollLeft = scrollContainer?.scrollLeft || 0;
       
-      // Find the household profile element and get its position
-      const householdProfileElement = document.querySelector('.integrated-household-profile');
-      const profileOffsetTop = householdProfileElement ? 
-        householdProfileElement.getBoundingClientRect().top + window.pageYOffset : null;
+      // Temporarily disable scroll anchoring to prevent browser intervention
+      if (scrollContainer) {
+        scrollContainer.style.overflowAnchor = 'none';
+      }
+      
+      // Store the current active element to restore focus
+      const activeElement = document.activeElement;
       
       const filteredData = data.filter(d => state.filter(d));
       const newHousehold = getRandomWeightedHousehold(filteredData);
@@ -274,22 +281,30 @@
         createAnimatedNumber(`household-id-${sectionIndex}`, 
           selectedHousehold?.id || 0, newHousehold.id, d => Math.round(d), 600);
         
-        // Use multiple rAF to ensure DOM has fully updated
+        // Immediately restore scroll position (synchronously)
+        if (scrollContainer) {
+          scrollContainer.scrollTop = currentScrollTop;
+          scrollContainer.scrollLeft = currentScrollLeft;
+        }
+        
+        // Use rAF to ensure position is maintained after all updates
         requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            // If we had a profile element position, maintain it
-            if (profileOffsetTop !== null && householdProfileElement) {
-              const newOffsetTop = householdProfileElement.getBoundingClientRect().top + window.pageYOffset;
-              const scrollAdjustment = newOffsetTop - profileOffsetTop;
-              
-              if (Math.abs(scrollAdjustment) > 2) {
-                scrollContainer.scrollTop = currentScrollTop + scrollAdjustment;
+          if (scrollContainer) {
+            scrollContainer.scrollTop = currentScrollTop;
+            scrollContainer.scrollLeft = currentScrollLeft;
+            
+            // Re-enable scroll anchoring after a delay
+            setTimeout(() => {
+              if (scrollContainer) {
+                scrollContainer.style.overflowAnchor = '';
               }
-            } else if (scrollContainer && Math.abs(scrollContainer.scrollTop - currentScrollTop) > 5) {
-              // Fallback to simple scroll restoration
-              scrollContainer.scrollTop = currentScrollTop;
-            }
-          });
+            }, 100);
+          }
+          
+          // Restore focus if it was lost
+          if (activeElement && activeElement !== document.body) {
+            activeElement.focus({ preventScroll: true });
+          }
         });
       }
     }
@@ -620,7 +635,7 @@
               <!-- Dynamic content for income sections -->
               {#if state.id !== 'intro' && data.length > 0}
                 {@const sectionData = data.filter(d => state.filter(d))}
-                {@const stats = calculateSectionStats(sectionData)}
+                {@const stats = calculateSectionStats(sectionData, false, state.id)}
                 {#if stats}
                   {#if state.id === 'lower-income'}
                     <p>Of the {stats.total} million households with market income below $50,000, OBBBA will increase the net income of {stats.positivePercent}% and reduce the net income of {stats.negativePercent}%. Let's take a look at one of them at random. You can also click on a dot to view information about a household.</p>
@@ -631,7 +646,7 @@
                   {:else if state.id === 'highest-income'}
                     <p>Of the {stats.total} million households with market income over $1 million, OBBBA will increase the net income of {stats.positivePercent}% and reduce the net income of {stats.negativePercent}%. Let's take a look at one of them at random. You can also click on a dot to view information about a household.</p>
                   {:else if state.id === 'all-households'}
-                    {@const allStats = calculateSectionStats(sectionData, true)}
+                    {@const allStats = calculateSectionStats(sectionData, true, state.id)}
                     <p>{@html state.description.replace('{totalPercentage}', allStats.affectedPercent).replace('{medianImpact}', allStats.medianChange)}</p>
                   {/if}
                 {/if}
@@ -759,6 +774,10 @@
     pointer-events: none; /* Allow clicks through except on text sections */
     -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
     
+    /* Prevent scroll snap behavior */
+    scroll-snap-type: none !important;
+    scroll-behavior: auto !important;
+    
     /* Hide scrollbar while keeping functionality */
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE and Edge */
@@ -841,6 +860,9 @@
     cursor: move;
     user-select: none;
     z-index: 15;
+    /* Prevent any scroll snap behavior */
+    scroll-snap-align: none !important;
+    scroll-margin: 0 !important;
   }
   
   .text-section:not(.active) {
@@ -956,6 +978,9 @@
       width: 100%;
       max-width: none;
       top: 90px; /* Account for multi-row header */
+      /* Extra prevention of scroll snap on mobile */
+      -webkit-overflow-scrolling: auto !important;
+      scroll-snap-type: none !important;
     }
     
     .text-content {
