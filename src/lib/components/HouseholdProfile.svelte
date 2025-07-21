@@ -377,6 +377,9 @@
     border: 1px solid rgba(226, 232, 240, 0.7);
     /* Maintain stable layout */
     min-height: 350px;
+    /* Prevent layout shifts during content changes */
+    contain: layout;
+    will-change: contents;
   }
 
   .household-profile h3 {

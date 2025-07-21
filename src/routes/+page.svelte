@@ -199,13 +199,19 @@
   
   // Handle household selection
   function selectHousehold(household, shouldScroll = true) {
+    // Capture scroll position before any changes
+    const scrollBefore = scrollContainer?.scrollTop || 0;
+    
     selectedHousehold = household;
     
     // If we're in a group view, update the random household for that section
     const currentState = scrollStates[$currentStateIndex];
     if (currentState && currentState.viewType === 'group') {
-      // Update the random household for this section
-      randomHouseholds[currentState.id] = household;
+      // Update the random household for this section - use object spread for clean reactivity
+      randomHouseholds = {
+        ...randomHouseholds,
+        [currentState.id]: household
+      };
       
       // Only scroll if explicitly requested (not when randomizing)
       if (shouldScroll) {
@@ -221,7 +227,10 @@
     } else if (currentState && currentState.viewType === 'individual') {
       // Update the random household for the base section
       const baseViewId = currentState.id.replace('-individual', '');
-      randomHouseholds[baseViewId] = household;
+      randomHouseholds = {
+        ...randomHouseholds,
+        [baseViewId]: household
+      };
       
       // Update household display
       const sectionIndex = Math.floor($currentStateIndex / 2);
@@ -244,6 +253,19 @@
     // Force chart re-render
     if (chartComponent?.renderVisualization) {
       chartComponent.renderVisualization();
+    }
+    
+    // If we shouldn't scroll, restore the original position
+    if (!shouldScroll && scrollContainer) {
+      // Immediate restoration
+      scrollContainer.scrollTop = scrollBefore;
+      
+      // Also restore after next frame to catch any delayed layout changes
+      requestAnimationFrame(() => {
+        if (scrollContainer && scrollContainer.scrollTop !== scrollBefore) {
+          scrollContainer.scrollTop = scrollBefore;
+        }
+      });
     }
   }
   
@@ -610,7 +632,7 @@
       interpolationT={$currentInterpolationT}
       {randomHouseholds}
       {selectedHousehold}
-      onPointClick={selectHousehold}
+      onPointClick={(household) => selectHousehold(household, false)}
     />
   </div>
   
@@ -928,6 +950,10 @@
     /* Prevent layout shifts by maintaining minimum height */
     min-height: 400px;
     position: relative;
+    /* CSS containment to prevent layout shifts */
+    contain: layout style;
+    /* Prevent any scroll anchoring */
+    overflow-anchor: none;
   }
   
   
