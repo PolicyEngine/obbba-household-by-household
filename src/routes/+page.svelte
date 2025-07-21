@@ -757,6 +757,9 @@
     z-index: 10; /* Higher than chart but much lower than header (9999) */
     pointer-events: none; /* Allow clicks through except on text sections */
     -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    /* Prevent automatic scroll adjustments */
+    overflow-anchor: none;
+    scroll-behavior: auto;
     
     /* Prevent scroll snap behavior */
     scroll-snap-type: none !important;
@@ -912,6 +915,8 @@
     /* Prevent layout shifts by maintaining minimum height */
     min-height: 400px;
     position: relative;
+    /* Prevent being used as scroll anchor */
+    overflow-anchor: none;
   }
   
   
