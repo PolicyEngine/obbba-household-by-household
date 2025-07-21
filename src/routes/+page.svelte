@@ -45,6 +45,9 @@
   // Track if we need to scroll to a household on load
   let pendingScrollToHousehold = null;
   
+  // Flag to prevent URL subscription from triggering during internal updates
+  let isInternalUpdate = false;
+  
   // Draggable state
   let draggingSectionIndex = null;
   let dragOffset = { x: 0, y: 0 };
@@ -266,6 +269,9 @@
       return;
     }
     
+    // Preserve current scroll position
+    const currentScrollTop = scrollContainer?.scrollTop || 0;
+    
     selectedDataset = dataset;
     
     // Remember current household ID if one is selected
@@ -276,26 +282,29 @@
     
     // Preserve random households by finding the same household IDs in the new dataset
     const oldRandomHouseholds = { ...randomHouseholds };
-    randomHouseholds = {};
+    const newRandomHouseholds = {};
     
     Object.entries(oldRandomHouseholds).forEach(([sectionId, oldHousehold]) => {
       // Find the household with the same ID in the new dataset
       const newHousehold = data.find(d => String(d.id) === String(oldHousehold.id));
       if (newHousehold) {
-        randomHouseholds[sectionId] = newHousehold;
+        newRandomHouseholds[sectionId] = newHousehold;
       }
     });
     
     // If any sections don't have households, initialize them
     scrollStates.forEach(state => {
-      if (state.viewType === 'group' && !randomHouseholds[state.id]) {
+      if (state.viewType === 'group' && !newRandomHouseholds[state.id]) {
         const filteredData = data.filter(d => state.filter(d));
         const randomHousehold = getRandomWeightedHousehold(filteredData);
         if (randomHousehold) {
-          randomHouseholds[state.id] = randomHousehold;
+          newRandomHouseholds[state.id] = randomHousehold;
         }
       }
     });
+    
+    // Assign the new random households object to trigger reactivity
+    randomHouseholds = newRandomHouseholds;
     
     // Try to find the same household in the new dataset
     if (currentHouseholdId) {
@@ -308,27 +317,36 @@
       }
     }
     
-    // Update URL
+    // Update URL with internal flag to prevent re-triggering
+    isInternalUpdate = true;
     updateUrlWithHousehold(selectedHousehold?.id, dataset);
     
     // Force chart re-render
     if (chartComponent?.renderVisualization) {
       chartComponent.renderVisualization();
     }
+    
+    // Restore scroll position after a brief delay to allow for any layout changes
+    if (scrollContainer && currentScrollTop > 0) {
+      requestAnimationFrame(() => {
+        scrollContainer.scrollTop = currentScrollTop;
+      });
+    }
   }
   
   // Handle URL parameters
   async function handleUrlParams() {
-    const { householdId, baseline } = parseUrlParams();
-    console.log('handleUrlParams called with:', { householdId, baseline });
-    
-    // Update baseline if provided
-    if (baseline && baseline !== selectedDataset) {
-      selectedDataset = baseline;
-    }
-    
-    // Load all datasets if needed
-    if (Object.keys(allDatasets).length === 0) {
+    try {
+      const { householdId, baseline } = parseUrlParams();
+      console.log('handleUrlParams called with:', { householdId, baseline });
+      
+      // Update baseline if provided
+      if (baseline && baseline !== selectedDataset) {
+        selectedDataset = baseline;
+      }
+      
+      // Load all datasets if needed
+      if (Object.keys(allDatasets).length === 0) {
       isLoading = true;
       try {
         console.log('Loading all datasets...');
@@ -382,11 +400,25 @@
         }
       }
     }
+    } catch (error) {
+      console.error('Error in handleUrlParams:', error);
+      loadError = `Failed to load data: ${error.message}`;
+    }
   }
   
   // Lifecycle
   onMount(async () => {
     console.log('Component mounted, starting initialization...');
+    
+    // Add global error handler
+    const handleError = (event) => {
+      console.error('Global error caught:', event.error);
+      loadError = `An error occurred: ${event.error?.message || 'Unknown error'}`;
+      event.preventDefault();
+    };
+    
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleError);
     
     // Check if we're in an iframe and get URL params from parent if needed
     const isInIframe = window.self !== window.top;
@@ -406,6 +438,11 @@
     
     // Listen for URL changes
     const unsubscribe = page.subscribe(() => {
+      // Skip if this is an internal update
+      if (isInternalUpdate) {
+        isInternalUpdate = false;
+        return;
+      }
       handleUrlParams();
     });
     
@@ -451,6 +488,8 @@
       window.removeEventListener('wheel', handleWheel);
       window.removeEventListener('mousemove', handleDrag);
       window.removeEventListener('mouseup', endDrag);
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleError);
       cleanupScrollObserver(scrollObserver);
       cleanupAnimations();
     };
