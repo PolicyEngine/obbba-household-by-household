@@ -275,10 +275,33 @@
     // Preserve current scroll position
     const currentScrollTop = scrollContainer?.scrollTop || 0;
     
-    selectedDataset = dataset;
+    // Debug: Check if datasets are actually different
+    console.log('Switching from', selectedDataset, 'to', dataset);
+    console.log('Old dataset length:', data.length);
+    console.log('New dataset length:', allDatasets[dataset]?.length);
     
     // Remember current household ID if one is selected
     const currentHouseholdId = selectedHousehold?.id;
+    
+    // Sample a few households to verify data differences
+    if (data.length > 0 && allDatasets[dataset]?.length > 0) {
+      const sampleIds = ['1', '100', '1000', '10000'];
+      sampleIds.forEach(id => {
+        const oldHousehold = data.find(d => String(d.id) === id);
+        const newHousehold = allDatasets[dataset].find(d => String(d.id) === id);
+        if (oldHousehold && newHousehold) {
+          console.log(`Sample household ${id} comparison:`, {
+            oldNetIncome: oldHousehold['Total Change in Net Income'] || oldHousehold['Change in Household Net Income'],
+            newNetIncome: newHousehold['Total Change in Net Income'] || newHousehold['Change in Household Net Income'],
+            oldPercentChange: oldHousehold['Percentage Change in Net Income'],
+            newPercentChange: newHousehold['Percentage Change in Net Income']
+          });
+        }
+      });
+    }
+    
+    // NOW update selectedDataset after logging
+    selectedDataset = dataset;
     
     // Switch to the new dataset instantly
     data = allDatasets[dataset];
@@ -292,6 +315,18 @@
       const newHousehold = data.find(d => String(d.id) === String(oldHousehold.id));
       if (newHousehold) {
         newRandomHouseholds[sectionId] = newHousehold;
+        // Debug: Check if values are actually different
+        console.log(`Household ${oldHousehold.id} in section ${sectionId}:`, {
+          previousDataset: dataset === 'tcja-expiration' ? 'tcja-extension' : 'tcja-expiration',
+          newDataset: dataset,
+          oldNetChange: oldHousehold['Total Change in Net Income'] || oldHousehold['Change in Household Net Income'],
+          newNetChange: newHousehold['Total Change in Net Income'] || newHousehold['Change in Household Net Income'],
+          oldPercentChange: oldHousehold['Percentage Change in Net Income'],
+          newPercentChange: newHousehold['Percentage Change in Net Income'],
+          // Check all possible income fields
+          oldFields: Object.keys(oldHousehold).filter(k => k.includes('Income')).map(k => ({ [k]: oldHousehold[k] })),
+          newFields: Object.keys(newHousehold).filter(k => k.includes('Income')).map(k => ({ [k]: newHousehold[k] }))
+        });
       }
     });
     
@@ -308,6 +343,9 @@
     
     // Assign the new random households object to trigger reactivity
     randomHouseholds = newRandomHouseholds;
+    
+    // Force Svelte to detect the change
+    randomHouseholds = randomHouseholds;
     
     // Try to find the same household in the new dataset
     if (currentHouseholdId) {
@@ -573,7 +611,7 @@
                   <div class="integrated-household-profile">
                     <HouseholdProfile
                       household={randomHouseholds[state.id]}
-                      {selectedDataset}
+                      selectedDataset={selectedDataset}
                       currentState={state}
                       sectionIndex={0}
                       onRandomize={randomizeHousehold}
