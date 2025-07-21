@@ -235,7 +235,7 @@
             e.stopPropagation();
             
             // Blur the button to prevent focus-related scrolling
-            e.currentTarget.blur();
+            e.currentTarget.blur({ preventScroll: true });
             
             // Call the randomize function
             onRandomize();
