@@ -7,7 +7,6 @@
   export let currentState = null;
   export let sectionIndex = 0;
   export let onRandomize = () => {};
-  export let onShowDetails = () => {};
   
   let showHouseholdDetails = false;
   let showProvisionDetails = false;
@@ -40,12 +39,20 @@
       ages.push(Math.round(household['Age of Spouse']));
     }
     
-    // Add dependent ages if available
+    // Add individual dependent ages
     const numDependents = Math.round(household['Number of Dependents'] || household['Dependents'] || 0);
-    // For now, we'll just show the count since individual ages aren't in the data
     if (numDependents > 0) {
-      ages.push(`${numDependents} dependent${numDependents > 1 ? 's' : ''}`);
+      // Check for individual dependent ages
+      for (let i = 1; i <= numDependents; i++) {
+        const depAge = household[`Age of Dependent ${i}`];
+        if (depAge && depAge > 0) {
+          ages.push(Math.round(depAge));
+        }
+      }
     }
+    
+    // Sort ages in descending order
+    ages.sort((a, b) => b - a);
     
     return ages.join(', ');
   }
@@ -125,7 +132,7 @@
 {#if household}
   <div class="household-profile">
     <h3>
-      Household #<span id="household-id-{sectionIndex}">{household.id}</span>
+      Household #{household.id}
       <div class="header-buttons">
         <button 
           class="action-button random-button" 
@@ -368,13 +375,10 @@
   .value.pos { color: var(--scatter-positive); }
   .value.neg { color: var(--scatter-negative); }
 
-  /* Use monospace for data/numbers */
-  .household-details,
-  .household-details .label,
-  .household-details .value,
-  .household-profile h3,
-  .household-profile h3 span {
-    font-family: var(--font-mono) !important;
+  /* Use Roboto Mono for all text in the household box */
+  .household-profile,
+  .household-profile * {
+    font-family: 'Roboto Mono', monospace !important;
   }
   
   /* New section styles */
@@ -393,7 +397,6 @@
     font-weight: 700;
     color: var(--text-primary);
     margin: 0 0 1rem 0;
-    font-family: var(--font-mono);
   }
   
   /* Expand buttons */
@@ -403,7 +406,6 @@
     color: var(--primary-blue);
     cursor: pointer;
     font-size: 0.85rem;
-    font-family: var(--font-mono);
     padding: 0.5rem 0;
     margin-top: 0.5rem;
     text-decoration: none;

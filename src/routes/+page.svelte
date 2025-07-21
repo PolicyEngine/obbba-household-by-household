@@ -26,6 +26,7 @@
   import ScatterPlot from '$lib/components/ScatterPlot.svelte';
   
   // Data state
+  let allDatasets = {}; // Store both datasets
   let data = [];
   let selectedHousehold = null;
   let isLoading = false;
@@ -41,6 +42,41 @@
   let scrollContainer = null;
   let chartComponent = null;
   
+  // Calculate statistics for a section
+  function calculateSectionStats(sectionData) {
+    if (!sectionData || sectionData.length === 0) return null;
+    
+    let totalWeight = 0;
+    let positiveWeight = 0;
+    let negativeWeight = 0;
+    
+    sectionData.forEach(d => {
+      const weight = d['Household weight'] || d['Household Weight'] || 1;
+      const percentChange = d['Percentage Change in Net Income'] || 0;
+      
+      totalWeight += weight;
+      if (percentChange > 0) {
+        positiveWeight += weight;
+      } else if (percentChange < 0) {
+        negativeWeight += weight;
+      }
+    });
+    
+    const positivePercent = totalWeight > 0 ? Math.round((positiveWeight / totalWeight) * 100) : 0;
+    const negativePercent = totalWeight > 0 ? Math.round((negativeWeight / totalWeight) * 100) : 0;
+    
+    // Format total households in millions with one decimal place
+    const totalMillions = totalWeight / 1000000;
+    const totalFormatted = totalMillions.toFixed(1);
+    
+    return {
+      total: totalFormatted,
+      totalRaw: totalWeight,
+      positivePercent,
+      negativePercent
+    };
+  }
+  
   // Initialize or update random households for visible sections
   function initializeRandomHouseholds() {
     scrollStates.forEach(state => {
@@ -54,43 +90,12 @@
     });
   }
   
-  // Get current state and its households
+  // Get current state
   $: currentState = scrollStates[$currentStateIndex] || scrollStates[0];
-  $: currentRandomHousehold = (() => {
-    if (currentState?.viewType === 'individual') {
-      const baseViewId = currentState.id.replace('-individual', '');
-      return randomHouseholds[baseViewId];
-    } else if (currentState?.viewType === 'group') {
-      return randomHouseholds[currentState.id];
-    }
-    return null;
-  })();
   
   // Handle section changes
-  function handleSectionChange(newIndex) {
-    const newState = scrollStates[newIndex];
-    if (newState?.viewType === 'individual') {
-      const baseViewId = newState.id.replace('-individual', '');
-      const household = randomHouseholds[baseViewId];
-      if (household) {
-        selectHousehold(household);
-        
-        // Animate the household numbers
-        const sectionIndex = Math.floor(newIndex / 2);
-        createAnimatedNumber(`household-id-${sectionIndex}`, 0, household.id, d => Math.round(d), 600);
-        createAnimatedNumber(`num-dependents-${sectionIndex}`, 0, 
-          Math.round(household['Number of Dependents'] || household['Dependents'] || 0), 
-          d => Math.round(d), 700);
-        createAnimatedNumber(`age-of-head-${sectionIndex}`, 18, 
-          household['Age of Head'] || household['Age'] || 40, 
-          d => Math.round(d), 800);
-      }
-    } else if (selectedHousehold) {
-      updateUrlWithHousehold(null, selectedDataset);
-      selectedHousehold = null;
-    }
-    
-    // Force chart re-render
+  function handleSectionChange() {
+    // Force chart re-render when section changes
     if (chartComponent?.renderVisualization) {
       chartComponent.renderVisualization();
     }
@@ -100,11 +105,47 @@
   function selectHousehold(household) {
     selectedHousehold = household;
     
+    // If we're in a group view, update the random household for that section
+    const currentState = scrollStates[$currentStateIndex];
+    if (currentState && currentState.viewType === 'group') {
+      // Update the random household for this section
+      randomHouseholds[currentState.id] = household;
+      
+      // Find the next individual view and scroll to it
+      const nextIndex = $currentStateIndex + 1;
+      if (scrollStates[nextIndex] && scrollStates[nextIndex].viewType === 'individual') {
+        // Scroll to the individual view
+        if (textSections[nextIndex]) {
+          textSections[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    } else if (currentState && currentState.viewType === 'individual') {
+      // Update the random household for the base section
+      const baseViewId = currentState.id.replace('-individual', '');
+      randomHouseholds[baseViewId] = household;
+      
+      // Update household display
+      const sectionIndex = Math.floor($currentStateIndex / 2);
+      
+      // Animate other household numbers
+      createAnimatedNumber(`num-dependents-${sectionIndex}`, 0, 
+        Math.round(household['Number of Dependents'] || household['Dependents'] || 0), 
+        d => Math.round(d), 700);
+      createAnimatedNumber(`age-of-head-${sectionIndex}`, 18, 
+        household['Age of Head'] || household['Age'] || 40, 
+        d => Math.round(d), 800);
+    }
+    
     // Animate the household point
     animateHouseholdEmphasis(household.id);
     
     // Update URL
     updateUrlWithHousehold(household.id, selectedDataset);
+    
+    // Force chart re-render
+    if (chartComponent?.renderVisualization) {
+      chartComponent.renderVisualization();
+    }
   }
   
   // Randomize household for current section
@@ -129,46 +170,60 @@
   }
   
   // Handle dataset change
-  async function handleDatasetChange(dataset) {
+  function handleDatasetChange(dataset) {
+    if (!allDatasets[dataset]) {
+      console.error('Dataset not loaded:', dataset);
+      return;
+    }
+    
     selectedDataset = dataset;
-    isLoading = true;
     
     // Remember current household ID if one is selected
     const currentHouseholdId = selectedHousehold?.id;
     
-    try {
-      const datasets = await loadDatasets();
-      data = datasets[dataset];
-      
-      // Reset random households
-      randomHouseholds = {};
-      initializeRandomHouseholds();
-      
-      // Try to find the same household in the new dataset
-      if (currentHouseholdId) {
-        const household = data.find(d => String(d.id) === String(currentHouseholdId));
-        if (household) {
-          selectedHousehold = household;
-          updateUrlWithHousehold(household.id, dataset);
-          
-          // Animate emphasis on the household
-          animateHouseholdEmphasis(household.id);
-        } else {
-          // Household not found in new dataset, clear selection
-          selectedHousehold = null;
-          updateUrlWithHousehold(null, dataset);
+    // Switch to the new dataset instantly
+    data = allDatasets[dataset];
+    
+    // Preserve random households by finding the same household IDs in the new dataset
+    const oldRandomHouseholds = { ...randomHouseholds };
+    randomHouseholds = {};
+    
+    Object.entries(oldRandomHouseholds).forEach(([sectionId, oldHousehold]) => {
+      // Find the household with the same ID in the new dataset
+      const newHousehold = data.find(d => String(d.id) === String(oldHousehold.id));
+      if (newHousehold) {
+        randomHouseholds[sectionId] = newHousehold;
+      }
+    });
+    
+    // If any sections don't have households, initialize them
+    scrollStates.forEach(state => {
+      if (state.viewType === 'group' && !randomHouseholds[state.id]) {
+        const filteredData = data.filter(d => state.filter(d));
+        const randomHousehold = getRandomWeightedHousehold(filteredData);
+        if (randomHousehold) {
+          randomHouseholds[state.id] = randomHousehold;
         }
       }
-      
-      // Force chart re-render
-      if (chartComponent?.renderVisualization) {
-        chartComponent.renderVisualization();
+    });
+    
+    // Try to find the same household in the new dataset
+    if (currentHouseholdId) {
+      const household = data.find(d => String(d.id) === String(currentHouseholdId));
+      if (household) {
+        selectedHousehold = household;
+        animateHouseholdEmphasis(household.id);
+      } else {
+        selectedHousehold = null;
       }
-    } catch (error) {
-      console.error('Error loading dataset:', error);
-      loadError = error.message;
-    } finally {
-      isLoading = false;
+    }
+    
+    // Update URL
+    updateUrlWithHousehold(selectedHousehold?.id, dataset);
+    
+    // Force chart re-render
+    if (chartComponent?.renderVisualization) {
+      chartComponent.renderVisualization();
     }
   }
   
@@ -181,17 +236,17 @@
       selectedDataset = baseline;
     }
     
-    // Load data if needed
-    if (data.length === 0) {
+    // Load all datasets if needed
+    if (Object.keys(allDatasets).length === 0) {
       isLoading = true;
       try {
-        console.log('Loading datasets in handleUrlParams...');
-        const datasets = await loadDatasets();
-        console.log('Loaded datasets:', Object.keys(datasets), 'lengths:', {
-          'tcja-expiration': datasets['tcja-expiration']?.length,
-          'tcja-extension': datasets['tcja-extension']?.length
+        console.log('Loading all datasets...');
+        allDatasets = await loadDatasets();
+        console.log('Loaded datasets:', Object.keys(allDatasets), 'lengths:', {
+          'tcja-expiration': allDatasets['tcja-expiration']?.length,
+          'tcja-extension': allDatasets['tcja-extension']?.length
         });
-        data = datasets[selectedDataset];
+        data = allDatasets[selectedDataset];
         console.log('Selected dataset:', selectedDataset, 'length:', data.length);
         initializeRandomHouseholds();
       } catch (error) {
@@ -201,6 +256,9 @@
         return;
       }
       isLoading = false;
+    } else {
+      // Datasets already loaded, just switch
+      data = allDatasets[selectedDataset];
     }
     
     // Handle household selection
@@ -258,12 +316,26 @@
     
     window.addEventListener('message', handleMessage);
     
+    // Add wheel event listener to enable scrolling from anywhere
+    function handleWheel(event) {
+      // Check if the event target is not inside the scrollable area
+      if (!scrollContainer?.contains(event.target)) {
+        if (scrollContainer) {
+          scrollContainer.scrollTop += event.deltaY;
+          event.preventDefault();
+        }
+      }
+    }
+    
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    
     // Notify parent we're ready
     notifyParentOfUrlChange();
     
     return () => {
       unsubscribe();
       window.removeEventListener('message', handleMessage);
+      window.removeEventListener('wheel', handleWheel);
       cleanupScrollObserver(scrollObserver);
       cleanupAnimations();
     };
@@ -315,38 +387,62 @@
           >
             <div class="section-content">
               <h2>{state.title}</h2>
-              {#if state.description}
-                <p>{@html state.description}</p>
+              
+              <!-- Dynamic content for income sections -->
+              {#if state.id !== 'intro' && data.length > 0}
+                {@const sectionData = data.filter(d => state.filter(d))}
+                {@const stats = calculateSectionStats(sectionData)}
+                {#if stats}
+                  {#if state.id === 'lower-income'}
+                    <p>Of the {stats.total} million households with market income below $50,000, OBBBA will increase the net income of {stats.positivePercent}% and reduce the net income of {stats.negativePercent}%. Let's take a look at one of them at random. You can also click on a dot to view information about a household.</p>
+                  {:else if state.id === 'middle-income'}
+                    <p>Of the {stats.total} million households with market income between $50,000 and $200,000, OBBBA will increase the net income of {stats.positivePercent}% and reduce the net income of {stats.negativePercent}%. Let's take a look at one of them at random. You can also click on a dot to view information about a household.</p>
+                  {:else if state.id === 'upper-income'}
+                    <p>Of the {stats.total} million households with market income between $200,000 and $1 million, OBBBA will increase the net income of {stats.positivePercent}% and reduce the net income of {stats.negativePercent}%. Let's take a look at one of them at random. You can also click on a dot to view information about a household.</p>
+                  {:else if state.id === 'highest-income'}
+                    <p>Of the {stats.total} million households with market income over $1 million, OBBBA will increase the net income of {stats.positivePercent}% and reduce the net income of {stats.negativePercent}%. Let's take a look at one of them at random. You can also click on a dot to view information about a household.</p>
+                  {/if}
+                {/if}
+                
+                <!-- Integrated household profile for all income sections -->
+                {#if randomHouseholds[state.id]}
+                  <div class="integrated-household-profile">
+                    <HouseholdProfile
+                      household={randomHouseholds[state.id]}
+                      {selectedDataset}
+                      currentState={state}
+                      sectionIndex={0}
+                      onRandomize={randomizeHousehold}
+                    />
+                  </div>
+                {/if}
+              {:else if state.id === 'intro'}
+                {#if state.description}
+                  <p>{@html state.description}</p>
+                {/if}
+                {#if state.content}
+                  <p>{@html state.content}</p>
+                {/if}
               {/if}
-              {#if state.content}
-                <p>{@html state.content}</p>
+              
+              <!-- Scroll indicator inside first section -->
+              {#if i === 0 && $currentStateIndex === 0}
+                <div class="scroll-indicator">
+                  <span>Scroll to explore</span>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M19 12l-7 7-7-7"/>
+                  </svg>
+                </div>
               {/if}
             </div>
-          </section>
-        {:else if state.viewType === 'individual'}
-          <section 
-            class="text-section individual-section"
-            class:active={$currentStateIndex === i}
-            data-index={i}
-            bind:this={textSections[i]}
-          >
-            <HouseholdProfile
-              household={currentRandomHousehold}
-              {selectedDataset}
-              currentState={state}
-              sectionIndex={Math.floor(i / 2)}
-              onRandomize={randomizeHousehold}
-            />
           </section>
         {/if}
       {/each}
     </div>
-    <!-- Transparent area for chart interaction -->
-    <div class="chart-interaction-area"></div>
   </div>
   
   {#if isLoading}
-    <LoadingOverlay message="Loading {DATASETS[selectedDataset].label} baseline..." />
+    <LoadingOverlay message="Loading tax impact data..." />
   {/if}
   
   {#if loadError}
@@ -418,31 +514,81 @@
     z-index: 1;
   }
   
-  /* Scrollable overlay only on the left side */
+  /* Scrollable content overlay on the left only */
   .content-overlay {
     position: absolute;
     top: 60px; /* Account for header */
     left: 0;
     width: 40%;
-    max-width: 680px; /* 600px + 80px margin */
+    max-width: 680px;
     bottom: 0;
     overflow-y: auto;
-    z-index: 2;
+    z-index: 10; /* Higher than chart but lower than header */
+    
+    /* Hide scrollbar while keeping functionality */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+  
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .content-overlay::-webkit-scrollbar {
+    display: none;
   }
   
   .text-content {
     padding: 2rem 3rem 50vh 3rem;
-    margin-left: 80px; /* Space for y-axis */
+    margin-left: 120px; /* Space for y-axis - matches chart margin */
+    max-width: 680px; /* Keep text content constrained to left side */
   }
+  
   
   /* Make text sections interactive */
   .text-section {
     pointer-events: auto;
   }
   
-  /* Transparent area for chart interaction - remove this as it's blocking */
-  .chart-interaction-area {
-    display: none;
+  /* Scroll indicator */
+  .scroll-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    animation: bounce 2s infinite;
+    opacity: 0.7;
+  }
+  
+  .scroll-indicator:hover {
+    opacity: 1;
+  }
+  
+  .scroll-indicator svg {
+    animation: arrow-bounce 1.5s ease-in-out infinite;
+  }
+  
+  @keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+      transform: translateY(0);
+    }
+    40% {
+      transform: translateY(-3px);
+    }
+    60% {
+      transform: translateY(-1px);
+    }
+  }
+  
+  @keyframes arrow-bounce {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(3px);
+    }
   }
   
   .text-section {
@@ -457,7 +603,9 @@
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.5);
     pointer-events: auto;
+    position: relative;
   }
+  
   
   .text-section:global(.active) {
     opacity: 1;
@@ -484,13 +632,10 @@
   }
   
   
-  .individual-section {
-    margin-bottom: 80vh;
-    background: rgba(255, 255, 255, 0.9);
-  }
-  
-  .individual-section:global(.active) {
-    background: rgba(255, 255, 255, 0.98);
+  .integrated-household-profile {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
   }
   
   
@@ -544,7 +689,7 @@
     
     .text-content {
       padding: 1rem 1.5rem 20vh 1.5rem;
-      margin-left: 40px; /* Less space needed on mobile */
+      margin-left: 60px; /* Less space needed on mobile */
     }
     
     .text-section {

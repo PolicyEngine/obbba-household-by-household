@@ -45,9 +45,9 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 24px;
-    max-width: 1400px;
-    margin: 0 auto;
+    padding: 16px 48px 16px calc(120px + 48px); /* Match text content margin-left (120px) + padding (48px) */
+    max-width: none;
+    margin: 0;
   }
   
 
@@ -108,6 +108,7 @@
     background: var(--app-background);
     color: var(--text-primary);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    font-weight: 700;
   }
 
   .tab-button:disabled {
@@ -118,7 +119,7 @@
   /* Mobile responsive header */
   @media (max-width: 768px) {
     .header-content {
-      padding: 12px 16px;
+      padding: 12px 16px 12px calc(60px + 24px); /* Match mobile text content margin + padding */
       flex-direction: column;
       gap: 12px;
     }

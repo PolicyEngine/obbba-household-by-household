@@ -20,7 +20,7 @@
   let renderedPoints = [];
   
   // Chart dimensions
-  const margin = { top: 40, right: 60, bottom: 80, left: 80 };
+  const margin = { top: 60, right: 100, bottom: 100, left: 120 };
   let width = 900;
   let height = 600;
   
@@ -189,10 +189,21 @@
     const { minWeight, maxWeight } = weightRange;
     
     data.forEach(d => {
-      const x = xScale(d['Percentage Change in Net Income']);
-      const y = yScale(d['Gross Income']);
+      let x = xScale(d['Percentage Change in Net Income']);
+      let y = yScale(d['Gross Income']);
       
-      if (x < margin.left || x > width - margin.right || y < margin.top || y > height - margin.bottom) return;
+      // Check if point is outside bounds and clamp to edge
+      const isOutOfBounds = x < margin.left || x > width - margin.right || y < margin.top || y > height - margin.bottom;
+      
+      // Clamp x coordinate to visible range
+      if (x < margin.left) {
+        x = margin.left + 5; // Small offset from edge
+      } else if (x > width - margin.right) {
+        x = width - margin.right - 5; // Small offset from edge
+      }
+      
+      // Skip if y is out of bounds (we only clamp x-axis)
+      if (y < margin.top || y > height - margin.bottom) return;
       
       // Determine fade opacity for transitions
       let fadeOpacity = 1;
@@ -254,15 +265,36 @@
         
         ctx.globalAlpha = finalOpacity;
         ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, 2 * Math.PI);
-        ctx.fill();
         
-        if (isHighlighted && finalOpacity > 0.5) {
-          ctx.globalAlpha = finalOpacity;
-          ctx.strokeStyle = COLORS.BLACK;
-          ctx.lineWidth = 1;
-          ctx.stroke();
+        // Draw differently if clamped to edge
+        if (isOutOfBounds) {
+          // Draw as a triangle pointing outward for out-of-bounds points
+          ctx.beginPath();
+          if (x <= margin.left + 5) {
+            // Left edge - triangle pointing left
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x - radius, y - radius);
+            ctx.lineTo(x - radius, y + radius);
+          } else if (x >= width - margin.right - 5) {
+            // Right edge - triangle pointing right
+            ctx.moveTo(x - radius, y);
+            ctx.lineTo(x + radius, y - radius);
+            ctx.lineTo(x + radius, y + radius);
+          }
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          // Normal circle for in-bounds points
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, 2 * Math.PI);
+          ctx.fill();
+          
+          if (isHighlighted && finalOpacity > 0.5) {
+            ctx.globalAlpha = finalOpacity;
+            ctx.strokeStyle = COLORS.BLACK;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
         }
       }
     });
@@ -283,7 +315,7 @@
       .attr('transform', `translate(0,${height - margin.bottom})`)
       .call(d3.axisBottom(xScale).tickFormat(d => `${d > 0 ? '+' : ''}${d}%`))
       .style('font-family', getFontFamily('sans'))
-      .style('font-size', '10px')
+      .style('font-size', '14px')
       .style('color', COLORS.DARKEST_BLUE);
     
     // Y-axis
@@ -291,7 +323,7 @@
       .attr('transform', `translate(${margin.left},0)`)
       .call(d3.axisLeft(yScale).ticks(6).tickFormat(d => d3.format('$,')(d)))
       .style('font-family', getFontFamily('sans'))
-      .style('font-size', '10px')
+      .style('font-size', '14px')
       .style('color', COLORS.DARKEST_BLUE);
     
     // Style axes
@@ -303,13 +335,13 @@
     // Axis labels
     g.append('text')
       .attr('x', width / 2)
-      .attr('y', height - 15)
+      .attr('y', height - 30)
       .attr('text-anchor', 'middle')
       .style('font-family', getFontFamily('sans'))
       .style('font-size', '16px')
       .style('font-weight', '400')
       .style('fill', COLORS.DARK_GRAY)
-      .text('Change in income →');
+      .text('Change in net income →');
     
     g.append('text')
       .attr('transform', 'rotate(-90)')
@@ -320,7 +352,7 @@
       .style('font-size', '16px')
       .style('font-weight', '400')
       .style('fill', COLORS.DARK_GRAY)
-      .text('Annual household income →');
+      .text('Annual household market income →');
   }
   
   // Handle resize
