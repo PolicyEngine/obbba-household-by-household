@@ -92,9 +92,15 @@ describe('clipboard utilities', () => {
     it('falls back to execCommand when clipboard API fails', async () => {
       writeTextMock.mockRejectedValue(new Error('Clipboard blocked'));
       
-      // Mock document selection
-      const textarea = document.createElement('textarea');
-      const selectMock = vi.spyOn(textarea, 'select');
+      // Mock document methods
+      const textarea = {
+        value: '',
+        style: {},
+        focus: vi.fn(),
+        select: vi.fn()
+      };
+      
+      const createElementMock = vi.spyOn(document, 'createElement').mockReturnValue(textarea);
       const appendChildMock = vi.spyOn(document.body, 'appendChild').mockImplementation(() => textarea);
       const removeChildMock = vi.spyOn(document.body, 'removeChild').mockImplementation(() => textarea);
 
@@ -103,10 +109,12 @@ describe('clipboard utilities', () => {
 
       await copyHouseholdUrl(household, 'tcja-expiration', null, event);
 
-      expect(appendChildMock).toHaveBeenCalled();
-      expect(selectMock).toHaveBeenCalled();
+      expect(createElementMock).toHaveBeenCalledWith('textarea');
+      expect(textarea.select).toHaveBeenCalled();
       expect(execCommandMock).toHaveBeenCalledWith('copy');
       expect(removeChildMock).toHaveBeenCalled();
+      
+      createElementMock.mockRestore();
     });
 
     it('works in iframe context', async () => {

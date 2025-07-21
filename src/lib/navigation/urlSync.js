@@ -36,18 +36,19 @@ export function parseUrlParams() {
   if (typeof window !== 'undefined') {
     const urlParams = new URLSearchParams(window.location.search);
     return {
-      householdId: String(urlParams.get('household') || ''),
-      baseline: urlParams.get('baseline')
+      householdId: urlParams.get('household') || '',
+      baseline: urlParams.get('baseline') || null,
+      section: urlParams.get('section') || null
     };
   }
-  return { householdId: '', baseline: null };
+  return { householdId: '', baseline: null, section: null };
 }
 
 // Find appropriate section index for a household
 export function findSectionForHousehold(household, scrollStates) {
   let targetSectionIndex = 0;
   
-  const income = household['Gross Income'];
+  const income = household['Market Income'] || household['Gross Income'];
   
   // Determine which income bracket
   if (income < 50000) {

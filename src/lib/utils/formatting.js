@@ -16,7 +16,7 @@ export function formatCurrency(value) {
   if (value === null || value === undefined || isNaN(value)) {
     return '$0';
   }
-  return fmtUSD.format(Math.round(value));
+  return fmtUSD.format(value);
 }
 
 export function formatPercentage(value) {
@@ -29,7 +29,7 @@ export function formatDollarChange(value) {
   if (value === null || value === undefined || value === 0) {
     return '$0';
   }
-  const formatted = fmtUSD.format(Math.abs(Math.round(value)));
+  const formatted = fmtUSD.format(Math.abs(value));
   return value > 0 ? '+' + formatted : '-' + formatted;
 }
 
@@ -50,5 +50,5 @@ export function formatNumber(value) {
   }
   return new Intl.NumberFormat('en-US', {
     maximumFractionDigits: 0
-  }).format(Math.round(value));
+  }).format(value);
 }

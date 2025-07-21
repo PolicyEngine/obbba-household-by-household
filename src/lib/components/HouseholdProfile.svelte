@@ -1,6 +1,23 @@
 <script>
   import { formatCurrency, formatDollarChange, formatPercentage } from '../utils/formatting.js';
   import { copyHouseholdUrl } from '../utils/clipboard.js';
+  import { onMount, onDestroy } from 'svelte';
+  import { tweened } from 'svelte/motion';
+  import { cubicOut } from 'svelte/easing';
+  
+  // Custom interpolation function for train station board effect
+  function trainStationInterpolate(from, to) {
+    return (t) => {
+      // Add random digits during transition for shuffling effect
+      if (t < 0.7) {
+        const progress = from + (to - from) * t;
+        const randomOffset = (Math.random() - 0.5) * Math.abs(to - from) * 0.5;
+        return progress + randomOffset;
+      }
+      // Settle on the actual value
+      return from + (to - from) * t;
+    };
+  }
   
   export let household = null;
   export let selectedDataset = 'tcja-expiration';
@@ -10,6 +27,63 @@
   
   let showHouseholdDetails = false;
   let showProvisionDetails = false;
+  
+  // Animated values with train station board effect
+  const householdId = tweened(0, { 
+    duration: 600, 
+    easing: cubicOut,
+    interpolate: trainStationInterpolate
+  });
+  const marketIncome = tweened(0, { 
+    duration: 700, 
+    easing: cubicOut,
+    interpolate: trainStationInterpolate
+  });
+  const baselineNetIncome = tweened(0, { 
+    duration: 750, 
+    easing: cubicOut,
+    interpolate: trainStationInterpolate
+  });
+  const obbbaNetIncome = tweened(0, { 
+    duration: 800, 
+    easing: cubicOut,
+    interpolate: trainStationInterpolate
+  });
+  const absoluteImpact = tweened(0, { 
+    duration: 850, 
+    easing: cubicOut,
+    interpolate: trainStationInterpolate
+  });
+  const relativeImpact = tweened(0, { 
+    duration: 900, 
+    easing: cubicOut,
+    interpolate: trainStationInterpolate
+  });
+  
+  let previousHouseholdId = null;
+  
+  // Update animated values when household changes
+  $: if (household && household.id !== previousHouseholdId) {
+    previousHouseholdId = household.id;
+    
+    // If this is the first household, start from random values for dramatic effect
+    if ($householdId === 0) {
+      householdId.set(Math.random() * 40000, { duration: 0 });
+      marketIncome.set(Math.random() * 200000, { duration: 0 });
+      baselineNetIncome.set(Math.random() * 150000, { duration: 0 });
+      obbbaNetIncome.set(Math.random() * 150000, { duration: 0 });
+      absoluteImpact.set((Math.random() - 0.5) * 20000, { duration: 0 });
+      relativeImpact.set((Math.random() - 0.5) * 20, { duration: 0 });
+    }
+    
+    // Animate to actual values
+    householdId.set(parseInt(household.id) || 0);
+    marketIncome.set(household['Market Income'] || household['Gross Income'] || 0);
+    baselineNetIncome.set(household['Baseline Net Income'] || 0);
+    obbbaNetIncome.set((household['Baseline Net Income'] || 0) + (household['Total Change in Net Income'] || household['Change in Household Net Income'] || 0));
+    absoluteImpact.set(household['Total Change in Net Income'] || household['Change in Household Net Income'] || 0);
+    relativeImpact.set(household['Percentage Change in Net Income'] || 0);
+  }
   
   // State abbreviation to full name mapping
   const stateNames = {
@@ -132,7 +206,7 @@
 {#if household}
   <div class="household-profile">
     <h3>
-      Household #{household.id}
+      Household #{Math.round($householdId)}
       <div class="header-buttons">
         <button 
           class="action-button random-button" 
@@ -164,7 +238,7 @@
         </div>
         <div class="detail-item">
           <span class="label">Market Income:</span>
-          <span class="value">{formatCurrency(household['Market Income'] || household['Gross Income'] || 0)}</span>
+          <span class="value">{formatCurrency($marketIncome)}</span>
         </div>
         <button 
           class="expand-button" 
@@ -216,22 +290,22 @@
       <div class="impact-details">
         <div class="detail-item">
           <span class="label">Net income under TCJA {selectedDataset === 'tcja-expiration' ? 'expiration' : 'extension'}:</span>
-          <span class="value">{formatCurrency(household['Baseline Net Income'] || 0)}</span>
+          <span class="value">{formatCurrency($baselineNetIncome)}</span>
         </div>
         <div class="detail-item">
           <span class="label">Net income under OBBBA:</span>
-          <span class="value">{formatCurrency((household['Baseline Net Income'] || 0) + (household['Total Change in Net Income'] || household['Change in Household Net Income'] || 0))}</span>
+          <span class="value">{formatCurrency($obbbaNetIncome)}</span>
         </div>
         <div class="detail-item">
           <span class="label">OBBBA absolute impact:</span>
-          <span class="value impact" class:pos={(household['Total Change in Net Income'] || household['Change in Household Net Income'] || 0) > 0} class:neg={(household['Total Change in Net Income'] || household['Change in Household Net Income'] || 0) < 0}>
-            {formatDollarChange(household['Total Change in Net Income'] || household['Change in Household Net Income'] || 0)}
+          <span class="value impact" class:pos={$absoluteImpact > 0} class:neg={$absoluteImpact < 0}>
+            {formatDollarChange($absoluteImpact)}
           </span>
         </div>
         <div class="detail-item">
           <span class="label">OBBBA relative impact:</span>
-          <span class="value impact" class:pos={household['Percentage Change in Net Income'] > 0} class:neg={household['Percentage Change in Net Income'] < 0}>
-            {formatPercentage(household['Percentage Change in Net Income'] || 0)}
+          <span class="value impact" class:pos={$relativeImpact > 0} class:neg={$relativeImpact < 0}>
+            {formatPercentage($relativeImpact)}
           </span>
         </div>
         <button 
@@ -385,7 +459,6 @@
   .household-section {
     margin-bottom: 1.5rem;
     padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--border);
   }
   
   .impact-section {
@@ -436,7 +509,6 @@
   .expandable-details {
     margin-top: 1rem;
     padding-top: 1rem;
-    border-top: 1px solid var(--grid-lines);
   }
   
   .impact-details .detail-item {

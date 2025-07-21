@@ -94,7 +94,7 @@ describe('urlSync utilities', () => {
 
   describe('findSectionForHousehold', () => {
     it('finds lower-income section for households under $50k', () => {
-      const household = { 'Gross Income': 30000 };
+      const household = { 'Market Income': 30000 };
       const index = findSectionForHousehold(household, scrollStates);
       
       const state = scrollStates[index];
@@ -102,7 +102,7 @@ describe('urlSync utilities', () => {
     });
 
     it('finds middle-income section for households $50k-$200k', () => {
-      const household = { 'Gross Income': 100000 };
+      const household = { 'Market Income': 100000 };
       const index = findSectionForHousehold(household, scrollStates);
       
       const state = scrollStates[index];
@@ -110,7 +110,7 @@ describe('urlSync utilities', () => {
     });
 
     it('finds upper-income section for households $200k-$1M', () => {
-      const household = { 'Gross Income': 500000 };
+      const household = { 'Market Income': 500000 };
       const index = findSectionForHousehold(household, scrollStates);
       
       const state = scrollStates[index];
@@ -118,19 +118,20 @@ describe('urlSync utilities', () => {
     });
 
     it('finds highest-income section for households over $1M', () => {
-      const household = { 'Gross Income': 2000000 };
+      const household = { 'Market Income': 2000000 };
       const index = findSectionForHousehold(household, scrollStates);
       
       const state = scrollStates[index];
       expect(state.id).toContain('highest-income');
     });
 
-    it('advances to individual view when available', () => {
-      const household = { 'Gross Income': 75000 };
+    it('returns group view (no individual views exist)', () => {
+      const household = { 'Market Income': 75000 };
       const index = findSectionForHousehold(household, scrollStates);
       
-      // Should return individual view index, not group view
-      expect(scrollStates[index].viewType).toBe('individual');
+      // Should return group view since we removed individual views
+      expect(scrollStates[index].viewType).toBe('group');
+      expect(scrollStates[index].id).toBe('middle-income');
     });
   });
 });

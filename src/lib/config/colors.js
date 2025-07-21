@@ -36,6 +36,11 @@ export const APP_COLORS = {
 
 // Get color for data point based on change value
 export function getPointColor(change) {
+  // Handle edge cases
+  if (change === null || change === undefined || isNaN(change) || typeof change !== 'number') {
+    return APP_COLORS.scatterNeutral;
+  }
+  
   if (Math.abs(change) < 0.1) {
     return APP_COLORS.scatterNeutral;
   } else if (change > 0) {

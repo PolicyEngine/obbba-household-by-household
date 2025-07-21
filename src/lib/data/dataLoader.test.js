@@ -15,7 +15,7 @@ vi.mock('papaparse', () => ({
           return obj;
         }, {});
       });
-      config.complete({ data });
+      return { data, errors: [] };
     })
   }
 }));
@@ -32,12 +32,14 @@ describe('dataLoader', () => {
     it('processes valid data correctly', () => {
       const rawData = [
         {
+          'Household ID': '12345',
           'Gross Income': '50000',
           'Total Change in Net Income': '1000',
           'Percentage Change in Net Income': '2.5',
           'Household weight': '100'
         },
         {
+          'Household ID': '67890',
           'Gross Income': '100000',
           'Total Change in Net Income': '-500',
           'Percentage Change in Net Income': '-0.5',
@@ -49,17 +51,18 @@ describe('dataLoader', () => {
 
       expect(processed).toHaveLength(2);
       expect(processed[0]).toMatchObject({
-        id: '0',
+        id: '12345',
+        householdId: '12345',
         'Gross Income': '50000',
         'Total Change in Net Income': '1000',
         'Percentage Change in Net Income': '2.5',
         'Household weight': '100'
       });
-      expect(processed[1].id).toBe('1');
+      expect(processed[1].id).toBe('67890');
       expect(processed[1]['Gross Income']).toBe('100000');
     });
 
-    it('filters out invalid rows', () => {
+    it('processes all rows without filtering', () => {
       const rawData = [
         { 'Gross Income': '50000', 'Total Change in Net Income': '1000' },
         { 'Gross Income': '', 'Total Change in Net Income': '1000' },
@@ -69,8 +72,10 @@ describe('dataLoader', () => {
 
       const processed = processData(rawData);
 
-      expect(processed).toHaveLength(1);
+      // processData doesn't filter, just transforms
+      expect(processed).toHaveLength(4);
       expect(processed[0]['Gross Income']).toBe('50000');
+      expect(processed[1]['Gross Income']).toBe('');
     });
 
     it('handles missing columns gracefully', () => {
@@ -81,7 +86,10 @@ describe('dataLoader', () => {
 
       const processed = processData(rawData);
 
-      expect(processed).toHaveLength(0);
+      // processData doesn't filter, just transforms
+      expect(processed).toHaveLength(2);
+      expect(processed[0]['Gross Income']).toBe('50000');
+      expect(processed[1]['Total Change in Net Income']).toBe('1000');
     });
 
     it('adds default weight when missing', () => {
@@ -102,9 +110,9 @@ describe('dataLoader', () => {
 
   describe('loadDatasets', () => {
     it('loads and processes both datasets', async () => {
-      const mockCsvData = `Gross Income,Total Change in Net Income,Percentage Change in Net Income,Household weight
-50000,1000,2.5,100
-100000,-500,-0.5,200`;
+      const mockCsvData = `Household ID,Gross Income,Total Change in Net Income,Percentage Change in Net Income,Household weight
+12345,50000,1000,2.5,100
+67890,100000,-500,-0.5,200`;
 
       fetch.mockResolvedValue({
         ok: true,

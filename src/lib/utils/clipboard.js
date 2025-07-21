@@ -1,5 +1,10 @@
 // Copy household URL to clipboard with fallback methods
 export async function copyHouseholdUrl(household, selectedDataset, currentState, event) {
+  // Prevent default if event provided
+  if (event && event.preventDefault) {
+    event.preventDefault();
+  }
+  
   let url;
   
   // Debug logging to understand the issue
