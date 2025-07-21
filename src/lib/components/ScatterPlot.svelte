@@ -334,17 +334,22 @@
     
     const g = svg.append('g');
     
+    // Responsive settings
+    const isMobile = window.innerWidth <= 768;
+    const xAxisFontSize = isMobile ? '10px' : '14px';
+    const yAxisFontSize = isMobile ? '10px' : '14px';
+    
     // X-axis
     const xAxis = g.append('g')
       .attr('transform', `translate(0,${height - margin.bottom})`)
-      .call(d3.axisBottom(xScale).tickFormat(d => `${d > 0 ? '+' : ''}${d}%`))
+      .call(d3.axisBottom(xScale)
+        .ticks(isMobile ? 5 : 10)
+        .tickFormat(d => `${d > 0 ? '+' : ''}${d}%`))
       .style('font-family', getFontFamily('sans'))
-      .style('font-size', '14px')
+      .style('font-size', xAxisFontSize)
       .style('color', COLORS.DARKEST_BLUE);
     
     // Y-axis
-    const isMobile = window.innerWidth <= 768;
-    const yAxisFontSize = isMobile ? '10px' : '14px';
     const yAxis = g.append('g')
       .attr('transform', `translate(${margin.left},0)`)
       .call(d3.axisLeft(yScale).ticks(isMobile ? 4 : 6).tickFormat(d => {
@@ -369,13 +374,13 @@
     // Axis labels
     g.append('text')
       .attr('x', width / 2)
-      .attr('y', height - 30)
+      .attr('y', height - (isMobile ? 5 : 30))
       .attr('text-anchor', 'middle')
       .style('font-family', getFontFamily('sans'))
-      .style('font-size', '16px')
+      .style('font-size', isMobile ? '12px' : '16px')
       .style('font-weight', '400')
       .style('fill', COLORS.DARK_GRAY)
-      .text('Change in net income →');
+      .text(isMobile ? 'Change in income →' : 'Change in net income →');
     
     g.append('text')
       .attr('transform', 'rotate(-90)')

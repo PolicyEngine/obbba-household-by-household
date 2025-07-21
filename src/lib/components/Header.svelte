@@ -186,15 +186,18 @@
     }
 
     .baseline-selector {
-      flex: 1;
+      flex: 0 1 auto;
       justify-content: center;
       border-radius: 20px;
       padding: 2px;
+      margin: 0 auto; /* Center the selector */
+      max-width: 280px; /* Limit width */
     }
 
     .tab-button {
-      font-size: 12px;
-      padding: 6px 12px;
+      font-size: 11px;
+      padding: 4px 8px;
+      min-width: 0; /* Allow buttons to shrink */
     }
   }
   
@@ -203,10 +206,14 @@
       font-size: 14px;
     }
 
+    .baseline-selector {
+      max-width: 240px; /* Even narrower on small screens */
+    }
+
     .tab-button {
       flex: 1;
-      font-size: 13px;
-      padding: 6px 12px;
+      font-size: 10px;
+      padding: 4px 6px;
     }
   }
 </style>
