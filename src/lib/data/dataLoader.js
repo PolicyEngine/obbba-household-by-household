@@ -79,3 +79,42 @@ export async function loadDatasets() {
     throw new Error('Failed to load datasets');
   }
 }
+
+// Load datasets progressively - primary dataset first, then secondary in background
+export async function loadDatasetsProgressive(onFirstDatasetLoaded, onSecondDatasetLoaded) {
+  const allDatasets = {};
+  
+  try {
+    // Load TCJA expiration first (primary dataset)
+    console.log('Loading primary dataset (TCJA expiration)...');
+    const tcjaExpiration = await loadDataset('tcja-expiration');
+    allDatasets['tcja-expiration'] = processData(tcjaExpiration);
+    
+    // Notify that first dataset is ready
+    if (onFirstDatasetLoaded) {
+      onFirstDatasetLoaded(allDatasets);
+    }
+    
+    // Load TCJA extension in the background
+    console.log('Loading secondary dataset (TCJA extension) in background...');
+    loadDataset('tcja-extension')
+      .then(tcjaExtension => {
+        allDatasets['tcja-extension'] = processData(tcjaExtension);
+        console.log('Secondary dataset loaded successfully');
+        
+        // Notify that second dataset is ready
+        if (onSecondDatasetLoaded) {
+          onSecondDatasetLoaded(allDatasets);
+        }
+      })
+      .catch(error => {
+        console.error('Failed to load secondary dataset:', error);
+        // Don't throw - we can still work with just the primary dataset
+      });
+    
+    return allDatasets;
+  } catch (error) {
+    console.error('Failed to load primary dataset:', error);
+    throw new Error('Failed to load primary dataset');
+  }
+}
