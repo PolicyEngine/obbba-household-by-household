@@ -202,12 +202,12 @@
     let maxWeight = -Infinity;
     
     data.forEach(d => {
-      const x = xScale(d['Percentage Change in Net Income']);
+      const x = xScale(d['Percentage change in net income']);
       const y = yScale(d['Gross Income']);
       
       if (x >= margin.left && x <= width - margin.right && 
           y >= margin.top && y <= height - margin.bottom) {
-        const weight = d['Household weight'] || d['Household Weight'] || 1;
+        const weight = d['Household weight'] || d['Household weight'] || 1;
         minWeight = Math.min(minWeight, weight);
         maxWeight = Math.max(maxWeight, weight);
       }
@@ -230,7 +230,7 @@
     const dataToRender = data.slice(0, maxPointsToRender);
     
     dataToRender.forEach(d => {
-      let x = xScale(d['Percentage Change in Net Income']);
+      let x = xScale(d['Percentage change in net income']);
       let y = yScale(d['Gross Income']);
       
       // Check if point is outside bounds and clamp to edge
@@ -263,7 +263,7 @@
       }
       
       // Get point color
-      const color = getPointColor(d['Percentage Change in Net Income']);
+      const color = getPointColor(d['Percentage change in net income']);
       
       // Determine if highlighted
       const isGroupHighlighted = d.isHighlighted && d.stateIndex === Math.floor(currentStateIndex / 2);
@@ -276,7 +276,7 @@
       const isHighlighted = isGroupHighlighted || isIndividualHighlighted || isSelectedHousehold;
       
       // Set radius
-      const weight = d['Household weight'] || d['Household Weight'] || 1;
+      const weight = d['Household weight'] || d['Household weight'] || 1;
       let radius = isHighlighted ? (isIndividualHighlighted || isSelectedHousehold ? 6 : 4) : 2;
       
       // Calculate opacity based on weight
