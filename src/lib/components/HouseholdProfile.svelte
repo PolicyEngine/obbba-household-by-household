@@ -382,6 +382,8 @@
     /* Prevent layout shifts during animations */
     contain: layout style;
     will-change: contents;
+    /* Prevent text selection during updates to avoid focus issues */
+    user-select: none;
   }
 
   .household-profile h3 {
