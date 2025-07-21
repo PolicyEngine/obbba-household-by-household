@@ -61,10 +61,22 @@
   });
   
   let previousHouseholdId = null;
+  let previousDataset = null;
   
-  // Update animated values when household changes
-  $: if (household && household.id !== previousHouseholdId) {
+  // Update animated values when household changes or dataset changes
+  $: if (household && (household.id !== previousHouseholdId || selectedDataset !== previousDataset)) {
+    console.log('HouseholdProfile updating:', {
+      householdId: household.id,
+      dataset: selectedDataset,
+      netChange: household['Total Change in Net Income'] || household['Change in Household Net Income'],
+      percentChange: household['Percentage Change in Net Income'],
+      baselineNetIncome: household['Baseline Net Income'],
+      marketIncome: household['Market Income'] || household['Gross Income'],
+      allKeys: Object.keys(household).filter(k => k.includes('Income') || k.includes('Net'))
+    });
+    
     previousHouseholdId = household.id;
+    previousDataset = selectedDataset;
     
     // If this is the first household, start from random values for dramatic effect
     if ($householdId === 0) {
