@@ -8,8 +8,12 @@ export async function loadDataset(datasetKey) {
     throw new Error(`Unknown dataset: ${datasetKey}`);
   }
 
+  // Handle base path for both dev and production
+  const base = import.meta.env.BASE_URL || '/';
+  const url = `${base}${dataset.filename}`;
+
   try {
-    const response = await fetch(`/${dataset.filename}`);
+    const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to load CSV: ${response.status} ${response.statusText}`);
     }
@@ -30,7 +34,7 @@ export async function loadDataset(datasetKey) {
     console.error('Error loading data:', error);
     console.error('Dataset key:', datasetKey);
     console.error('Filename:', dataset?.filename);
-    console.error('Full URL:', `/${dataset?.filename}`);
+    console.error('Full URL:', url);
     throw error;
   }
 }
