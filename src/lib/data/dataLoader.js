@@ -54,3 +54,21 @@ export function buildHouseholdMap(data) {
   });
   return householdIdMap;
 }
+
+// Load all datasets
+export async function loadDatasets() {
+  try {
+    const [tcjaExpiration, tcjaExtension] = await Promise.all([
+      loadDataset('tcja-expiration'),
+      loadDataset('tcja-extension')
+    ]);
+    
+    return {
+      'tcja-expiration': processData(tcjaExpiration),
+      'tcja-extension': processData(tcjaExtension)
+    };
+  } catch (error) {
+    console.error('Failed to load datasets:', error);
+    throw new Error('Failed to load datasets');
+  }
+}
