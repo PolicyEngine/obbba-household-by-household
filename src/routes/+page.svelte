@@ -195,7 +195,7 @@
   }
   
   // Handle household selection
-  function selectHousehold(household) {
+  function selectHousehold(household, shouldScroll = true) {
     selectedHousehold = household;
     
     // If we're in a group view, update the random household for that section
@@ -204,12 +204,15 @@
       // Update the random household for this section
       randomHouseholds[currentState.id] = household;
       
-      // Find the next individual view and scroll to it
-      const nextIndex = $currentStateIndex + 1;
-      if (scrollStates[nextIndex] && scrollStates[nextIndex].viewType === 'individual') {
-        // Scroll to the individual view
-        if (textSections[nextIndex]) {
-          textSections[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Only scroll if explicitly requested (not when randomizing)
+      if (shouldScroll) {
+        // Find the next individual view and scroll to it
+        const nextIndex = $currentStateIndex + 1;
+        if (scrollStates[nextIndex] && scrollStates[nextIndex].viewType === 'individual') {
+          // Scroll to the individual view
+          if (textSections[nextIndex]) {
+            textSections[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
         }
       }
     } else if (currentState && currentState.viewType === 'individual') {
@@ -252,7 +255,7 @@
       
       if (newHousehold) {
         randomHouseholds[baseViewId] = newHousehold;
-        selectHousehold(newHousehold);
+        selectHousehold(newHousehold, false); // Don't scroll when randomizing
         
         // Re-trigger animations
         const sectionIndex = Math.floor($currentStateIndex / 2);
