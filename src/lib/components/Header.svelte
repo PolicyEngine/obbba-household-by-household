@@ -4,7 +4,9 @@
   
   export let selectedDataset = 'tcja-expiration';
   export let loading = false;
+  export let secondDatasetLoading = false;
   export let onDatasetChange = () => {};
+  export let allDatasets = {}; // Add this prop to check if datasets are loaded
   
   let headerEl;
   let isInIframe = false;
@@ -50,9 +52,12 @@
             class="tab-button" 
             class:active={selectedDataset === key}
             on:click={() => onDatasetChange(key)}
-            disabled={loading}
+            disabled={loading || (key === 'tcja-extension' && secondDatasetLoading && !allDatasets['tcja-extension'])}
           >
             {dataset.label}
+            {#if key === 'tcja-extension' && secondDatasetLoading}
+              <span class="loading-dot"></span>
+            {/if}
           </button>
         {/each}
       </div>
@@ -150,6 +155,25 @@
   .tab-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  .loading-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--text-secondary);
+    margin-left: 6px;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 1;
+    }
   }
 
   /* Mobile responsive header */
