@@ -199,24 +199,36 @@
   
   // Handle household selection
   function selectHousehold(household, shouldScroll = true) {
-    // If not scrolling, lock the scroll position
+    // If not scrolling, prevent any scroll changes
     if (!shouldScroll && scrollContainer) {
       // Save current scroll position
       const savedScrollTop = scrollContainer.scrollTop;
       
-      // Create a scroll handler that maintains position
+      // Use a debounced scroll handler to avoid vibration
+      let scrollTimeout;
       const maintainScroll = (e) => {
-        if (scrollContainer.scrollTop !== savedScrollTop) {
-          scrollContainer.scrollTop = savedScrollTop;
-        }
+        // Cancel the event to prevent scrolling
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Clear any pending position restore
+        clearTimeout(scrollTimeout);
+        
+        // Restore position after a tiny delay to avoid fighting with browser
+        scrollTimeout = setTimeout(() => {
+          if (scrollContainer && Math.abs(scrollContainer.scrollTop - savedScrollTop) > 1) {
+            scrollContainer.scrollTop = savedScrollTop;
+          }
+        }, 10);
       };
       
-      // Add scroll listener to maintain position
-      scrollContainer.addEventListener('scroll', maintainScroll, { passive: false });
+      // Add scroll listener with capture to intercept early
+      scrollContainer.addEventListener('scroll', maintainScroll, { capture: true, passive: false });
       
       // Remove listener after animations complete
       setTimeout(() => {
-        scrollContainer.removeEventListener('scroll', maintainScroll);
+        clearTimeout(scrollTimeout);
+        scrollContainer.removeEventListener('scroll', maintainScroll, { capture: true });
       }, 1000); // Match the longest animation duration
     }
     

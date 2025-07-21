@@ -380,8 +380,12 @@
     /* Prevent being used as scroll anchor */
     overflow-anchor: none;
     /* Prevent layout shifts during animations */
-    contain: layout style;
-    will-change: contents;
+    contain: layout style paint;
+    will-change: transform;
+    /* Force GPU acceleration for smoother updates */
+    transform: translateZ(0);
+    /* Prevent text selection during updates to avoid focus issues */
+    user-select: none;
   }
 
   .household-profile h3 {
