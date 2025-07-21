@@ -75,6 +75,13 @@
       allKeys: Object.keys(household).filter(k => k.includes('Income') || k.includes('Net'))
     });
     
+    // Don't reset expanded states when just shuffling households
+    // Only reset when switching datasets
+    if (selectedDataset !== previousDataset) {
+      showHouseholdDetails = false;
+      showProvisionDetails = false;
+    }
+    
     previousHouseholdId = household.id;
     previousDataset = selectedDataset;
     
@@ -222,7 +229,17 @@
       <div class="header-buttons">
         <button 
           class="action-button random-button" 
-          on:click={onRandomize}
+          on:click|preventDefault|stopPropagation={(e) => {
+            // Prevent any default scroll behavior
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Blur the button to prevent focus-related scrolling
+            e.currentTarget.blur();
+            
+            // Call the randomize function
+            onRandomize();
+          }}
           title="Pick a new random household"
         >
           🔀
@@ -358,6 +375,8 @@
     background: rgba(247, 250, 252, 0.85);
     border-radius: 8px;
     border: 1px solid rgba(226, 232, 240, 0.7);
+    /* Maintain stable layout */
+    min-height: 350px;
   }
 
   .household-profile h3 {
