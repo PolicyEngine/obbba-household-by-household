@@ -10,7 +10,10 @@ export async function loadDataset(datasetKey) {
 
   // Handle base path for both dev and production
   const base = import.meta.env.BASE_URL || '/';
-  const url = `${base}${dataset.filename}`;
+  // Ensure base ends with / and filename doesn't start with /
+  const normalizedBase = base.endsWith('/') ? base : base + '/';
+  const normalizedFilename = dataset.filename.startsWith('/') ? dataset.filename.slice(1) : dataset.filename;
+  const url = `${normalizedBase}${normalizedFilename}`;
 
   try {
     const response = await fetch(url);
