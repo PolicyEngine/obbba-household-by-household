@@ -250,17 +250,31 @@
     const state = scrollStates.find(s => s.id === baseViewId);
     
     if (state && data.length > 0) {
+      // Preserve scroll position before any DOM changes
+      const currentScrollTop = scrollContainer?.scrollTop || 0;
+      
       const filteredData = data.filter(d => state.filter(d));
       const newHousehold = getRandomWeightedHousehold(filteredData);
       
       if (newHousehold) {
-        randomHouseholds[baseViewId] = newHousehold;
+        // Create new object to trigger Svelte reactivity properly
+        randomHouseholds = {
+          ...randomHouseholds,
+          [baseViewId]: newHousehold
+        };
         selectHousehold(newHousehold, false); // Don't scroll when randomizing
         
         // Re-trigger animations
         const sectionIndex = Math.floor($currentStateIndex / 2);
         createAnimatedNumber(`household-id-${sectionIndex}`, 
           selectedHousehold?.id || 0, newHousehold.id, d => Math.round(d), 600);
+        
+        // Restore scroll position after DOM updates
+        requestAnimationFrame(() => {
+          if (scrollContainer && Math.abs(scrollContainer.scrollTop - currentScrollTop) > 5) {
+            scrollContainer.scrollTop = currentScrollTop;
+          }
+        });
       }
     }
   }
