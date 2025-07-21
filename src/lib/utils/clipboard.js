@@ -29,9 +29,6 @@ export async function copyHouseholdUrl(household, selectedDataset, currentState,
   // Set household parameters
   url.searchParams.set('household', household.id);
   url.searchParams.set('baseline', selectedDataset);
-  if (currentState) {
-    url.searchParams.set('section', currentState.id);
-  }
   
   const fullUrl = url.toString();
   console.log('Full URL to copy:', fullUrl);

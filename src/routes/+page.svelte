@@ -339,6 +339,12 @@
         // Find appropriate section
         const targetIndex = findSectionForHousehold(household, scrollStates);
         
+        // Update the random household for the appropriate section
+        const baseViewId = scrollStates[targetIndex]?.id?.replace('-individual', '') || scrollStates[targetIndex]?.id;
+        if (baseViewId) {
+          randomHouseholds[baseViewId] = household;
+        }
+        
         // Scroll to section
         if (textSections[targetIndex] && scrollContainer) {
           // Delay to ensure DOM is ready

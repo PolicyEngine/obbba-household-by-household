@@ -63,7 +63,7 @@ describe('clipboard utilities', () => {
       );
     });
 
-    it('includes section when provided', async () => {
+    it('does not include section parameter', async () => {
       const household = { id: 12345 };
       const dataset = 'tcja-extension';
       const currentState = { id: 'middle-income' };
@@ -72,7 +72,7 @@ describe('clipboard utilities', () => {
       await copyHouseholdUrl(household, dataset, currentState, event);
 
       expect(writeTextMock).toHaveBeenCalledWith(
-        'https://example.com/obbba-scatter?household=12345&baseline=tcja-extension&section=middle-income'
+        'https://example.com/obbba-scatter?household=12345&baseline=tcja-extension'
       );
     });
 
