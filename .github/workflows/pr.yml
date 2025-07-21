@@ -1,0 +1,85 @@
+name: Pull Request
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  size:
+    name: Check PR Size
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check PR size
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const pr = context.payload.pull_request;
+          const { data: files } = await github.rest.pulls.listFiles({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: pr.number
+          });
+          
+          const additions = files.reduce((sum, file) => sum + file.additions, 0);
+          const deletions = files.reduce((sum, file) => sum + file.deletions, 0);
+          const filesChanged = files.length;
+          
+          console.log(`PR stats: ${filesChanged} files, +${additions}/-${deletions}`);
+          
+          if (additions - deletions > 500) {
+            core.warning('This PR adds more than 500 lines. Consider breaking it up into smaller PRs.');
+          }
+          
+          if (filesChanged > 20) {
+            core.warning('This PR changes more than 20 files. Consider breaking it up into smaller PRs.');
+          }
+
+  preview:
+    name: Build Preview
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build preview
+      run: npm run build
+      env:
+        BASE_PATH: '/pr-preview/pr-${{ github.event.pull_request.number }}'
+    
+    - name: Upload preview artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: preview-${{ github.event.pull_request.number }}
+        path: build/
+        retention-days: 7
+    
+    - name: Comment PR
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const prNumber = context.payload.pull_request.number;
+          const comment = `🚀 **Preview Build Ready**
+          
+          A preview build has been created for this PR. It will be available at:
+          \`https://policyengine.github.io/obbba-scatter/pr-preview/pr-${prNumber}\`
+          
+          Note: The preview URL will be active after the PR is merged and deployed.`;
+          
+          github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: prNumber,
+            body: comment
+          });
