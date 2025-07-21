@@ -57,7 +57,7 @@
   }
   
   // Get current state and its households
-  $: currentState = scrollStates[currentStateIndex] || scrollStates[0];
+  $: currentState = scrollStates[$currentStateIndex] || scrollStates[0];
   $: currentRandomHousehold = (() => {
     if (currentState?.viewType === 'individual') {
       const baseViewId = currentState.id.replace('-individual', '');
@@ -124,7 +124,7 @@
         selectHousehold(newHousehold);
         
         // Re-trigger animations
-        const sectionIndex = Math.floor(currentStateIndex / 2);
+        const sectionIndex = Math.floor($currentStateIndex / 2);
         createAnimatedNumber(`household-id-${sectionIndex}`, 
           selectedHousehold?.id || 0, newHousehold.id, d => Math.round(d), 600);
       }
@@ -308,10 +308,10 @@
           bind:this={chartComponent}
           {data}
           {scrollStates}
-          currentStateIndex={currentStateIndex}
-          previousStateIndex={previousStateIndex}
-          isTransitioning={isTransitioning}
-          interpolationT={currentInterpolationT}
+          currentStateIndex={$currentStateIndex}
+          previousStateIndex={$previousStateIndex}
+          isTransitioning={$isTransitioning}
+          interpolationT={$currentInterpolationT}
           {randomHouseholds}
           onPointClick={selectHousehold}
         />

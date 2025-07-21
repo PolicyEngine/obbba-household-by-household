@@ -85,3 +85,6 @@ export function generateScrollStates() {
   
   return scrollStates;
 }
+
+// Export the generated scroll states
+export const scrollStates = generateScrollStates();
