@@ -1,5 +1,5 @@
 <script>
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, tick } from 'svelte';
   import { page } from '$app/stores';
   import { DATASETS } from '$lib/config/datasets.js';
   import { scrollStates } from '$lib/config/views.js';
@@ -263,7 +263,7 @@
   }
   
   // Handle dataset change
-  function handleDatasetChange(dataset) {
+  async function handleDatasetChange(dataset) {
     if (!allDatasets[dataset]) {
       console.error('Dataset not loaded:', dataset);
       return;
@@ -289,6 +289,10 @@
       const newHousehold = data.find(d => String(d.id) === String(oldHousehold.id));
       if (newHousehold) {
         newRandomHouseholds[sectionId] = newHousehold;
+        console.log(`Section ${sectionId}: Updated household ${oldHousehold.id}`, {
+          oldNetChange: oldHousehold['Total Change in Net Income'] || oldHousehold['Change in Household Net Income'],
+          newNetChange: newHousehold['Total Change in Net Income'] || newHousehold['Change in Household Net Income']
+        });
       }
     });
     
@@ -304,7 +308,10 @@
     });
     
     // Assign the new random households object to trigger reactivity
-    randomHouseholds = newRandomHouseholds;
+    randomHouseholds = { ...newRandomHouseholds };
+    
+    // Wait for Svelte to process the update
+    await tick();
     
     // Try to find the same household in the new dataset
     if (currentHouseholdId) {
