@@ -42,6 +42,9 @@
   let scrollContainer = null;
   let chartComponent = null;
   
+  // Track if we need to scroll to a household on load
+  let pendingScrollToHousehold = null;
+  
   // Draggable state
   let draggingSectionIndex = null;
   let dragOffset = { x: 0, y: 0 };
@@ -135,6 +138,24 @@
   // Re-render chart whenever transition values change
   $: if (chartComponent && ($isTransitioning || $currentInterpolationT)) {
     chartComponent.renderVisualization();
+  }
+  
+  // Handle pending scroll to household when sections are ready
+  $: if (pendingScrollToHousehold && textSections.length > 0 && textSections[pendingScrollToHousehold.targetIndex]) {
+    const { household, targetIndex } = pendingScrollToHousehold;
+    
+    // Ensure the household is selected
+    selectedHousehold = household;
+    
+    // Scroll to the section
+    setTimeout(() => {
+      if (textSections[targetIndex]) {
+        textSections[targetIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 200);
+    
+    // Clear the pending scroll
+    pendingScrollToHousehold = null;
   }
   
   // Handle section changes
@@ -299,6 +320,7 @@
   // Handle URL parameters
   async function handleUrlParams() {
     const { householdId, baseline } = parseUrlParams();
+    console.log('handleUrlParams called with:', { householdId, baseline });
     
     // Update baseline if provided
     if (baseline && baseline !== selectedDataset) {
@@ -332,12 +354,15 @@
     
     // Handle household selection
     if (householdId && data.length > 0) {
+      console.log('Looking for household:', householdId, 'in', data.length, 'households');
       const household = data.find(d => String(d.id) === householdId);
       if (household) {
+        console.log('Found household:', household);
         selectedHousehold = household;
         
         // Find appropriate section
         const targetIndex = findSectionForHousehold(household, scrollStates);
+        console.log('Target index:', targetIndex, 'textSections length:', textSections.length);
         
         // Update the random household for the appropriate section
         const baseViewId = scrollStates[targetIndex]?.id?.replace('-individual', '') || scrollStates[targetIndex]?.id;
@@ -351,6 +376,9 @@
           setTimeout(() => {
             textSections[targetIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
           }, 100);
+        } else {
+          // If sections aren't ready yet, store for later
+          pendingScrollToHousehold = { household, targetIndex };
         }
       }
     }
@@ -359,6 +387,14 @@
   // Lifecycle
   onMount(async () => {
     console.log('Component mounted, starting initialization...');
+    
+    // Check if we're in an iframe and get URL params from parent if needed
+    const isInIframe = window.self !== window.top;
+    if (isInIframe) {
+      // Check if parent passed parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      console.log('In iframe, URL params:', urlParams.toString());
+    }
     
     // Handle initial URL parameters
     await handleUrlParams();
