@@ -3,16 +3,21 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "build": "vite build",
     "dev": "vite dev",
+    "build": "vite build",
+    "build:github": "vite build",
+    "build:policyengine": "BASE_PATH=/us/obbba-household-explorer vite build",
     "preview": "vite preview",
+    "preview:policyengine": "BASE_PATH=/us/obbba-household-explorer vite preview",
+    "serve:policyengine": "node serve-policyengine.js",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "format": "prettier --write \"src/**/*.{js,svelte,json,css}\"",
     "format:check": "prettier --check \"src/**/*.{js,svelte,json,css}\"",
     "check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
-    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch"
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch",
+    "deploy": "npm run build && npx gh-pages -d build -t true"
   },
   "devDependencies": {
     "@sveltejs/adapter-auto": "^3.0.0",
