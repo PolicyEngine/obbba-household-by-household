@@ -75,6 +75,13 @@
       allKeys: Object.keys(household).filter(k => k.includes('Income') || k.includes('Net'))
     });
     
+    // Don't reset expanded states when just shuffling households
+    // Only reset when switching datasets
+    if (selectedDataset !== previousDataset) {
+      showHouseholdDetails = false;
+      showProvisionDetails = false;
+    }
+    
     previousHouseholdId = household.id;
     previousDataset = selectedDataset;
     
@@ -358,6 +365,8 @@
     background: rgba(247, 250, 252, 0.85);
     border-radius: 8px;
     border: 1px solid rgba(226, 232, 240, 0.7);
+    /* Maintain stable layout */
+    min-height: 350px;
   }
 
   .household-profile h3 {

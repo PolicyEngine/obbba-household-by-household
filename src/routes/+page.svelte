@@ -253,6 +253,11 @@
       // Preserve scroll position before any DOM changes
       const currentScrollTop = scrollContainer?.scrollTop || 0;
       
+      // Find the household profile element and get its position
+      const householdProfileElement = document.querySelector('.integrated-household-profile');
+      const profileOffsetTop = householdProfileElement ? 
+        householdProfileElement.getBoundingClientRect().top + window.pageYOffset : null;
+      
       const filteredData = data.filter(d => state.filter(d));
       const newHousehold = getRandomWeightedHousehold(filteredData);
       
@@ -269,11 +274,22 @@
         createAnimatedNumber(`household-id-${sectionIndex}`, 
           selectedHousehold?.id || 0, newHousehold.id, d => Math.round(d), 600);
         
-        // Restore scroll position after DOM updates
+        // Use multiple rAF to ensure DOM has fully updated
         requestAnimationFrame(() => {
-          if (scrollContainer && Math.abs(scrollContainer.scrollTop - currentScrollTop) > 5) {
-            scrollContainer.scrollTop = currentScrollTop;
-          }
+          requestAnimationFrame(() => {
+            // If we had a profile element position, maintain it
+            if (profileOffsetTop !== null && householdProfileElement) {
+              const newOffsetTop = householdProfileElement.getBoundingClientRect().top + window.pageYOffset;
+              const scrollAdjustment = newOffsetTop - profileOffsetTop;
+              
+              if (Math.abs(scrollAdjustment) > 2) {
+                scrollContainer.scrollTop = currentScrollTop + scrollAdjustment;
+              }
+            } else if (scrollContainer && Math.abs(scrollContainer.scrollTop - currentScrollTop) > 5) {
+              // Fallback to simple scroll restoration
+              scrollContainer.scrollTop = currentScrollTop;
+            }
+          });
         });
       }
     }
@@ -887,6 +903,9 @@
     margin-top: 1.5rem;
     padding-top: 1.5rem;
     border-top: 1px solid var(--border);
+    /* Prevent layout shifts by maintaining minimum height */
+    min-height: 400px;
+    position: relative;
   }
   
   
