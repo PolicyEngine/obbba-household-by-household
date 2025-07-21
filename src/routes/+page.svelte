@@ -695,9 +695,9 @@
   {#if loadError}
     <div class="error-overlay">
       <div class="error-content">
-        <h2>Error Loading Data</h2>
+        <h2>Error loading data</h2>
         <p>{loadError}</p>
-        <button on:click={() => location.reload()}>Reload Page</button>
+        <button on:click={() => location.reload()}>Reload page</button>
       </div>
     </div>
   {/if}

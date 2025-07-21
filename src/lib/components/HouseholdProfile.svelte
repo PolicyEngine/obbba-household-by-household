@@ -266,7 +266,7 @@
           <span class="value">{getHouseholdAges(household)}</span>
         </div>
         <div class="detail-item">
-          <span class="label">Market Income:</span>
+          <span class="label">Market income:</span>
           <span class="value">{formatCurrency($marketIncome)}</span>
         </div>
         <button 
@@ -282,12 +282,12 @@
       {#if showHouseholdDetails}
         <div class="expandable-details">
           <div class="detail-item">
-            <span class="label">Filing Status:</span>
+            <span class="label">Filing status:</span>
             <span class="value">{household['Is Married'] ? 'Married' : 'Single'}</span>
           </div>
           {#if household['Baseline Net Income']}
             <div class="detail-item">
-              <span class="label">Baseline Net Income:</span>
+              <span class="label">Baseline net income:</span>
               <span class="value">{formatCurrency(household['Baseline Net Income'])}</span>
             </div>
           {/if}
@@ -315,7 +315,7 @@
     
     <!-- OBBBA Impact Section -->
     <div class="impact-section">
-      <h4>OBBBA Impact</h4>
+      <h4>OBBBA impact</h4>
       <div class="impact-details">
         <div class="detail-item">
           <span class="label">Net income under TCJA {selectedDataset === 'tcja-expiration' ? 'expiration' : 'extension'}:</span>
