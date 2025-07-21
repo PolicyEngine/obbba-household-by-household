@@ -204,11 +204,18 @@
       // Save current scroll position
       const savedScrollTop = scrollContainer.scrollTop;
       
-      // Create a scroll handler that maintains position
+      // Use a debounced scroll handler to avoid vibration
+      let scrollTimeout;
       const maintainScroll = (e) => {
-        if (scrollContainer.scrollTop !== savedScrollTop) {
-          scrollContainer.scrollTop = savedScrollTop;
-        }
+        // Clear any pending position restore
+        clearTimeout(scrollTimeout);
+        
+        // Restore position after a tiny delay to avoid fighting with browser
+        scrollTimeout = setTimeout(() => {
+          if (scrollContainer && Math.abs(scrollContainer.scrollTop - savedScrollTop) > 1) {
+            scrollContainer.scrollTop = savedScrollTop;
+          }
+        }, 10);
       };
       
       // Add scroll listener to maintain position
@@ -216,6 +223,7 @@
       
       // Remove listener after animations complete
       setTimeout(() => {
+        clearTimeout(scrollTimeout);
         scrollContainer.removeEventListener('scroll', maintainScroll);
       }, 1000); // Match the longest animation duration
     }
