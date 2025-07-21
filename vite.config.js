@@ -3,5 +3,6 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
 	plugins: [sveltekit()],
-	base: '/obbba-scatter'
+	// Use environment variable or fallback to GitHub Pages path
+	base: process.env.BASE_PATH || '/obbba-scatter'
 });

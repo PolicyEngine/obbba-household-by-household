@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PolicyEngine Integration Example</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        #app-container {
+            width: 100%;
+            height: 100vh;
+            position: relative;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="app-container">
+        <iframe id="obbba-iframe" src=""></iframe>
+    </div>
+
+    <script>
+        // Get the iframe element
+        const iframe = document.getElementById('obbba-iframe');
+        
+        // Function to update iframe src with current URL parameters
+        function updateIframeSrc() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const baseUrl = '/us/obbba-household-explorer/'; // Or full URL for PolicyEngine
+            
+            // Pass URL parameters to iframe
+            iframe.src = baseUrl + '?' + urlParams.toString();
+        }
+        
+        // Initial load
+        updateIframeSrc();
+        
+        // Listen for URL changes (e.g., from browser back/forward)
+        window.addEventListener('popstate', updateIframeSrc);
+        
+        // Listen for messages from the iframe
+        window.addEventListener('message', (event) => {
+            // Verify origin for security
+            // if (event.origin !== expectedOrigin) return;
+            
+            if (event.data?.type === 'urlUpdate') {
+                // Update parent URL when iframe URL changes
+                const newUrl = new URL(window.location);
+                const newParams = new URLSearchParams(event.data.params);
+                
+                // Update parent URL parameters
+                newUrl.search = newParams.toString();
+                window.history.pushState({}, '', newUrl);
+            } else if (event.data?.type === 'requestUrlParams') {
+                // Send current URL parameters to iframe
+                iframe.contentWindow.postMessage({
+                    type: 'urlParams',
+                    params: window.location.search
+                }, '*');
+            }
+        });
+        
+        // Example deep links that should work:
+        // https://policyengine.org/us/obbba-household-explorer?household=39519&baseline=tcja-expiration
+        // https://policyengine.org/us/obbba-household-explorer?household=12345&baseline=tcja-extension
+    </script>
+</body>
+</html> 

@@ -539,9 +539,35 @@
     // Check if we're in an iframe and get URL params from parent if needed
     const isInIframe = window.self !== window.top;
     if (isInIframe) {
-      // Check if parent passed parameters
-      const urlParams = new URLSearchParams(window.location.search);
-      console.log('In iframe, URL params:', urlParams.toString());
+      console.log('Running in iframe, checking for parent URL parameters...');
+      
+      // Request parent to send current URL parameters
+      window.parent.postMessage({
+        type: 'requestUrlParams'
+      }, '*');
+      
+      // Also check if parent URL has parameters that should be used
+      // This handles the case where the iframe src doesn't include the params
+      const parentUrl = document.referrer;
+      if (parentUrl) {
+        try {
+          const parentUrlObj = new URL(parentUrl);
+          const parentParams = new URLSearchParams(parentUrlObj.search);
+          const household = parentParams.get('household');
+          const baseline = parentParams.get('baseline');
+          
+          if (household || baseline) {
+            console.log('Found parameters in parent URL:', { household, baseline });
+            // Update our URL to match parent
+            const currentUrl = new URL(window.location);
+            if (household) currentUrl.searchParams.set('household', household);
+            if (baseline) currentUrl.searchParams.set('baseline', baseline);
+            window.history.replaceState({}, '', currentUrl);
+          }
+        } catch (e) {
+          console.log('Could not parse parent URL:', e);
+        }
+      }
     }
     
     // Handle initial URL parameters
