@@ -747,7 +747,7 @@
   </div>
   
   {#if isLoading}
-    <LoadingOverlay message="Loading tax impact data..." />
+    <LoadingOverlay message="Loading data..." />
   {/if}
   
   {#if loadError}
