@@ -432,66 +432,84 @@
       
       // Load all datasets if needed
       if (Object.keys(allDatasets).length === 0) {
-      isLoading = true;
-      try {
-        console.log('Loading datasets progressively...');
-        
-        // Load datasets progressively
-        allDatasets = await loadDatasetsProgressive(
-          // First dataset loaded callback
-          (partialDatasets) => {
-            // Callback when first dataset is loaded
-            console.log('First dataset loaded:', Object.keys(partialDatasets));
-            allDatasets = { ...partialDatasets };
-            
-            // If current selection is TCJA expiration, show it immediately
-            if (selectedDataset === 'tcja-expiration' && partialDatasets['tcja-expiration']) {
-              data = partialDatasets['tcja-expiration'];
-              initializeRandomHouseholds();
-              isLoading = false; // Stop showing loading overlay
-              secondDatasetLoading = true; // But indicate background loading
+        isLoading = true;
+        try {
+          console.log('Loading datasets progressively...');
+          
+          // Load datasets progressively
+          allDatasets = await loadDatasetsProgressive(
+            // First dataset loaded callback
+            (partialDatasets) => {
+              // Callback when first dataset is loaded
+              console.log('First dataset loaded:', Object.keys(partialDatasets));
+              allDatasets = { ...partialDatasets };
+              
+              // If current selection is TCJA expiration, show it immediately
+              if (selectedDataset === 'tcja-expiration' && partialDatasets['tcja-expiration']) {
+                data = partialDatasets['tcja-expiration'];
+                initializeRandomHouseholds();
+                isLoading = false; // Stop showing loading overlay
+                secondDatasetLoading = true; // But indicate background loading
+                
+                // Handle household selection now that data is loaded
+                handleHouseholdSelection(householdId);
+              }
+            },
+            // Second dataset loaded callback
+            (completeDatasets) => {
+              console.log('Second dataset loaded in background');
+              allDatasets = { ...completeDatasets };
+              secondDatasetLoading = false;
+              
+              // If user switched to extension dataset while it was loading, update now
+              if (selectedDataset === 'tcja-extension' && completeDatasets['tcja-extension']) {
+                data = completeDatasets['tcja-extension'];
+                initializeRandomHouseholds();
+                // Handle household selection for extension dataset
+                handleHouseholdSelection(householdId);
+              }
             }
-          },
-          // Second dataset loaded callback
-          (completeDatasets) => {
-            console.log('Second dataset loaded in background');
-            allDatasets = { ...completeDatasets };
-            secondDatasetLoading = false;
-            
-            // If user switched to extension dataset while it was loading, update now
-            if (selectedDataset === 'tcja-extension' && completeDatasets['tcja-extension']) {
-              handleDatasetChange('tcja-extension');
-            }
+          );
+          
+          // All datasets are now loaded
+          console.log('All datasets loaded:', Object.keys(allDatasets), 'lengths:', {
+            'tcja-expiration': allDatasets['tcja-expiration']?.length,
+            'tcja-extension': allDatasets['tcja-extension']?.length
+          });
+          
+          // Update data if not already set
+          if (!data.length && allDatasets[selectedDataset]) {
+            data = allDatasets[selectedDataset];
+            initializeRandomHouseholds();
+            // Handle household selection now that data is loaded
+            handleHouseholdSelection(householdId);
           }
-        );
-        
-        // All datasets are now loaded
-        console.log('All datasets loaded:', Object.keys(allDatasets), 'lengths:', {
-          'tcja-expiration': allDatasets['tcja-expiration']?.length,
-          'tcja-extension': allDatasets['tcja-extension']?.length
-        });
-        
-        // Update data if not already set
-        if (!data.length && allDatasets[selectedDataset]) {
-          data = allDatasets[selectedDataset];
-          initializeRandomHouseholds();
+          
+          secondDatasetLoading = false;
+        } catch (error) {
+          console.error('Error loading data:', error);
+          loadError = error.message;
+          isLoading = false;
+          secondDatasetLoading = false;
+          return;
         }
-        
-        secondDatasetLoading = false;
-      } catch (error) {
-        console.error('Error loading data:', error);
-        loadError = error.message;
         isLoading = false;
-        secondDatasetLoading = false;
-        return;
+      } else {
+        // Datasets already loaded, just switch
+        if (allDatasets[selectedDataset]) {
+          data = allDatasets[selectedDataset];
+          // Handle household selection immediately
+          handleHouseholdSelection(householdId);
+        }
       }
-      isLoading = false;
-    } else {
-      // Datasets already loaded, just switch
-      data = allDatasets[selectedDataset];
+    } catch (error) {
+      console.error('Error in handleUrlParams:', error);
+      loadError = `Failed to load data: ${error.message}`;
     }
-    
-    // Handle household selection
+  }
+  
+  // Separate function to handle household selection after data is loaded
+  function handleHouseholdSelection(householdId) {
     if (householdId && data.length > 0) {
       console.log('Looking for household:', householdId, 'in', data.length, 'households');
       const household = data.find(d => String(d.id) === householdId);
@@ -506,7 +524,11 @@
         // Update the random household for the appropriate section
         const baseViewId = scrollStates[targetIndex]?.id?.replace('-individual', '') || scrollStates[targetIndex]?.id;
         if (baseViewId) {
-          randomHouseholds[baseViewId] = household;
+          // Use proper reactivity assignment
+          randomHouseholds = {
+            ...randomHouseholds,
+            [baseViewId]: household
+          };
         }
         
         // Scroll to section only if not in iframe
@@ -522,11 +544,14 @@
             pendingScrollToHousehold = { household, targetIndex };
           }
         }
+        
+        // Ensure chart updates
+        if (chartComponent?.renderVisualization) {
+          chartComponent.renderVisualization();
+        }
+      } else {
+        console.log('Household not found:', householdId);
       }
-    }
-    } catch (error) {
-      console.error('Error in handleUrlParams:', error);
-      loadError = `Failed to load data: ${error.message}`;
     }
   }
   
@@ -550,8 +575,6 @@
     // Add class to body if in iframe
     if (isInIframe) {
       document.body.classList.add('in-iframe');
-    }
-    if (isInIframe) {
       console.log('Running in iframe, checking for parent URL parameters...');
       
       // Request parent to send current URL parameters
@@ -581,6 +604,32 @@
           console.log('Could not parse parent URL:', e);
         }
       }
+      
+      // For PolicyEngine integration, check if URL params are missing from iframe src
+      // but present in the parent page URL structure
+      if (!window.location.search && parentUrl) {
+        try {
+          // Check if parent URL contains household explorer path with params
+          const parentUrlMatch = parentUrl.match(/obbba-household-explorer[^?]*\?(.+)/);
+          if (parentUrlMatch) {
+            console.log('Found parameters in parent path, applying to iframe');
+            const parentParams = new URLSearchParams(parentUrlMatch[1]);
+            const currentUrl = new URL(window.location);
+            
+            // Copy relevant parameters
+            ['household', 'baseline', 'section'].forEach(param => {
+              const value = parentParams.get(param);
+              if (value) {
+                currentUrl.searchParams.set(param, value);
+              }
+            });
+            
+            window.history.replaceState({}, '', currentUrl);
+          }
+        } catch (e) {
+          console.log('Could not extract parameters from parent path:', e);
+        }
+      }
     }
     
     // Handle initial URL parameters
@@ -603,17 +652,30 @@
     
     // Listen for parent messages (iframe integration)
     function handleMessage(event) {
+      // For security, we could check event.origin here in production
+      // if (event.origin !== expectedOrigin) return;
+      
       if (event.data?.type === 'urlParams') {
+        console.log('Received URL params from parent:', event.data.params);
         const url = new URL(window.location);
         const params = new URLSearchParams(event.data.params);
         
+        let hasChanges = false;
+        
         // Update our URL to match parent
         for (const [key, value] of params) {
-          url.searchParams.set(key, value);
+          if (url.searchParams.get(key) !== value) {
+            url.searchParams.set(key, value);
+            hasChanges = true;
+          }
         }
         
-        window.history.replaceState({}, '', url);
-        handleUrlParams();
+        // Only update if there are actual changes
+        if (hasChanges) {
+          window.history.replaceState({}, '', url);
+          console.log('Updated iframe URL based on parent params');
+          handleUrlParams();
+        }
       }
       
       // Handle test messages

@@ -26,7 +26,9 @@ export function updateUrlWithHousehold(householdId, selectedDataset) {
     }
     
     // Update URL without triggering navigation
-    goto(url.pathname + url.search, { replaceState: true, noScroll: true });
+    // Use the full path including search params for SvelteKit goto
+    const newUrl = url.pathname + url.search;
+    goto(newUrl, { replaceState: true, noScroll: true });
     notifyParentOfUrlChange();
   }
 }
