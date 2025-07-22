@@ -1,20 +1,23 @@
 #!/usr/bin/env python3
 """
-Optimized main script for generating tax reform data in efficient format.
+Generate tax reform data files for OBBBA Scatter visualization.
+This generates both the original wide format and the optimized format.
 """
 
 from datetime import datetime
+import shutil
 from reforms import (
     tcja_reform,
     current_law_baseline,
     get_all_senate_finance_reforms,
 )
+from analysis import calculate_stacked_household_impacts
 from analysis_optimized import calculate_stacked_household_impacts_optimized
 
 
 def main():
-    print(f"Optimized Tax Reform Data Generation")
-    print(f"===================================")
+    print(f"Tax Reform Data Generation")
+    print(f"=========================")
     print(f"Analysis year: 2026")
     print(f"Dataset: Enhanced CPS 2024")
     print(f"Starting analysis at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
@@ -33,14 +36,15 @@ def main():
         print(f"  {i}. {reform_name}")
     print()
     
-    # Calculate household-level impacts with Current Law baseline
+    # Generate optimized format
+    print("\nGenerating optimized format...")
     households_df, provisions_df = calculate_stacked_household_impacts_optimized(
         reforms=reforms, 
         baseline_reform=baseline_reform, 
         year=2026
     )
     
-    # Save results
+    # Save optimized results
     households_file = "households_tcja_expiration.csv"
     provisions_file = "provisions_tcja_expiration.csv"
     
@@ -48,17 +52,21 @@ def main():
     provisions_df.to_csv(provisions_file, index=False)
     
     print(f"\nSaved optimized results:")
-    print(f"  - {households_file} ({households_df.memory_usage(deep=True).sum() / 1024 / 1024:.1f} MB in memory)")
-    print(f"  - {provisions_file} ({provisions_df.memory_usage(deep=True).sum() / 1024 / 1024:.1f} MB in memory)")
+    print(f"  - {households_file}")
+    print(f"  - {provisions_file}")
     
-    # Check file sizes
-    import os
-    households_size = os.path.getsize(households_file) / 1024 / 1024
-    provisions_size = os.path.getsize(provisions_file) / 1024 / 1024
-    print(f"\nFile sizes:")
-    print(f"  - {households_file}: {households_size:.1f} MB")
-    print(f"  - {provisions_file}: {provisions_size:.1f} MB")
-    print(f"  - Total: {households_size + provisions_size:.1f} MB")
+    # Generate original wide format
+    print("\nGenerating original wide format...")
+    wide_df = calculate_stacked_household_impacts(
+        reforms=reforms,
+        baseline_reform=baseline_reform,
+        year=2026
+    )
+    
+    # Save with new name (without "senate")
+    wide_file = "household_tax_income_changes_current_law_baseline.csv"
+    wide_df.to_csv(wide_file, index=False)
+    print(f"  - {wide_file}")
     
     # Analysis 2: TCJA baseline (TCJA extension)
     print("\n" + "=" * 50)
@@ -66,14 +74,15 @@ def main():
     print("=" * 50)
     tcja_baseline_reform = tcja_reform()
     
-    # Calculate household-level impacts with TCJA baseline
+    # Generate optimized format
+    print("\nGenerating optimized format...")
     households_df_tcja, provisions_df_tcja = calculate_stacked_household_impacts_optimized(
         reforms=reforms,
         baseline_reform=tcja_baseline_reform,
         year=2026
     )
     
-    # Save results
+    # Save optimized results
     households_file_tcja = "households_tcja_extension.csv"
     provisions_file_tcja = "provisions_tcja_extension.csv"
     
@@ -81,29 +90,44 @@ def main():
     provisions_df_tcja.to_csv(provisions_file_tcja, index=False)
     
     print(f"\nSaved optimized results:")
-    print(f"  - {households_file_tcja} ({households_df_tcja.memory_usage(deep=True).sum() / 1024 / 1024:.1f} MB in memory)")
-    print(f"  - {provisions_file_tcja} ({provisions_df_tcja.memory_usage(deep=True).sum() / 1024 / 1024:.1f} MB in memory)")
+    print(f"  - {households_file_tcja}")
+    print(f"  - {provisions_file_tcja}")
     
-    # Check file sizes
-    households_size_tcja = os.path.getsize(households_file_tcja) / 1024 / 1024
-    provisions_size_tcja = os.path.getsize(provisions_file_tcja) / 1024 / 1024
-    print(f"\nFile sizes:")
-    print(f"  - {households_file_tcja}: {households_size_tcja:.1f} MB")
-    print(f"  - {provisions_file_tcja}: {provisions_size_tcja:.1f} MB")
-    print(f"  - Total: {households_size_tcja + provisions_size_tcja:.1f} MB")
+    # Generate original wide format
+    print("\nGenerating original wide format...")
+    wide_df_tcja = calculate_stacked_household_impacts(
+        reforms=reforms,
+        baseline_reform=tcja_baseline_reform,
+        year=2026
+    )
     
-    # Compare with original format estimate
+    # Save with new name (without "senate")
+    wide_file_tcja = "household_tax_income_changes_tcja_baseline.csv"
+    wide_df_tcja.to_csv(wide_file_tcja, index=False)
+    print(f"  - {wide_file_tcja}")
+    
+    # Summary
+    import os
     print(f"\n" + "=" * 50)
     print("SUMMARY")
     print("=" * 50)
-    original_size_estimate = len(households_df) * 150 * 8 / 1024 / 1024  # ~150 columns, 8 bytes per value
-    optimized_size = (households_size + provisions_size + households_size_tcja + provisions_size_tcja)
-    reduction = (1 - optimized_size / (original_size_estimate * 2)) * 100
     
-    print(f"Original format estimate: {original_size_estimate * 2:.1f} MB (2 files)")
-    print(f"Optimized format actual: {optimized_size:.1f} MB (4 files)")
-    print(f"Size reduction: {reduction:.0f}%")
+    total_size = 0
+    for f in [households_file, provisions_file, wide_file, 
+              households_file_tcja, provisions_file_tcja, wide_file_tcja]:
+        size = os.path.getsize(f) / 1024 / 1024
+        total_size += size
+        print(f"{f}: {size:.1f} MB")
+    
+    print(f"\nTotal size: {total_size:.1f} MB")
     print(f"\nAnalysis completed at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    
+    # Copy to static directory
+    print("\nCopying files to ../static/...")
+    for f in [households_file, provisions_file, wide_file,
+              households_file_tcja, provisions_file_tcja, wide_file_tcja]:
+        shutil.copy(f, "../static/")
+    print("Files copied successfully!")
 
 
 if __name__ == "__main__":
