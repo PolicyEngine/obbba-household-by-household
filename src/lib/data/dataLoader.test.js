@@ -34,15 +34,15 @@ describe('dataLoader', () => {
         {
           'Household ID': '12345',
           'Gross Income': '50000',
-          'Total Change in Net Income': '1000',
-          'Percentage Change in Net Income': '2.5',
+          'Total change in net income': '1000',
+          'Percentage change in net income': '2.5',
           'Household weight': '100'
         },
         {
           'Household ID': '67890',
           'Gross Income': '100000',
-          'Total Change in Net Income': '-500',
-          'Percentage Change in Net Income': '-0.5',
+          'Total change in net income': '-500',
+          'Percentage change in net income': '-0.5',
           'Household weight': '200'
         }
       ];
@@ -54,8 +54,8 @@ describe('dataLoader', () => {
         id: '12345',
         householdId: '12345',
         'Gross Income': '50000',
-        'Total Change in Net Income': '1000',
-        'Percentage Change in Net Income': '2.5',
+        'Total change in net income': '1000',
+        'Percentage change in net income': '2.5',
         'Household weight': '100'
       });
       expect(processed[1].id).toBe('67890');
@@ -64,10 +64,10 @@ describe('dataLoader', () => {
 
     it('processes all rows without filtering', () => {
       const rawData = [
-        { 'Gross Income': '50000', 'Total Change in Net Income': '1000' },
-        { 'Gross Income': '', 'Total Change in Net Income': '1000' },
-        { 'Gross Income': 'invalid', 'Total Change in Net Income': '1000' },
-        { 'Gross Income': '60000', 'Total Change in Net Income': '' }
+        { 'Gross Income': '50000', 'Total change in net income': '1000' },
+        { 'Gross Income': '', 'Total change in net income': '1000' },
+        { 'Gross Income': 'invalid', 'Total change in net income': '1000' },
+        { 'Gross Income': '60000', 'Total change in net income': '' }
       ];
 
       const processed = processData(rawData);
@@ -81,7 +81,7 @@ describe('dataLoader', () => {
     it('handles missing columns gracefully', () => {
       const rawData = [
         { 'Gross Income': '50000' },
-        { 'Total Change in Net Income': '1000' }
+        { 'Total change in net income': '1000' }
       ];
 
       const processed = processData(rawData);
@@ -89,15 +89,15 @@ describe('dataLoader', () => {
       // processData doesn't filter, just transforms
       expect(processed).toHaveLength(2);
       expect(processed[0]['Gross Income']).toBe('50000');
-      expect(processed[1]['Total Change in Net Income']).toBe('1000');
+      expect(processed[1]['Total change in net income']).toBe('1000');
     });
 
     it('adds default weight when missing', () => {
       const rawData = [
         {
           'Gross Income': '50000',
-          'Total Change in Net Income': '1000',
-          'Percentage Change in Net Income': '2.5'
+          'Total change in net income': '1000',
+          'Percentage change in net income': '2.5'
         }
       ];
 
@@ -110,7 +110,7 @@ describe('dataLoader', () => {
 
   describe('loadDatasets', () => {
     it('loads and processes both datasets', async () => {
-      const mockCsvData = `Household ID,Gross Income,Total Change in Net Income,Percentage Change in Net Income,Household weight
+      const mockCsvData = `Household ID,Gross Income,Total change in net income,Percentage change in net income,Household weight
 12345,50000,1000,2.5,100
 67890,100000,-500,-0.5,200`;
 

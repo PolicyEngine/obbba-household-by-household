@@ -68,8 +68,8 @@
     console.log('HouseholdProfile updating:', {
       householdId: household.id,
       dataset: selectedDataset,
-      netChange: household['Total Change in Net Income'] || household['Change in Household Net Income'],
-      percentChange: household['Percentage Change in Net Income'],
+      netChange: household['Total change in net income'] || household['Change in Household Net Income'],
+      percentChange: household['Percentage change in net income'],
       baselineNetIncome: household['Baseline Net Income'],
       marketIncome: household['Market Income'] || household['Gross Income'],
       allKeys: Object.keys(household).filter(k => k.includes('Income') || k.includes('Net'))
@@ -99,9 +99,9 @@
     householdId.set(parseInt(household.id) || 0);
     marketIncome.set(household['Market Income'] || household['Gross Income'] || 0);
     baselineNetIncome.set(household['Baseline Net Income'] || 0);
-    obbbaNetIncome.set((household['Baseline Net Income'] || 0) + (household['Total Change in Net Income'] || household['Change in Household Net Income'] || 0));
-    absoluteImpact.set(household['Total Change in Net Income'] || household['Change in Household Net Income'] || 0);
-    relativeImpact.set(household['Percentage Change in Net Income'] || 0);
+    obbbaNetIncome.set((household['Baseline Net Income'] || 0) + (household['Total change in net income'] || household['Change in Household Net Income'] || 0));
+    absoluteImpact.set(household['Total change in net income'] || household['Change in Household Net Income'] || 0);
+    relativeImpact.set(household['Percentage change in net income'] || 0);
   }
   
   // State abbreviation to full name mapping
@@ -128,8 +128,8 @@
     if (headAge) ages.push(Math.round(headAge));
     
     // Add spouse age if married
-    if (household['Is Married'] && household['Age of Spouse']) {
-      ages.push(Math.round(household['Age of Spouse']));
+    if (household['Is Married'] && household['Age of spouse']) {
+      ages.push(Math.round(household['Age of spouse']));
     }
     
     // Add individual dependent ages
@@ -137,7 +137,7 @@
     if (numDependents > 0) {
       // Check for individual dependent ages
       for (let i = 1; i <= numDependents; i++) {
-        const depAge = household[`Age of Dependent ${i}`];
+        const depAge = household[`Age of dependent ${i}`];
         if (depAge && depAge > 0) {
           ages.push(Math.round(depAge));
         }
@@ -186,28 +186,28 @@
     if (!household) return [];
     
     const provisions = [
-      { name: 'Rate Adjustment', key: 'Change in Net income after Rate Adjustments' },
-      { name: 'Standard Deduction Increase', key: 'Change in Net income after Standard deduction increase' },
-      { name: 'Exemption Repeal', key: 'Change in Net income after Exemption Reform' },
-      { name: 'Child Tax Credit Social Security Number Requirement', key: 'Change in Net income after Child Tax Credit Social Security Number Requirement' },
-      { name: 'Child Tax Credit Expansion', key: 'Change in Net income after Child Tax Credit Expansion' },
-      { name: 'Qualified Business Income Deduction Reform', key: 'Change in Net income after Qualified Business Interest Deduction Reform' },
-      { name: 'Alternative Minimum Tax Reform', key: 'Change in Net income after Alternative Minimum Tax Reform' },
-      { name: 'Miscellaneous Deductions Reform', key: 'Change in Net income after Miscellaneous Deduction Reform' },
-      { name: 'Charitable Deductions Reform', key: 'Change in Net income after Charitable Deductions Reform' },
-      { name: 'Casualty Loss Deductions Repeal', key: 'Change in Net income after Casualty Loss Deductions Repeal' },
-      { name: 'Pease Repeal', key: 'Change in Net income after Pease Repeal' },
-      { name: 'Limitation on Itemized Deductions Reform', key: 'Change in Net income after Limitation on Itemized Deductions Reform' },
-      { name: 'Estate Tax Reform', key: 'Change in Net income after Estate Tax Reform' },
-      { name: 'New Senior Deduction', key: 'Change in Net income after New Senior Deduction' },
-      { name: 'Tip Exemption', key: 'Change in Net income after Tip Exemption' },
-      { name: 'Overtime Exemption', key: 'Change in Net income after Overtime Exemption' },
-      { name: 'Auto Loan Interest Deduction', key: 'Change in Net income after Auto Loan Interest Deduction' },
+      { name: 'Rate adjustment', key: 'Change in Net income after Rate adjustments' },
+      { name: 'Standard deduction increase', key: 'Change in Net income after Standard deduction increase' },
+      { name: 'Exemption repeal', key: 'Change in Net income after Exemption repeal' },
+      { name: 'Child tax credit social security number requirement', key: 'Change in Net income after Child tax credit social security number requirement' },
+      { name: 'Child tax credit expansion', key: 'Change in Net income after Child tax credit expansion' },
+      { name: 'Qualified Business Income Deduction Reform', key: 'Change in Net income after Qualified business interest deduction reform' },
+      { name: 'Alternative minimum tax reform', key: 'Change in Net income after Alternative minimum tax reform' },
+      { name: 'Miscellaneous deduction reform', key: 'Change in Net income after Miscellaneous deduction reform' },
+      { name: 'Charitable deductions reform', key: 'Change in Net income after Charitable deductions reform' },
+      { name: 'Casualty loss deduction repeal', key: 'Change in Net income after Casualty loss deduction repeal' },
+      { name: 'Pease repeal', key: 'Change in Net income after Pease repeal' },
+      { name: 'Limitation on itemized deductions reform', key: 'Change in Net income after Limitation on itemized deductions reform' },
+      { name: 'Estate tax reform', key: 'Change in Net income after Estate tax reform' },
+      { name: 'New senior deduction', key: 'Change in Net income after New senior deduction' },
+      { name: 'Tip exemption', key: 'Change in Net income after Tip exemption' },
+      { name: 'Overtime exemption', key: 'Change in Net income after Overtime exemption' },
+      { name: 'Auto loan interest deduction', key: 'Change in Net income after Auto loan interest deduction' },
       { name: 'Cap on State and Local Tax Deduction', key: 'Change in Net income after Cap on state and local tax deduction' },
       { name: 'Child and Dependent Care Credit Reform', key: 'Change in Net income after Child and dependent care credit reform' },
-      { name: 'Extension of ACA Enhanced Subsidies', key: 'Change in Net income after Extension of ACA Enhanced Subsidies' },
-      { name: 'SNAP Reform', key: 'Change in Net income after SNAP Reform' },
-      { name: 'Medicaid Reform', key: 'Change in Net income after Medicaid Reform' }
+      { name: 'Extension of ACA enhanced subsidies', key: 'Change in Net income after Extension of ACA enhanced subsidies' },
+      { name: 'SNAP reform', key: 'Change in Net income after SNAP reform' },
+      { name: 'Medicaid reform', key: 'Change in Net income after Medicaid reform' }
     ];
     
     return provisions

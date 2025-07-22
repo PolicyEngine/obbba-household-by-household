@@ -65,8 +65,8 @@
     const percentChanges = [];
     
     sectionData.forEach(d => {
-      const weight = d['Household weight'] || d['Household Weight'] || 1;
-      const percentChange = d['Percentage Change in Net Income'] || 0;
+      const weight = d['Household weight'] || d['Household weight'] || 1;
+      const percentChange = d['Percentage change in net income'] || 0;
       
       totalWeight += weight;
       if (percentChange > 0) {
@@ -330,10 +330,10 @@
         const newHousehold = allDatasets[dataset].find(d => String(d.id) === id);
         if (oldHousehold && newHousehold) {
           console.log(`Sample household ${id} comparison:`, {
-            oldNetIncome: oldHousehold['Total Change in Net Income'] || oldHousehold['Change in Household Net Income'],
-            newNetIncome: newHousehold['Total Change in Net Income'] || newHousehold['Change in Household Net Income'],
-            oldPercentChange: oldHousehold['Percentage Change in Net Income'],
-            newPercentChange: newHousehold['Percentage Change in Net Income']
+            oldNetIncome: oldHousehold['Total change in net income'] || oldHousehold['Change in Household Net Income'],
+            newNetIncome: newHousehold['Total change in net income'] || newHousehold['Change in Household Net Income'],
+            oldPercentChange: oldHousehold['Percentage change in net income'],
+            newPercentChange: newHousehold['Percentage change in net income']
           });
         }
       });
@@ -358,10 +358,10 @@
         console.log(`Household ${oldHousehold.id} in section ${sectionId}:`, {
           previousDataset: dataset === 'tcja-expiration' ? 'tcja-extension' : 'tcja-expiration',
           newDataset: dataset,
-          oldNetChange: oldHousehold['Total Change in Net Income'] || oldHousehold['Change in Household Net Income'],
-          newNetChange: newHousehold['Total Change in Net Income'] || newHousehold['Change in Household Net Income'],
-          oldPercentChange: oldHousehold['Percentage Change in Net Income'],
-          newPercentChange: newHousehold['Percentage Change in Net Income'],
+          oldNetChange: oldHousehold['Total change in net income'] || oldHousehold['Change in Household Net Income'],
+          newNetChange: newHousehold['Total change in net income'] || newHousehold['Change in Household Net Income'],
+          oldPercentChange: oldHousehold['Percentage change in net income'],
+          newPercentChange: newHousehold['Percentage change in net income'],
           // Check all possible income fields
           oldFields: Object.keys(oldHousehold).filter(k => k.includes('Income')).map(k => ({ [k]: oldHousehold[k] })),
           newFields: Object.keys(newHousehold).filter(k => k.includes('Income')).map(k => ({ [k]: newHousehold[k] }))
