@@ -154,12 +154,16 @@
     // Ensure the household is selected
     selectedHousehold = household;
     
-    // Scroll to the section
-    setTimeout(() => {
-      if (textSections[targetIndex]) {
-        textSections[targetIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 200);
+    // Only scroll if not in iframe
+    const isInIframe = window.self !== window.top;
+    if (!isInIframe) {
+      // Scroll to the section
+      setTimeout(() => {
+        if (textSections[targetIndex]) {
+          textSections[targetIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 200);
+    }
     
     // Clear the pending scroll
     pendingScrollToHousehold = null;
@@ -240,8 +244,9 @@
         [currentState.id]: household
       };
       
-      // Only scroll if explicitly requested (not when randomizing)
-      if (shouldScroll) {
+      // Only scroll if explicitly requested (not when randomizing) AND not in iframe
+      const isInIframe = window.self !== window.top;
+      if (shouldScroll && !isInIframe) {
         // Find the next individual view and scroll to it
         const nextIndex = $currentStateIndex + 1;
         if (scrollStates[nextIndex] && scrollStates[nextIndex].viewType === 'individual') {
@@ -504,15 +509,18 @@
           randomHouseholds[baseViewId] = household;
         }
         
-        // Scroll to section
-        if (textSections[targetIndex] && scrollContainer) {
-          // Delay to ensure DOM is ready
-          setTimeout(() => {
-            textSections[targetIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }, 100);
-        } else {
-          // If sections aren't ready yet, store for later
-          pendingScrollToHousehold = { household, targetIndex };
+        // Scroll to section only if not in iframe
+        const isInIframe = window.self !== window.top;
+        if (!isInIframe) {
+          if (textSections[targetIndex] && scrollContainer) {
+            // Delay to ensure DOM is ready
+            setTimeout(() => {
+              textSections[targetIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+          } else {
+            // If sections aren't ready yet, store for later
+            pendingScrollToHousehold = { household, targetIndex };
+          }
         }
       }
     }
@@ -538,6 +546,11 @@
     
     // Check if we're in an iframe and get URL params from parent if needed
     const isInIframe = window.self !== window.top;
+    
+    // Add class to body if in iframe
+    if (isInIframe) {
+      document.body.classList.add('in-iframe');
+    }
     if (isInIframe) {
       console.log('Running in iframe, checking for parent URL parameters...');
       
@@ -601,6 +614,58 @@
         
         window.history.replaceState({}, '', url);
         handleUrlParams();
+      }
+      
+      // Handle test messages
+      if (event.data?.type === 'test') {
+        const action = event.data.action;
+        let response = { type: 'testResponse', action };
+        
+        switch (action) {
+          case 'randomHousehold':
+            try {
+              randomizeHousehold();
+              response.message = 'Random household selected successfully';
+            } catch (error) {
+              response.message = `Error: ${error.message}`;
+            }
+            break;
+            
+          case 'scroll':
+            try {
+              if (scrollContainer) {
+                scrollContainer.scrollTop += 200;
+                response.message = 'Scroll test completed';
+              } else {
+                response.message = 'Error: No scroll container found';
+              }
+            } catch (error) {
+              response.message = `Error: ${error.message}`;
+            }
+            break;
+            
+          case 'switchBaseline':
+            try {
+              const newDataset = selectedDataset === 'tcja-expiration' ? 'tcja-extension' : 'tcja-expiration';
+              handleDatasetChange(newDataset);
+              response.message = `Switched to ${newDataset}`;
+            } catch (error) {
+              response.message = `Error: ${error.message}`;
+            }
+            break;
+            
+          case 'checkIframe':
+            const isInIframe = window.self !== window.top;
+            const hasClass = document.body.classList.contains('in-iframe');
+            response.message = `Iframe detected: ${isInIframe}, CSS class applied: ${hasClass}`;
+            break;
+            
+          default:
+            response.message = `Unknown test action: ${action}`;
+        }
+        
+        // Send response back to parent
+        event.source.postMessage(response, event.origin);
       }
     }
     
@@ -809,6 +874,11 @@
     position: relative;
   }
   
+  /* Adjust positioning when in iframe */
+  :global(body.in-iframe) .app-container {
+    height: calc(100vh - 60px); /* Account for PolicyEngine header */
+  }
+  
   /* Full-screen chart background */
   .chart-background {
     position: fixed; /* Fixed to viewport */
@@ -817,6 +887,12 @@
     right: 0;
     bottom: 0;
     z-index: 1;
+  }
+  
+  /* In iframe, don't use fixed positioning to avoid conflicts */
+  :global(body.in-iframe) .chart-background {
+    position: absolute;
+    top: 0;
   }
   
   /* Scrollable content overlay - full width to allow dragging anywhere */
@@ -844,14 +920,15 @@
     -ms-overflow-style: none; /* IE and Edge */
   }
   
-  /* Hide scrollbar for Chrome, Safari and Opera */
-  .content-overlay::-webkit-scrollbar {
-    display: none;
+  /* In iframe, adjust content overlay positioning */
+  :global(body.in-iframe) .content-overlay {
+    top: 0;
   }
   
   .text-content {
     padding: 2rem 3rem 50vh 3rem;
     margin-left: 120px; /* Space for y-axis - matches chart margin */
+    margin-top: 4rem; /* Add space below header for first section */
     max-width: 680px; /* Keep text content constrained to left side */
   }
   

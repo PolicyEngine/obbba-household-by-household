@@ -66,29 +66,46 @@
 </header>
 
 <style>
-  /* Floating header styles */
-  .floating-header {
-    position: fixed;
+  header {
+    position: sticky;
     top: 0;
     left: 0;
     right: 0;
+    z-index: 9999;
     background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(226, 232, 240, 0.5);
-    z-index: 9999; /* Very high z-index to ensure it stays on top */
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    transform: translateZ(0); /* Force GPU acceleration for better performance */
-    will-change: transform; /* Optimize for animations */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    min-height: 60px;
+    width: 100%;
+    
+    /* Ensure header stays visible even when scrolling */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
   }
-
+  
+  /* Ensure header stays visible when embedded in iframe */
+  :global(body.in-iframe) header {
+    position: fixed !important;
+    top: 0 !important;
+    transform: translateY(0) !important;
+    -webkit-transform: translateY(0) !important;
+  }
+  
   .header-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 48px 16px calc(120px + 48px); /* Match text content margin-left (120px) + padding (48px) */
+    width: 100%;
     max-width: none;
     margin: 0;
+    padding: 0 1.5rem 0 calc(120px + 3rem); /* Left padding: y-axis space (120px) + text padding (3rem) */
   }
   
 
