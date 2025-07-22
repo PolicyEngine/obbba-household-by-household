@@ -46,6 +46,8 @@ export async function loadDataset(datasetKey) {
 export function processData(rawData) {
   return rawData.map((d, i) => ({
     ...d,
+    // Ensure 'Is Married' is a boolean
+    ...(d['Is Married'] !== undefined ? { 'Is Married': d['Is Married'] === true || d['Is Married'] === 'True' || d['Is Married'] === 1 || d['Is Married'] === '1' } : {}),
     id: String(d['Household ID'] || i), // Convert to string for consistent comparison
     householdId: d['Household ID'], // Keep original for reference
     isAnnotated: false,
