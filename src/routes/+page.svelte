@@ -3,7 +3,7 @@
   import { page } from '$app/stores';
   import { DATASETS } from '$lib/config/datasets.js';
   import { scrollStates } from '$lib/config/views.js';
-  import { loadDatasets, loadDatasetsProgressive } from '$lib/data/dataLoader.js';
+  import { loadDatasets, loadDatasetsProgressive } from '$lib/data/dataLoaderWrapper.js';
   import { 
     parseUrlParams, 
     updateUrlWithHousehold, 
