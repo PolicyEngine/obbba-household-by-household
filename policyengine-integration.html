@@ -37,30 +37,51 @@
             const baseUrl = '/us/obbba-household-explorer/'; // Or full URL for PolicyEngine
             
             // Pass URL parameters to iframe
-            iframe.src = baseUrl + '?' + urlParams.toString();
+            const fullUrl = baseUrl + (urlParams.toString() ? '?' + urlParams.toString() : '');
+            iframe.src = fullUrl;
+            
+            console.log('Updated iframe src to:', fullUrl);
+        }
+        
+        // Function to extract parameters from current URL and sync with iframe
+        function syncParameters() {
+            // Check for parameters in current URL
+            const currentParams = new URLSearchParams(window.location.search);
+            console.log('Current page parameters:', currentParams.toString());
+            
+            // Always update iframe with current parameters
+            updateIframeSrc();
         }
         
         // Initial load
-        updateIframeSrc();
+        syncParameters();
         
         // Listen for URL changes (e.g., from browser back/forward)
-        window.addEventListener('popstate', updateIframeSrc);
+        window.addEventListener('popstate', (event) => {
+            console.log('Browser navigation detected, syncing parameters');
+            syncParameters();
+        });
         
         // Listen for messages from the iframe
         window.addEventListener('message', (event) => {
-            // Verify origin for security
-            // if (event.origin !== expectedOrigin) return;
+            console.log('Received message from iframe:', event.data);
             
             if (event.data?.type === 'urlUpdate') {
                 // Update parent URL when iframe URL changes
                 const newUrl = new URL(window.location);
-                const newParams = new URLSearchParams(event.data.params);
                 
-                // Update parent URL parameters
-                newUrl.search = newParams.toString();
+                // Clear existing parameters and set new ones
+                newUrl.search = '';
+                if (event.data.params) {
+                    newUrl.search = '?' + event.data.params;
+                }
+                
+                // Update parent URL without triggering a page reload
                 window.history.pushState({}, '', newUrl);
+                console.log('Updated parent URL to:', newUrl.toString());
             } else if (event.data?.type === 'requestUrlParams') {
                 // Send current URL parameters to iframe
+                console.log('Iframe requested URL params, sending:', window.location.search);
                 iframe.contentWindow.postMessage({
                     type: 'urlParams',
                     params: window.location.search
@@ -68,9 +89,36 @@
             }
         });
         
+        // Handle the case where URL parameters are added after initial load
+        // This simulates what would happen when someone clicks a deep link
+        function handleDeepLink(params) {
+            const url = new URL(window.location);
+            const paramObj = new URLSearchParams(params);
+            
+            // Update URL with new parameters
+            for (const [key, value] of paramObj) {
+                url.searchParams.set(key, value);
+            }
+            
+            window.history.pushState({}, '', url);
+            syncParameters();
+        }
+        
+        // Example function to test deep links programmatically
+        window.testDeepLink = function(household, baseline = 'tcja-expiration') {
+            const params = `household=${household}&baseline=${baseline}`;
+            console.log('Testing deep link with params:', params);
+            handleDeepLink(params);
+        };
+        
+        // For debugging: expose sync function globally
+        window.syncParameters = syncParameters;
+        
         // Example deep links that should work:
         // https://policyengine.org/us/obbba-household-explorer?household=39519&baseline=tcja-expiration
         // https://policyengine.org/us/obbba-household-explorer?household=12345&baseline=tcja-extension
+        
+        console.log('PolicyEngine integration ready. Test with: testDeepLink(39519, "tcja-expiration")');
     </script>
 </body>
 </html> 
