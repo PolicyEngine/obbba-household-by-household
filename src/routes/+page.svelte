@@ -1185,7 +1185,7 @@
   }
   
   .overlay-title {
-    font-size: 1.5rem;
+    font-size: 2rem;
     font-weight: 700;
     color: var(--text-primary);
     margin: 0;
@@ -1441,7 +1441,7 @@
   }
   
   .text-section h2 {
-    font-size: 2rem;
+    font-size: 24px;
     font-weight: 700;
     margin: 0 0 1rem 0;
     color: var(--text-primary);
@@ -1566,7 +1566,7 @@
     }
     
     .overlay-title {
-      font-size: 1.125rem;
+      font-size: 1.5rem;
     }
     
     /* Hide full title, show mobile title */
@@ -1688,7 +1688,7 @@
     
     
     .text-section h2 {
-      font-size: 1.25rem;
+      font-size: 18px;
       line-height: 1.3;
       margin-bottom: 0.75rem;
     }
@@ -1725,7 +1725,7 @@
     }
     
     .overlay-title {
-      font-size: 0.875rem;
+      font-size: 1.125rem;
     }
     
     /* Ensure mobile title is shown on small screens too */
@@ -1775,7 +1775,7 @@
     
     
     .text-section h2 {
-      font-size: 1.125rem;
+      font-size: 16px;
     }
     
     .text-section p {

@@ -105,10 +105,11 @@
   
 
   .app-title {
-    font-size: 24px;
+    font-size: 36px !important;
     font-weight: 700;
     color: var(--text-primary);
     margin: 0;
+    line-height: 1.2;
   }
 
   /* Baseline selector container */
@@ -174,6 +175,10 @@
       height: auto; /* Allow height to grow for stacked layout */
     }
     
+    .app-title {
+      font-size: 28px !important;
+    }
+    
     .header-content {
       padding: 12px;
       flex-direction: column; /* Stack vertically */
@@ -219,7 +224,7 @@
   
   @media (max-width: 480px) {
     .app-title {
-      font-size: 14px;
+      font-size: 22px !important;
     }
 
     .baseline-selector {
