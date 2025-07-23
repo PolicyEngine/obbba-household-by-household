@@ -27,7 +27,7 @@
   let isInitializingAnimations = false;
   
   // Chart dimensions
-  let margin = { top: 60, right: 100, bottom: 100, left: 120 };
+  let margin = { top: 60, right: 120, bottom: 100, left: 120 };
   let width = 900;
   let height = 600;
   
@@ -37,11 +37,11 @@
     
     const viewportWidth = window.innerWidth;
     if (viewportWidth <= 480) {
-      margin = { top: 40, right: 15, bottom: 50, left: 50 };
+      margin = { top: 40, right: 50, bottom: 50, left: 50 };
     } else if (viewportWidth <= 768) {
-      margin = { top: 50, right: 30, bottom: 70, left: 65 };
+      margin = { top: 50, right: 65, bottom: 70, left: 65 };
     } else {
-      margin = { top: 60, right: 100, bottom: 100, left: 120 };
+      margin = { top: 60, right: 120, bottom: 100, left: 120 };
     }
   }
   

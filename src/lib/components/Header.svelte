@@ -100,7 +100,7 @@
     width: 100%;
     max-width: none;
     margin: 0;
-    padding: 0 1.5rem 0 calc(120px + 3rem); /* Left padding: y-axis space (120px) + text padding (3rem) */
+    padding: 0 calc(120px + 3rem) 0 calc(120px + 3rem); /* Symmetric padding to center content */
   }
   
 
