@@ -21,7 +21,6 @@
   } from '$lib/navigation/scrollHandler.js';
   import { animateHouseholdEmphasis, createAnimatedNumber, cleanupAnimations } from '$lib/utils/animations.js';
   import LoadingOverlay from '$lib/components/LoadingOverlay.svelte';
-  import Header from '$lib/components/Header.svelte';
   import HouseholdProfile from '$lib/components/HouseholdProfile.svelte';
   import ScatterPlot from '$lib/components/ScatterPlot.svelte';
   
@@ -779,13 +778,6 @@
 </svelte:head>
 
 <div class="app-container">
-  <Header 
-    {selectedDataset} 
-    {secondDatasetLoading}
-    {allDatasets}
-    onDatasetChange={handleDatasetChange}
-  />
-  
   <!-- Full-screen chart background -->
   <div class="chart-background">
     <ScatterPlot
@@ -802,16 +794,50 @@
     />
   </div>
   
+  <!-- Title overlay (always visible, content fades based on scroll) -->
+  <div class="title-overlay">
+    <h1 class="overlay-title">{scrollStates[0]?.title || "The One Big Beautiful Bill Act, household by household"}</h1>
+    <div class="overlay-description" style="opacity: {$currentStateIndex === 0 ? 1 : 0}; transition: opacity 0.3s ease">
+      {#if scrollStates[0]?.description}
+        <p>{@html scrollStates[0].description}</p>
+      {/if}
+      <div class="scroll-indicator">
+        <span>Scroll to explore</span>
+        <span class="arrow">↓</span>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Baseline selector overlay (always visible on right) -->
+  <div class="baseline-selector-overlay">
+    <span class="baseline-label">Baseline:</span>
+    <div class="baseline-selector">
+      {#each Object.entries(DATASETS) as [key, dataset]}
+        <button 
+          class="tab-button" 
+          class:active={selectedDataset === key}
+          on:click={() => handleDatasetChange(key)}
+          disabled={isLoading || (key === 'tcja-extension' && secondDatasetLoading && !allDatasets['tcja-extension'])}
+        >
+          {dataset.label}
+          {#if key === 'tcja-extension' && secondDatasetLoading}
+            <span class="loading-dot"></span>
+          {/if}
+        </button>
+      {/each}
+    </div>
+  </div>
+  
   <!-- Scrollable content overlay -->
   <div class="content-overlay" bind:this={scrollContainer}>
     <div class="text-content">
       {#each scrollStates as state, i}
-        {#if state.viewType === 'group'}
+        {#if state.viewType === 'group' && state.id !== 'intro'}
           <section 
             class="text-section {state.id}"
             class:active={$currentStateIndex === i}
             class:dragging={draggingSectionIndex === i}
-            class:centered={state.id === 'intro' || state.id === 'all-households'}
+            class:centered={state.id === 'all-households'}
             class:align-left={startOnLeft ? ['lower-income', 'upper-income'].includes(state.id) : ['middle-income', 'highest-income'].includes(state.id)}
             class:align-right={startOnLeft ? ['middle-income', 'highest-income'].includes(state.id) : ['lower-income', 'upper-income'].includes(state.id)}
             data-index={i}
@@ -860,10 +886,6 @@
                       onRandomize={randomizeHousehold}
                     />
                   </div>
-                {/if}
-              {:else if state.id === 'intro'}
-                {#if state.description}
-                  <p>{@html state.description}</p>
                 {/if}
                 {#if state.content}
                   <p>{@html state.content}</p>
@@ -957,7 +979,7 @@
   /* Full-screen chart background */
   .chart-background {
     position: fixed; /* Fixed to viewport */
-    top: 60px; /* Account for header */
+    top: 0; /* Start from top now that header is removed */
     left: 0;
     right: 0;
     bottom: 0;
@@ -970,16 +992,152 @@
     top: 0;
   }
   
+  /* Title overlay - always visible, full width */
+  .title-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 20; /* Higher than content overlay (15) to be above boxes */
+    background: rgba(255, 255, 255, 0.98);
+    padding: 1.5rem 2rem;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+    text-align: center;
+  }
+  
+  .overlay-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+  }
+  
+  .overlay-description {
+    transition: opacity 0.3s ease, max-height 0.3s ease;
+    overflow: hidden;
+    margin-top: 1rem;
+  }
+  
+  .overlay-description p {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0 auto;
+    max-width: 800px;
+  }
+  
+  
+  .scroll-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    opacity: 0.7;
+  }
+  
+  .scroll-indicator .arrow {
+    font-size: 1.25rem;
+    animation: arrow-bounce 2s infinite;
+  }
+  
+  /* Baseline selector overlay (always visible on right) */
+  .baseline-selector-overlay {
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    z-index: 20; /* Same as title overlay, above content */
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 0.75rem 1.25rem;
+    border-radius: 12px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(226, 232, 240, 0.5);
+  }
+
+  .baseline-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+  }
+
+  .baseline-selector {
+    display: flex;
+    background: var(--grid-lines);
+    border-radius: 8px;
+    padding: 4px;
+    gap: 4px;
+  }
+
+  .tab-button {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    font-family: var(--font-sans);
+  }
+
+  .tab-button:hover:not(:disabled):not(.active) {
+    background: rgba(44, 100, 150, 0.08);
+    color: var(--text-primary);
+  }
+
+  .tab-button.active {
+    background: var(--app-background);
+    color: var(--text-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    font-weight: 700;
+  }
+
+  .tab-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .loading-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--text-secondary);
+    margin-left: 6px;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+  
   /* Scrollable content overlay - full width to allow dragging anywhere */
   .content-overlay {
     position: absolute;
-    top: 60px; /* Account for header */
+    top: 0; /* Start from top now that header is removed */
     left: 0;
     width: 100%; /* Full width for dragging */
     bottom: 0;
     overflow-y: auto;
     overflow-x: hidden; /* Prevent horizontal scroll */
-    z-index: 10; /* Higher than chart but much lower than header (9999) */
+    z-index: 15; /* Higher than title overlay (10) */
     pointer-events: none; /* Allow clicks through except on text sections */
     -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
     /* Prevent automatic scroll adjustments */
@@ -1004,7 +1162,7 @@
     padding: 2rem 3rem 50vh 3rem;
     padding-left: calc(120px + 3rem); /* Space for y-axis - matches chart margin */
     padding-right: calc(120px + 3rem); /* Match left side for symmetry */
-    margin-top: 4rem; /* Add space below header for first section */
+    margin-top: 280px; /* Space for the fixed title overlay */
     width: 100%;
     position: relative;
   }
@@ -1155,6 +1313,22 @@
     opacity: 0.8;
   }
   
+  /* Intro section special layout */
+  .intro-title-bar {
+    margin: -1.5rem -1.5rem 1rem -1.5rem; /* Negative margins to extend to box edges */
+    padding: 1rem 1.5rem;
+    background: rgba(255, 255, 255, 0.5);
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .intro-title-bar h2 {
+    margin: 0;
+  }
+  
+  .intro-content {
+    transition: opacity 0.3s ease;
+  }
+  
   
   .integrated-household-profile {
     margin-top: 0.75rem;
@@ -1212,15 +1386,50 @@
     .content-overlay {
       width: 100%;
       max-width: none;
-      top: 90px; /* Account for multi-row header */
+      top: 0; /* Start from top */
       /* Extra prevention of scroll snap on mobile */
       -webkit-overflow-scrolling: auto !important;
       scroll-snap-type: none !important;
     }
     
+    /* Mobile title overlay styles */
+    .title-overlay {
+      padding: 1rem;
+    }
+    
+    .overlay-title {
+      font-size: 1.25rem;
+    }
+    
+    .overlay-description p {
+      font-size: 0.875rem;
+    }
+    
+    .baseline-selector-overlay {
+      top: 1rem;
+      right: 1rem;
+      padding: 0.5rem 0.75rem;
+      gap: 8px;
+    }
+    
+    .baseline-label {
+      font-size: 12px;
+    }
+    
+    .baseline-selector {
+      padding: 3px;
+      gap: 3px;
+    }
+    
+    .tab-button {
+      font-size: 12px;
+      padding: 6px 12px;
+    }
+    
     .text-content {
       padding: 1rem 1rem 30vh 1rem;
       max-width: 100%;
+      margin-top: 200px; /* Space for mobile title overlay */
     }
     
     .text-section {
@@ -1267,8 +1476,36 @@
   
   /* Small mobile devices */
   @media (max-width: 480px) {
+    .title-overlay {
+      padding: 0.75rem;
+    }
+    
+    .overlay-title {
+      font-size: 1rem;
+    }
+    
+    .overlay-description p {
+      font-size: 0.813rem;
+    }
+    
+    .baseline-selector-overlay {
+      top: 0.5rem;
+      right: 0.5rem;
+      padding: 0.375rem 0.5rem;
+    }
+    
+    .baseline-label {
+      font-size: 11px;
+    }
+    
+    .tab-button {
+      font-size: 11px;
+      padding: 4px 8px;
+    }
+    
     .text-content {
       padding: 0.75rem 0.75rem 20vh 0.75rem;
+      margin-top: 160px; /* Space for small mobile title overlay */
     }
     
     .text-section {
