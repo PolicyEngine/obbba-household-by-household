@@ -188,7 +188,12 @@ describe('dataLoader', () => {
         progressReports.push(progress);
       });
 
-      expect(progressReports).toEqual([33, 67, 100]);
+      // Progress is now reported only on 5% intervals
+      // With 1500 items in chunks of 500:
+      // - 500/1500 = 33.3% → rounds to 33% (not divisible by 5, skipped)
+      // - 1000/1500 = 66.7% → rounds to 67% (not divisible by 5, skipped)  
+      // - 1500/1500 = 100% (divisible by 5, reported)
+      expect(progressReports).toEqual([100]);
     });
   });
 });
