@@ -808,7 +808,10 @@
   
   <!-- Title overlay (always visible) -->
   <div class="title-overlay">
-    <h1 class="overlay-title">{scrollStates[0]?.title || "The One Big Beautiful Bill Act, household by household"}</h1>
+    <h1 class="overlay-title">
+      <span class="title-full">{scrollStates[0]?.title || "The One Big Beautiful Bill Act, household by household"}</span>
+      <span class="title-mobile">OBBBA, household by household</span>
+    </h1>
   </div>
   
   <!-- Baseline selector overlay (always visible on right) -->
@@ -1039,6 +1042,11 @@
     color: var(--text-primary);
     margin: 0;
     white-space: nowrap;
+  }
+  
+  /* Show full title on desktop, hide mobile title */
+  .title-mobile {
+    display: none;
   }
   
   
@@ -1421,6 +1429,15 @@
       font-size: 1.125rem;
     }
     
+    /* Hide full title, show mobile title */
+    .title-full {
+      display: none;
+    }
+    
+    .title-mobile {
+      display: inline;
+    }
+    
     .baseline-selector-overlay {
       top: auto;
       bottom: 1rem;
@@ -1569,6 +1586,15 @@
     
     .overlay-title {
       font-size: 0.875rem;
+    }
+    
+    /* Ensure mobile title is shown on small screens too */
+    .title-full {
+      display: none;
+    }
+    
+    .title-mobile {
+      display: inline;
     }
     
     .baseline-selector-overlay {
