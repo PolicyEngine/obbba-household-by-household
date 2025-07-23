@@ -2,8 +2,8 @@
 export const baseViews = [
   {
     id: 'intro',
-    title: "How the reconciliation bill affects 40,000 households",
-    groupText: "On July 4, President Donald Trump signed into law the One Big Beautiful Bill Act (OBBBA). The bill extended the 2017 tax cuts, enacted additional tax reforms, and reduced spending on programs like Medicaid.<br><br>We've calculated how these changes will affect 40,000 representative households in 2026. As you scroll, you'll discover how impacts vary across income levels—with surprising patterns emerging as incomes rise.",
+    title: "The One Big Beautiful Bill Act, household by household",
+    groupText: "On July 4, President Donald Trump signed into law the One Big Beautiful Bill Act (OBBBA). The bill extended the 2017 tax cuts, enacted additional tax reforms, and reduced spending on programs like Medicaid.<br><br>We've calculated how these changes will affect 40,000 representative households in 2026. As you scroll, you'll see how impacts vary across income levels—with patterns emerging as incomes rise.",
     view: {
       xDomain: [-20, 20],
       yDomain: [0, 350000],
@@ -24,7 +24,7 @@ export const baseViews = [
   },
   {
     id: 'middle-income',
-    title: "Households with income $50,000 - $200,000", 
+    title: "Households with income $50,000 to $200,000", 
     groupText: null, // Will be dynamically generated with statistics
     view: {
       xDomain: [-20, 20],
@@ -35,7 +35,7 @@ export const baseViews = [
   },
   {
     id: 'upper-income',
-    title: "Households with income $200,000 - $1 million",
+    title: "Households with income $200,000 to $1 million",
     groupText: null, // Will be dynamically generated with statistics
     view: {
       xDomain: [-20, 20],
@@ -58,7 +58,7 @@ export const baseViews = [
   {
     id: 'all-households',
     title: "All households",
-    groupText: "Overall, OBBBA affects {totalPercentage}% of households. The median household experiences a {medianImpact}% change in net income.<br><br>Visit <a href='https://policyengine.org' target='_blank' style='color: var(--primary-blue); text-decoration: underline;'>PolicyEngine.org</a> to explore more of our free, open source tools and policy research. Calculate your own tax impact, design custom reforms, and analyze their effects on poverty, inequality, and government revenues.",
+    groupText: "Overall, OBBBA affects {totalPercentage}% of households. The median household gains {medianImpact}% in net income.<br><br>Visit <a href='https://policyengine.org' target='_blank' style='color: var(--primary-blue); text-decoration: underline;'>PolicyEngine.org</a> to explore more of our free, open source tools and policy research. Calculate your own tax impact, design custom reforms, and analyze their effects on poverty, inequality, and government revenues.",
     view: {
       xDomain: [-20, 20],
       yDomain: [0, 10000000],

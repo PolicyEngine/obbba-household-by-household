@@ -824,7 +824,7 @@
                 {#if stats}
                   {#if state.id === 'lower-income'}
                     <p>Of the {stats.total} million households with market income below $50,000, OBBBA will increase the net income of {stats.positivePercent}% and reduce the net income of {stats.negativePercent}%.</p>
-                    <p>Each dot represents a household—darker dots show greater impact. Click any dot to explore that household's details, or scroll to see the randomly selected household below.</p>
+                    <p>Each dot represents a household. Click any dot to explore that household's details, or scroll to see the randomly selected household below.</p>
                   {:else if state.id === 'middle-income'}
                     {@const lowerStats = calculateSectionStats(data.filter(d => d['Market Income'] >= 0 && d['Market Income'] < 50000))}
                     <p>Among the {stats.total} million households earning $50,000–$200,000, {stats.positivePercent}% will see gains and {stats.negativePercent}% will see losses.</p>
@@ -832,11 +832,11 @@
                   {:else if state.id === 'upper-income'}
                     {@const middleStats = calculateSectionStats(data.filter(d => d['Market Income'] >= 50000 && d['Market Income'] < 200000))}
                     <p>For the {stats.total} million households earning $200,000–$1 million, the reform creates {stats.positivePercent}% winners and {stats.negativePercent}% losers.</p>
-                    <p>This upper-income bracket shows {stats.positivePercent > middleStats.positivePercent ? 'even higher' : 'lower'} gain rates than middle-income households. The concentration of impacts becomes more pronounced at higher incomes.</p>
+                    <p>This upper-income bracket shows {stats.positivePercent > middleStats.positivePercent ? 'higher' : 'lower'} gain rates than middle-income households. The concentration of impacts increases at higher incomes.</p>
                   {:else if state.id === 'highest-income'}
                     {@const upperStats = calculateSectionStats(data.filter(d => d['Market Income'] >= 200000 && d['Market Income'] < 1000000))}
                     <p>Among the {stats.total} million households with income over $1 million, {stats.positivePercent}% benefit while {stats.negativePercent}% pay more.</p>
-                    <p>At the highest incomes, the pattern {stats.positivePercent > upperStats.positivePercent ? 'continues with even more households gaining' : 'shifts with fewer households benefiting'} compared to the $200k–$1M group. These households see the largest absolute changes in both directions.</p>
+                    <p>At the highest incomes, the pattern {stats.positivePercent > upperStats.positivePercent ? 'continues with more households gaining' : 'shifts with fewer households benefiting'} compared to the $200k–$1M group. These households see the largest absolute changes in both directions.</p>
                   {:else if state.id === 'all-households'}
                     {@const allStats = calculateSectionStats(sectionData, true, state.id)}
                     <p>{@html state.description.replace('{totalPercentage}', allStats.affectedPercent).replace('{medianImpact}', allStats.medianChange)}</p>
