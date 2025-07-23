@@ -155,8 +155,9 @@
       }
     });
     
-    if (needsRerender) {
-      renderVisualization();
+    // Render the canvas if needed (without checking for data changes)
+    if (needsRerender && canvasRef) {
+      renderCanvas();
     }
     
     // Continue animation if any points are still animating
@@ -214,6 +215,7 @@
         });
       }
       
+      // Update BEFORE starting animations to prevent loops
       lastDatasetLength = data.length;
       
       // ALWAYS clear existing animations to prevent old slow animations
@@ -221,8 +223,8 @@
         cancelAnimationFrame(animationFrame);
       }
       
-      // Only animate if there are new points
-      if (!isTransitioning && !isInitialLoad) {
+      // Only animate if not already animating
+      if (!isTransitioning && !isInitializingAnimations) {
         // Get only the new points for animation
         const newPoints = data.filter(point => {
           const anim = pointAnimations.get(point.id);
@@ -269,18 +271,9 @@
     }
   }
   
-  // Main rendering function
-  export function renderVisualization() {
+  // Render just the canvas without checking for data changes
+  function renderCanvas() {
     if (!canvasRef || !data.length) return;
-    
-    // Check if we need to start new animations
-    checkForDataChange();
-    
-    // If we just started initializing animations, wait a frame for them to be set up
-    if (isInitializingAnimations && typeof window !== 'undefined') {
-      requestAnimationFrame(() => renderVisualization());
-      return;
-    }
     
     try {
       const ctx = canvasRef.getContext('2d', { 
@@ -363,6 +356,17 @@
         ctx.clearRect(0, 0, width, height);
       }
     }
+  }
+  
+  // Main rendering function that checks for data changes
+  export function renderVisualization() {
+    if (!canvasRef || !data.length) return;
+    
+    // Check if we need to start new animations
+    checkForDataChange();
+    
+    // Render the canvas
+    renderCanvas();
   }
   
   function drawGridLines(ctx, xScale, yScale, xMin, xMax, yMin, yMax) {
