@@ -46,6 +46,9 @@
   // Track if we need to scroll to a household on load
   let pendingScrollToHousehold = null;
   
+  // Random starting side for alternating layout (consistent per session)
+  const startOnLeft = Math.random() < 0.5;
+  
   // Flag to prevent URL subscription from triggering during internal updates
   let isInternalUpdate = false;
   
@@ -809,8 +812,8 @@
             class:active={$currentStateIndex === i}
             class:dragging={draggingSectionIndex === i}
             class:centered={state.id === 'intro' || state.id === 'all-households'}
-            class:align-right={['lower-income', 'upper-income'].includes(state.id)}
-            class:align-left={['middle-income', 'highest-income'].includes(state.id)}
+            class:align-left={startOnLeft ? ['lower-income', 'upper-income'].includes(state.id) : ['middle-income', 'highest-income'].includes(state.id)}
+            class:align-right={startOnLeft ? ['middle-income', 'highest-income'].includes(state.id) : ['lower-income', 'upper-income'].includes(state.id)}
             data-index={i}
             bind:this={textSections[i]}
             style="transform: translate({sectionPositions[i]?.x || 0}px, {sectionPositions[i]?.y || 0}px)"
