@@ -615,13 +615,24 @@
     
     if (canvasRef && svgRef) {
       const container = canvasRef.parentElement;
-      width = container.clientWidth;
-      height = container.clientHeight;
+      // Get the actual rendered dimensions
+      const rect = container.getBoundingClientRect();
+      width = Math.floor(rect.width);
+      height = Math.floor(rect.height);
       updateMargins(); // Update margins based on viewport
+      
+      // Set canvas resolution to match CSS size
       canvasRef.width = width;
       canvasRef.height = height;
+      canvasRef.style.width = width + 'px';
+      canvasRef.style.height = height + 'px';
+      
+      // Ensure SVG matches exactly
       svgRef.setAttribute('width', width);
       svgRef.setAttribute('height', height);
+      svgRef.style.width = width + 'px';
+      svgRef.style.height = height + 'px';
+      
       renderVisualization();
     }
   }
@@ -639,6 +650,14 @@
     handleResize();
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', handleResize);
+    }
+    
+    // In iframe contexts, dimensions might settle after initial render
+    const isInIframe = window.self !== window.top;
+    if (isInIframe) {
+      // Double-check dimensions after a short delay
+      setTimeout(handleResize, 100);
+      setTimeout(handleResize, 300);
     }
   });
   
@@ -683,8 +702,7 @@
   .main-canvas {
     background: var(--app-background);
     cursor: crosshair;
-    width: 100%;
-    height: 100%;
+    display: block;
   }
   
   .overlay-svg {
@@ -692,5 +710,6 @@
     top: 0;
     left: 0;
     pointer-events: none;
+    display: block;
   }
 </style>
