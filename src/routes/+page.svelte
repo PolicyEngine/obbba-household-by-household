@@ -441,6 +441,7 @@
         isLoading = true;
         
         // Use ultra-fast optimized loading with pre-computed samples
+        console.log('Starting ultra-fast data loading...');
         loadDatasetsUltraFast(
             (phase, datasets) => {
               console.log(`📊 Phase ${phase} complete with ${Object.keys(datasets).length} datasets`);
@@ -453,7 +454,9 @@
               
               // Update data if it's the selected dataset
               if (datasets[selectedDataset]) {
+                console.log(`Setting data for ${selectedDataset}: ${datasets[selectedDataset].length} rows`);
                 data = datasets[selectedDataset];
+                console.log(`Data array now has ${data.length} rows`);
                 initializeRandomHouseholds();
                 
                 // Force chart render
