@@ -794,18 +794,9 @@
     />
   </div>
   
-  <!-- Title overlay (always visible, content fades based on scroll) -->
+  <!-- Title overlay (always visible) -->
   <div class="title-overlay">
     <h1 class="overlay-title">{scrollStates[0]?.title || "The One Big Beautiful Bill Act, household by household"}</h1>
-    <div class="overlay-description" style="opacity: {$currentStateIndex === 0 ? 1 : 0}; transition: opacity 0.3s ease">
-      {#if scrollStates[0]?.description}
-        <p>{@html scrollStates[0].description}</p>
-      {/if}
-      <div class="scroll-indicator">
-        <span>Scroll to explore</span>
-        <span class="arrow">↓</span>
-      </div>
-    </div>
   </div>
   
   <!-- Baseline selector overlay (always visible on right) -->
@@ -832,12 +823,12 @@
   <div class="content-overlay" bind:this={scrollContainer}>
     <div class="text-content">
       {#each scrollStates as state, i}
-        {#if state.viewType === 'group' && state.id !== 'intro'}
+        {#if state.viewType === 'group'}
           <section 
             class="text-section {state.id}"
             class:active={$currentStateIndex === i}
             class:dragging={draggingSectionIndex === i}
-            class:centered={state.id === 'all-households'}
+            class:centered={state.id === 'intro' || state.id === 'all-households'}
             class:align-left={startOnLeft ? ['lower-income', 'upper-income'].includes(state.id) : ['middle-income', 'highest-income'].includes(state.id)}
             class:align-right={startOnLeft ? ['middle-income', 'highest-income'].includes(state.id) : ['lower-income', 'upper-income'].includes(state.id)}
             data-index={i}
@@ -992,41 +983,29 @@
     top: 0;
   }
   
-  /* Title overlay - always visible, full width */
+  /* Title overlay - always visible, centered */
   .title-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
+    top: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 20; /* Higher than content overlay (15) to be above boxes */
-    background: rgba(255, 255, 255, 0.98);
-    padding: 1.5rem 2rem;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 1rem 2rem;
+    border-radius: 12px;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(226, 232, 240, 0.5);
     text-align: center;
   }
   
   .overlay-title {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: var(--text-primary);
     margin: 0;
-  }
-  
-  .overlay-description {
-    transition: opacity 0.3s ease, max-height 0.3s ease;
-    overflow: hidden;
-    margin-top: 1rem;
-  }
-  
-  .overlay-description p {
-    font-size: 1rem;
-    color: var(--text-secondary);
-    line-height: 1.6;
-    margin: 0 auto;
-    max-width: 800px;
+    white-space: nowrap;
   }
   
   
@@ -1162,7 +1141,7 @@
     padding: 2rem 3rem 50vh 3rem;
     padding-left: calc(120px + 3rem); /* Space for y-axis - matches chart margin */
     padding-right: calc(120px + 3rem); /* Match left side for symmetry */
-    margin-top: 280px; /* Space for the fixed title overlay */
+    margin-top: 4rem; /* Normal spacing since title overlay is smaller */
     width: 100%;
     position: relative;
   }
@@ -1394,15 +1373,12 @@
     
     /* Mobile title overlay styles */
     .title-overlay {
-      padding: 1rem;
+      top: 1rem;
+      padding: 0.75rem 1.5rem;
     }
     
     .overlay-title {
-      font-size: 1.25rem;
-    }
-    
-    .overlay-description p {
-      font-size: 0.875rem;
+      font-size: 1.125rem;
     }
     
     .baseline-selector-overlay {
@@ -1429,7 +1405,7 @@
     .text-content {
       padding: 1rem 1rem 30vh 1rem;
       max-width: 100%;
-      margin-top: 200px; /* Space for mobile title overlay */
+      margin-top: 3rem; /* Less space needed on mobile */
     }
     
     .text-section {
@@ -1477,15 +1453,12 @@
   /* Small mobile devices */
   @media (max-width: 480px) {
     .title-overlay {
-      padding: 0.75rem;
+      top: 0.5rem;
+      padding: 0.5rem 1rem;
     }
     
     .overlay-title {
-      font-size: 1rem;
-    }
-    
-    .overlay-description p {
-      font-size: 0.813rem;
+      font-size: 0.875rem;
     }
     
     .baseline-selector-overlay {
@@ -1505,7 +1478,7 @@
     
     .text-content {
       padding: 0.75rem 0.75rem 20vh 0.75rem;
-      margin-top: 160px; /* Space for small mobile title overlay */
+      margin-top: 2.5rem;
     }
     
     .text-section {
