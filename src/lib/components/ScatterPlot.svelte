@@ -56,11 +56,11 @@
     // Create a magical starfield effect - randomize the order completely
     const shuffledPoints = [...dataPoints].sort(() => Math.random() - 0.5);
 
-    // Limit animation duration based on point count
-    const maxAnimationDuration = Math.min(3000, dataPoints.length * 3); // Max 3 seconds
+    // Much faster animation for better perceived performance
+    const maxAnimationDuration = Math.min(1500, dataPoints.length * 1); // Max 1.5 seconds
     
-    // For small datasets, ensure minimum animation time
-    const minAnimationDuration = Math.min(1000, dataPoints.length * 2); // At least 1s
+    // For small datasets, even faster
+    const minAnimationDuration = Math.min(500, dataPoints.length * 0.5); // Min 0.5s
     const actualAnimationDuration = Math.max(minAnimationDuration, maxAnimationDuration);
 
     const baseDelay = actualAnimationDuration / Math.max(dataPoints.length, 1);
@@ -95,7 +95,7 @@
       });
     });
 
-    console.log(`🌟 Starfield animation initialized: ${dataPoints.length} stars over ${actualAnimationDuration/1000}s (linear)`);
+    console.log(`🌟 Starfield animation initialized: ${dataPoints.length} stars over ${(actualAnimationDuration/1000).toFixed(1)}s`);
 
     // Start animation loop
     if (typeof window !== 'undefined') {
@@ -179,20 +179,35 @@
       const isInitialLoad = lastDatasetLength === 0;
       
       if (isInitialLoad) {
-        // Initial load: Start all dots hidden for starfield animation
-        data.forEach(point => {
-          pointAnimations.set(point.id, {
-            opacity: 0,
-            scale: 0.1,
-            isAnimating: true,
-            startTime: 0, // Will be set in initializePointAnimations
-            sparklePhase: Math.random() * Math.PI * 2,
-            hasSparkled: false
-          });
+        // Initial load: Show first 50 dots immediately, animate the rest
+        data.forEach((point, index) => {
+          if (index < 50) {
+            // First 50 dots appear instantly
+            pointAnimations.set(point.id, {
+              opacity: 1,
+              scale: 1,
+              isAnimating: false,
+              sparklePhase: Math.random() * Math.PI * 2,
+              hasSparkled: false
+            });
+          } else {
+            // Rest animate in
+            pointAnimations.set(point.id, {
+              opacity: 0,
+              scale: 0.1,
+              isAnimating: true,
+              startTime: 0,
+              sparklePhase: Math.random() * Math.PI * 2,
+              hasSparkled: false
+            });
+          }
         });
         
-        // Start starfield animation for all dots
-        initializePointAnimations(data);
+        // Start starfield animation for remaining dots
+        const dotsToAnimate = data.filter((_, i) => i >= 50);
+        if (dotsToAnimate.length > 0) {
+          initializePointAnimations(dotsToAnimate);
+        }
       } else {
         // Subsequent loads: Only animate NEW points
         // Keep existing points visible
@@ -271,9 +286,18 @@
     }
   }
   
+  // Track first render time
+  let firstRenderTime = null;
+  
   // Render just the canvas without checking for data changes
   function renderCanvas() {
     if (!canvasRef || !data.length) return;
+    
+    // Log time to first render
+    if (!firstRenderTime && data.length > 0) {
+      firstRenderTime = performance.now();
+      console.log(`🎨 First dots rendered at ${firstRenderTime.toFixed(0)}ms`);
+    }
     
     try {
       const ctx = canvasRef.getContext('2d', { 

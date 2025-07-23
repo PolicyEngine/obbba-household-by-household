@@ -701,9 +701,12 @@
     }
   }
   
+  // Track performance timing
+  let pageLoadStart = typeof window !== 'undefined' ? performance.now() : 0;
+  
   // Lifecycle
   onMount(async () => {
-    console.log('Component mounted, starting initialization...');
+    console.log(`Component mounted at ${performance.now().toFixed(0)}ms (${(performance.now() - pageLoadStart).toFixed(0)}ms since page load)`);
     
     // Add global error handler
     const handleError = (event) => {
