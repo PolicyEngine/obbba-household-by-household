@@ -702,16 +702,16 @@
   // Track if we're currently rendering to prevent loops
   let isRendering = false;
   
-  // Re-render when data or state changes - DISABLED TO DEBUG
-  // $: if (data.length && canvasRef && !isRendering) {
-  //   isRendering = true;
-  //   requestAnimationFrame(() => {
-  //     renderVisualization();
-  //     isRendering = false;
-  //   });
-  // }
+  // Re-render when data or state changes
+  $: if (data.length && canvasRef && !isRendering) {
+    isRendering = true;
+    requestAnimationFrame(() => {
+      renderVisualization();
+      isRendering = false;
+    });
+  }
   
-  // For now, only render on explicit calls
+  // Explicit render function
   export function forceRender() {
     if (canvasRef && !isRendering) {
       isRendering = true;
