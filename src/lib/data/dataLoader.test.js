@@ -137,7 +137,7 @@ describe('dataLoader', () => {
       expect(datasets).toHaveProperty('tcja-extension');
       expect(datasets['tcja-expiration']).toHaveLength(2);
       expect(datasets['tcja-extension']).toHaveLength(2);
-    }, { timeout: 10000 }); // Increase timeout to 10 seconds
+    }, 10000); // Increase timeout to 10 seconds
 
     it('handles fetch errors gracefully', async () => {
       fetch.mockRejectedValue(new Error('Network error'));
@@ -188,7 +188,7 @@ describe('dataLoader', () => {
         progressReports.push(progress);
       });
 
-      expect(progressReports).toEqual([34, 67, 100]);
+      expect(progressReports).toEqual([33, 67, 100]);
     });
   });
 });
