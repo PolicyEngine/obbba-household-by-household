@@ -22,10 +22,17 @@ export async function loadDataset(datasetKey) {
     }
     
     const raw = await response.text();
-    const result = Papa.parse(raw, {
-      header: true,
-      dynamicTyping: true,
-      skipEmptyLines: true
+    
+    // Use Papa Parse in worker mode to avoid blocking the main thread
+    const result = await new Promise((resolve, reject) => {
+      Papa.parse(raw, {
+        header: true,
+        dynamicTyping: true,
+        skipEmptyLines: true,
+        worker: true, // Use web worker to avoid blocking
+        complete: resolve,
+        error: reject
+      });
     });
     
     if (result.errors.length > 0) {
@@ -53,6 +60,40 @@ export function processData(rawData) {
     isAnnotated: false,
     sectionIndex: null
   }));
+}
+
+// Process raw data into usable format with chunking to avoid blocking
+export async function processDataAsync(rawData, chunkSize = 1000, onProgress = null) {
+  const result = [];
+  const totalRows = rawData.length;
+  
+  for (let i = 0; i < rawData.length; i += chunkSize) {
+    const chunk = rawData.slice(i, i + chunkSize);
+    const processedChunk = chunk.map((d, index) => ({
+      ...d,
+      // Ensure 'Is Married' is a boolean
+      ...(d['Is Married'] !== undefined ? { 'Is Married': d['Is Married'] === true || d['Is Married'] === 'True' || d['Is Married'] === 1 || d['Is Married'] === '1' } : {}),
+      id: String(d['Household ID'] || (i + index)), // Convert to string for consistent comparison
+      householdId: d['Household ID'], // Keep original for reference
+      isAnnotated: false,
+      sectionIndex: null
+    }));
+    
+    result.push(...processedChunk);
+    
+    // Report progress if callback provided
+    if (onProgress) {
+      const progress = Math.min(100, Math.round(((i + chunkSize) / totalRows) * 100));
+      onProgress(progress);
+    }
+    
+    // Yield control to browser between chunks
+    if (i + chunkSize < rawData.length) {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
+  }
+  
+  return result;
 }
 
 // Build household ID map for quick lookups
@@ -97,11 +138,13 @@ export async function loadDatasetsProgressive(onFirstDatasetLoaded, onSecondData
       onFirstDatasetLoaded(allDatasets);
     }
     
-    // Load TCJA extension in the background
+    // Load TCJA extension in the background with async processing
     console.log('Loading secondary dataset (TCJA extension) in background...');
     loadDataset('tcja-extension')
-      .then(tcjaExtension => {
-        allDatasets['tcja-extension'] = processData(tcjaExtension);
+      .then(async (tcjaExtension) => {
+        console.log('Secondary dataset downloaded, processing asynchronously...');
+        // Use async processing to avoid blocking the main thread
+        allDatasets['tcja-extension'] = await processDataAsync(tcjaExtension);
         console.log('Secondary dataset loaded successfully');
         
         // Notify that second dataset is ready

@@ -430,29 +430,37 @@
         selectedDataset = baseline;
       }
       
-      // Load all datasets if needed
-      if (Object.keys(allDatasets).length === 0) {
-        isLoading = true;
-        try {
-          console.log('Loading datasets progressively...');
+              // Load all datasets if needed
+        if (Object.keys(allDatasets).length === 0) {
+          isLoading = true;
           
-          // Load datasets progressively
-          allDatasets = await loadDatasetsProgressive(
+          // Load datasets progressively - don't await, handle everything in callbacks
+          loadDatasetsProgressive(
             // First dataset loaded callback
             (partialDatasets) => {
               // Callback when first dataset is loaded
               console.log('First dataset loaded:', Object.keys(partialDatasets));
               allDatasets = { ...partialDatasets };
               
+              // Always stop loading overlay once first dataset is available
+              isLoading = false;
+              
               // If current selection is TCJA expiration, show it immediately
               if (selectedDataset === 'tcja-expiration' && partialDatasets['tcja-expiration']) {
                 data = partialDatasets['tcja-expiration'];
                 initializeRandomHouseholds();
-                isLoading = false; // Stop showing loading overlay
                 secondDatasetLoading = true; // But indicate background loading
                 
                 // Handle household selection now that data is loaded
                 handleHouseholdSelection(householdId);
+              } else if (selectedDataset === 'tcja-extension') {
+                // If user wants extension dataset but it's not loaded yet, 
+                // show expiration dataset temporarily and indicate loading
+                if (partialDatasets['tcja-expiration']) {
+                  data = partialDatasets['tcja-expiration'];
+                  initializeRandomHouseholds();
+                  secondDatasetLoading = true;
+                }
               }
             },
             // Second dataset loaded callback
@@ -469,31 +477,12 @@
                 handleHouseholdSelection(householdId);
               }
             }
-          );
-          
-          // All datasets are now loaded
-          console.log('All datasets loaded:', Object.keys(allDatasets), 'lengths:', {
-            'tcja-expiration': allDatasets['tcja-expiration']?.length,
-            'tcja-extension': allDatasets['tcja-extension']?.length
+          ).catch(error => {
+            console.error('Error loading data:', error);
+            loadError = error.message;
+            isLoading = false;
+            secondDatasetLoading = false;
           });
-          
-          // Update data if not already set
-          if (!data.length && allDatasets[selectedDataset]) {
-            data = allDatasets[selectedDataset];
-            initializeRandomHouseholds();
-            // Handle household selection now that data is loaded
-            handleHouseholdSelection(householdId);
-          }
-          
-          secondDatasetLoading = false;
-        } catch (error) {
-          console.error('Error loading data:', error);
-          loadError = error.message;
-          isLoading = false;
-          secondDatasetLoading = false;
-          return;
-        }
-        isLoading = false;
       } else {
         // Datasets already loaded, just switch
         if (allDatasets[selectedDataset]) {
