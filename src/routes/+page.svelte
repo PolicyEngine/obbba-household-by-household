@@ -32,6 +32,7 @@
   let loadError = null;
   let selectedDataset = 'tcja-expiration';
   let secondDatasetLoading = false; // Track background loading
+  let baselineDropdownOpen = false; // Track dropdown state on mobile
   
   // Random households for each section
   let randomHouseholds = {};
@@ -571,6 +572,16 @@
     window.addEventListener('error', handleError);
     window.addEventListener('unhandledrejection', handleError);
     
+    // Handle clicks outside dropdown to close it
+    const handleClickOutside = (event) => {
+      const selector = event.target.closest('.baseline-selector-overlay');
+      if (!selector && baselineDropdownOpen) {
+        baselineDropdownOpen = false;
+      }
+    };
+    
+    window.addEventListener('click', handleClickOutside);
+    
     // Check if we're in an iframe and get URL params from parent if needed
     const isInIframe = window.self !== window.top;
     
@@ -761,6 +772,7 @@
       window.removeEventListener('mouseup', endDrag);
       window.removeEventListener('error', handleError);
       window.removeEventListener('unhandledrejection', handleError);
+      window.removeEventListener('click', handleClickOutside);
       cleanupScrollObserver(scrollObserver);
       cleanupAnimations();
     };
@@ -800,14 +812,28 @@
   </div>
   
   <!-- Baseline selector overlay (always visible on right) -->
-  <div class="baseline-selector-overlay">
-    <span class="baseline-label">Baseline:</span>
+  <div class="baseline-selector-overlay" class:dropdown-open={baselineDropdownOpen}>
+    <div class="baseline-selector-header">
+      <span class="baseline-label">Baseline:</span>
+      <button 
+        class="baseline-dropdown-toggle"
+        on:click={() => baselineDropdownOpen = !baselineDropdownOpen}
+      >
+        <span class="selected-baseline">{DATASETS[selectedDataset].label}</span>
+        <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 4.5L6 7.5L9 4.5"/>
+        </svg>
+      </button>
+    </div>
     <div class="baseline-selector">
       {#each Object.entries(DATASETS) as [key, dataset]}
         <button 
           class="tab-button" 
           class:active={selectedDataset === key}
-          on:click={() => handleDatasetChange(key)}
+          on:click={() => {
+            handleDatasetChange(key);
+            baselineDropdownOpen = false;
+          }}
           disabled={isLoading || (key === 'tcja-extension' && secondDatasetLoading && !allDatasets['tcja-extension'])}
         >
           {dataset.label}
@@ -1054,6 +1080,12 @@
     font-weight: 500;
     color: var(--text-secondary);
     font-family: var(--font-sans);
+  }
+  
+  /* Hide dropdown elements on desktop */
+  .baseline-selector-header,
+  .baseline-dropdown-toggle {
+    display: none;
   }
 
   .baseline-selector {
@@ -1390,24 +1422,88 @@
     }
     
     .baseline-selector-overlay {
-      top: 1rem;
+      top: auto;
+      bottom: 1rem;
       right: 1rem;
-      padding: 0.5rem 0.75rem;
+      padding: 0;
+      gap: 0;
+      flex-direction: column;
+      align-items: stretch;
+      background: transparent;
+      box-shadow: none;
+      border: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+    
+    /* Show dropdown elements on mobile */
+    .baseline-selector-header {
+      display: flex;
+      align-items: center;
       gap: 8px;
+      padding: 0.5rem 0.75rem;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(226, 232, 240, 0.5);
+    }
+    
+    .baseline-dropdown-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-primary);
+      cursor: pointer;
+      font-family: var(--font-sans);
+    }
+    
+    .dropdown-arrow {
+      transition: transform 0.2s ease;
+    }
+    
+    .baseline-selector-overlay.dropdown-open .dropdown-arrow {
+      transform: rotate(180deg);
     }
     
     .baseline-label {
       font-size: 12px;
     }
     
+    /* Dropdown menu on mobile */
     .baseline-selector {
-      padding: 3px;
-      gap: 3px;
+      display: none;
+      position: absolute;
+      bottom: 100%;
+      right: 0;
+      margin-bottom: 8px;
+      padding: 8px;
+      flex-direction: column;
+      gap: 4px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(226, 232, 240, 0.5);
+      min-width: 200px;
+    }
+    
+    .baseline-selector-overlay.dropdown-open .baseline-selector {
+      display: flex;
     }
     
     .tab-button {
       font-size: 12px;
-      padding: 6px 12px;
+      padding: 8px 12px;
+      text-align: left;
+      border-radius: 6px;
     }
     
     .text-content {
@@ -1471,18 +1567,29 @@
     }
     
     .baseline-selector-overlay {
-      top: 0.5rem;
+      bottom: 0.5rem;
       right: 0.5rem;
+    }
+    
+    .baseline-selector-header {
       padding: 0.375rem 0.5rem;
+    }
+    
+    .baseline-dropdown-toggle {
+      font-size: 11px;
     }
     
     .baseline-label {
       font-size: 11px;
     }
     
+    .baseline-selector {
+      padding: 6px;
+    }
+    
     .tab-button {
       font-size: 11px;
-      padding: 4px 8px;
+      padding: 6px 10px;
     }
     
     .text-content {
