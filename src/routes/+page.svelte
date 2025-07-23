@@ -1066,10 +1066,10 @@
     animation: arrow-bounce 2s infinite;
   }
   
-  /* Baseline selector overlay (always visible on right) */
+  /* Baseline selector overlay (bottom-right on all devices) */
   .baseline-selector-overlay {
     position: fixed;
-    top: 2rem;
+    bottom: 2rem;
     right: 2rem;
     z-index: 20; /* Same as title overlay, above content */
     display: flex;
