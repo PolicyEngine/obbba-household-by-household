@@ -5,12 +5,12 @@ export async function loadTinyVisualization(onUpdate) {
   const startTime = performance.now();
   
   try {
-    // Load the small sample instead of full minimal
+    // Load the truly minimal 3-column CSV
     const base = import.meta.env.BASE_URL || '/';
     const normalizedBase = base.endsWith('/') ? base : base + '/';
-    const url = `${normalizedBase}samples/household_tax_income_changes_senate_current_law_baseline_sample_small.csv`;
+    const url = `${normalizedBase}household_visualization_minimal_1000.csv`;
     
-    console.log('⚡ Loading 1000-point sample for instant visualization...');
+    console.log('⚡ Loading minimal 3-column visualization data (27KB)...');
     
     const response = await fetch(url);
     if (!response.ok) {
@@ -27,21 +27,22 @@ export async function loadTinyVisualization(onUpdate) {
       fastMode: true
     });
     
-    // Process data minimally
+    // Process data - we only have 3 columns!
     const data = result.data.map((d, i) => ({
-      id: String(d['Household ID'] || i),
-      householdId: d['Household ID'],
+      id: String(i),
+      householdId: i,
       'Market Income': d['Market Income'] || 0,
-      'Total change in net income': d['Total change in net income'] || d['Change in Household Net Income'] || 0,
-      'Change in Household Net Income': d['Total change in net income'] || d['Change in Household Net Income'] || 0,
+      'Total change in net income': d['Total change in net income'] || 0,
+      'Change in Household Net Income': d['Total change in net income'] || 0, // Alias
       'Household weight': d['Household weight'] || 1,
-      'Percentage change in net income': d['Percentage change in net income'] || 0,
-      // Basic demographics
-      'Number of Dependents': d['Number of Dependents'] || d['Dependents'] || 0,
-      'Dependents': d['Dependents'] || d['Number of Dependents'] || 0,
-      'Age of Head': d['Age of Head'] || d['Age'] || 40,
-      'Age': d['Age'] || d['Age of Head'] || 40,
-      'Is Married': !!(d['Is Married'] === true || d['Is Married'] === 'True' || d['Is Married'] === 1 || d['Is Married'] === '1')
+      // Estimate percentage for color
+      'Percentage change in net income': 0,
+      // Placeholder demographics for compatibility
+      'Number of Dependents': 0,
+      'Dependents': 0,
+      'Age of Head': 40,
+      'Age': 40,
+      'Is Married': false
     }));
     
     const totalTime = performance.now() - startTime;
