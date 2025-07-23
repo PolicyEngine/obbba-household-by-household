@@ -1148,7 +1148,7 @@
     padding: 2rem 3rem 50vh 3rem;
     padding-left: calc(120px + 3rem); /* Space for y-axis - matches chart margin */
     padding-right: calc(120px + 3rem); /* Match left side for symmetry */
-    margin-top: 4rem; /* Normal spacing since title overlay is smaller */
+    margin-top: 25vh; /* Push content down so second box appears centered */
     width: 100%;
     position: relative;
   }
@@ -1225,6 +1225,7 @@
     max-width: 640px;
     width: 100%;
   }
+  
   
   /* Centered sections (intro and all-households) */
   .text-section.centered {
@@ -1427,6 +1428,7 @@
       margin-right: auto !important;
     }
     
+    
     .text-section h2 {
       font-size: 1.25rem;
       line-height: 1.3;
@@ -1492,6 +1494,7 @@
       padding: 0.875rem;
       margin-bottom: 50vh;
     }
+    
     
     .text-section h2 {
       font-size: 1.125rem;
