@@ -21,7 +21,6 @@
   } from '$lib/navigation/scrollHandler.js';
   import { animateHouseholdEmphasis, createAnimatedNumber, cleanupAnimations } from '$lib/utils/animations.js';
   import LoadingOverlay from '$lib/components/LoadingOverlay.svelte';
-  import Header from '$lib/components/Header.svelte';
   import HouseholdProfile from '$lib/components/HouseholdProfile.svelte';
   import ScatterPlot from '$lib/components/ScatterPlot.svelte';
   
@@ -33,6 +32,7 @@
   let loadError = null;
   let selectedDataset = 'tcja-expiration';
   let secondDatasetLoading = false; // Track background loading
+  let baselineDropdownOpen = false; // Track dropdown state on mobile
   
   // Random households for each section
   let randomHouseholds = {};
@@ -620,6 +620,16 @@
     window.addEventListener('error', handleError);
     window.addEventListener('unhandledrejection', handleError);
     
+    // Handle clicks outside dropdown to close it
+    const handleClickOutside = (event) => {
+      const selector = event.target.closest('.baseline-selector-overlay');
+      if (!selector && baselineDropdownOpen) {
+        baselineDropdownOpen = false;
+      }
+    };
+    
+    window.addEventListener('click', handleClickOutside);
+    
     // Check if we're in an iframe and get URL params from parent if needed
     const isInIframe = window.self !== window.top;
     
@@ -810,6 +820,7 @@
       window.removeEventListener('mouseup', endDrag);
       window.removeEventListener('error', handleError);
       window.removeEventListener('unhandledrejection', handleError);
+      window.removeEventListener('click', handleClickOutside);
       cleanupScrollObserver(scrollObserver);
       cleanupAnimations();
     };
@@ -827,10 +838,6 @@
 </svelte:head>
 
 <div class="app-container">
-  <Header 
-    {selectedDataset} 
-    onDatasetChange={handleDatasetChange}
-  />
   
   <!-- Full-screen chart background -->
   <div class="chart-background">
@@ -846,6 +853,49 @@
       {selectedHousehold}
       onPointClick={(household) => selectHousehold(household, false)}
     />
+  </div>
+  
+  <!-- Title overlay (always visible) -->
+  <div class="title-overlay">
+    <h1 class="overlay-title">
+      <span class="title-full">{scrollStates[0]?.title || "The One Big Beautiful Bill Act, household by household"}</span>
+      <span class="title-mobile">OBBBA, household by household</span>
+    </h1>
+  </div>
+  
+  <!-- Baseline selector overlay (always visible on right) -->
+  <div class="baseline-selector-overlay" class:dropdown-open={baselineDropdownOpen}>
+    <span class="baseline-label desktop-only">Baseline:</span>
+    <div class="baseline-selector-header">
+      <span class="baseline-label">Baseline:</span>
+      <button 
+        class="baseline-dropdown-toggle"
+        on:click={() => baselineDropdownOpen = !baselineDropdownOpen}
+      >
+        <span class="selected-baseline">{DATASETS[selectedDataset].label}</span>
+        <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 4.5L6 7.5L9 4.5"/>
+        </svg>
+      </button>
+    </div>
+    <div class="baseline-selector">
+      {#each Object.entries(DATASETS) as [key, dataset]}
+        <button 
+          class="tab-button" 
+          class:active={selectedDataset === key}
+          on:click={() => {
+            handleDatasetChange(key);
+            baselineDropdownOpen = false;
+          }}
+          disabled={isLoading || (key === 'tcja-extension' && secondDatasetLoading && !allDatasets['tcja-extension'])}
+        >
+          {dataset.label}
+          {#if key === 'tcja-extension' && secondDatasetLoading}
+            <span class="loading-dot"></span>
+          {/if}
+        </button>
+      {/each}
+    </div>
   </div>
   
   <!-- Scrollable content overlay -->
@@ -867,10 +917,17 @@
           >
             <div class="section-content">
               <div class="drag-handle" title="Drag to move">⋮⋮</div>
-              <h2>{state.title}</h2>
+              {#if state.id !== 'intro'}
+                <h2>{state.title}</h2>
+              {/if}
               
+              <!-- Intro section content -->
+              {#if state.id === 'intro'}
+                {#if state.description}
+                  <p>{@html state.description}</p>
+                {/if}
               <!-- Dynamic content for income sections -->
-              {#if state.id !== 'intro' && data.length > 0}
+              {:else if data.length > 0}
                 {@const sectionData = data.filter(d => state.filter(d))}
                 {@const stats = calculateSectionStats(sectionData, false, state.id)}
                 {#if stats}
@@ -906,10 +963,6 @@
                       onRandomize={randomizeHousehold}
                     />
                   </div>
-                {/if}
-              {:else if state.id === 'intro'}
-                {#if state.description}
-                  <p>{@html state.description}</p>
                 {/if}
                 {#if state.content}
                   <p>{@html state.content}</p>
@@ -1003,7 +1056,7 @@
   /* Full-screen chart background */
   .chart-background {
     position: fixed; /* Fixed to viewport */
-    top: 60px; /* Account for header */
+    top: 0; /* Start from top now that header is removed */
     left: 0;
     right: 0;
     bottom: 0;
@@ -1016,16 +1069,143 @@
     top: 0;
   }
   
+  /* Title overlay - always visible, centered */
+  .title-overlay {
+    position: fixed;
+    top: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20; /* Higher than content overlay (15) to be above boxes */
+    background: rgba(255, 255, 255, 0.95);
+    padding: 1rem 2rem;
+    border-radius: 12px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(226, 232, 240, 0.5);
+    text-align: center;
+  }
+  
+  .overlay-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    white-space: nowrap;
+  }
+  
+  /* Show full title on desktop, hide mobile title */
+  .title-mobile {
+    display: none;
+  }
+  
+  
+  .scroll-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    opacity: 0.7;
+  }
+  
+  .scroll-indicator .arrow {
+    font-size: 1.25rem;
+    animation: arrow-bounce 2s infinite;
+  }
+  
+  /* Baseline selector overlay (aligned with chart edge) */
+  .baseline-selector-overlay {
+    position: fixed;
+    bottom: 2rem;
+    right: calc(100px + 3rem); /* Align with chart's right margin */
+    z-index: 20; /* Same as title overlay, above content */
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .baseline-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8), 0 0 4px rgba(255, 255, 255, 0.8);
+  }
+  
+  /* Hide dropdown elements on desktop */
+  .baseline-selector-header,
+  .baseline-dropdown-toggle {
+    display: none;
+  }
+
+  .baseline-selector {
+    display: flex;
+    gap: 8px;
+  }
+
+  .tab-button {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(226, 232, 240, 0.5);
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    font-family: var(--font-sans);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .tab-button:hover:not(:disabled):not(.active) {
+    background: rgba(44, 100, 150, 0.08);
+    color: var(--text-primary);
+  }
+
+  .tab-button.active {
+    background: var(--app-background);
+    color: var(--text-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    font-weight: 700;
+  }
+
+  .tab-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .loading-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--text-secondary);
+    margin-left: 6px;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+  
   /* Scrollable content overlay - full width to allow dragging anywhere */
   .content-overlay {
     position: absolute;
-    top: 60px; /* Account for header */
+    top: 0; /* Start from top now that header is removed */
     left: 0;
     width: 100%; /* Full width for dragging */
     bottom: 0;
     overflow-y: auto;
     overflow-x: hidden; /* Prevent horizontal scroll */
-    z-index: 10; /* Higher than chart but much lower than header (9999) */
+    z-index: 15; /* Higher than title overlay (10) */
     pointer-events: none; /* Allow clicks through except on text sections */
     -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
     /* Prevent automatic scroll adjustments */
@@ -1050,7 +1230,7 @@
     padding: 2rem 3rem 50vh 3rem;
     padding-left: calc(120px + 3rem); /* Space for y-axis - matches chart margin */
     padding-right: calc(120px + 3rem); /* Match left side for symmetry */
-    margin-top: 4rem; /* Add space below header for first section */
+    margin-top: 25vh; /* Push content down so second box appears centered */
     width: 100%;
     position: relative;
   }
@@ -1128,6 +1308,7 @@
     width: 100%;
   }
   
+  
   /* Centered sections (intro and all-households) */
   .text-section.centered {
     margin-left: auto;
@@ -1201,6 +1382,22 @@
     opacity: 0.8;
   }
   
+  /* Intro section special layout */
+  .intro-title-bar {
+    margin: -1.5rem -1.5rem 1rem -1.5rem; /* Negative margins to extend to box edges */
+    padding: 1rem 1.5rem;
+    background: rgba(255, 255, 255, 0.5);
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .intro-title-bar h2 {
+    margin: 0;
+  }
+  
+  .intro-content {
+    transition: opacity 0.3s ease;
+  }
+  
   
   .integrated-household-profile {
     margin-top: 0.75rem;
@@ -1258,15 +1455,125 @@
     .content-overlay {
       width: 100%;
       max-width: none;
-      top: 90px; /* Account for multi-row header */
+      top: 0; /* Start from top */
       /* Extra prevention of scroll snap on mobile */
       -webkit-overflow-scrolling: auto !important;
       scroll-snap-type: none !important;
     }
     
+    /* Mobile title overlay styles */
+    .title-overlay {
+      top: 1rem;
+      padding: 0.75rem 1.5rem;
+    }
+    
+    .overlay-title {
+      font-size: 1.125rem;
+    }
+    
+    /* Hide full title, show mobile title */
+    .title-full {
+      display: none;
+    }
+    
+    .title-mobile {
+      display: inline;
+    }
+    
+    .baseline-selector-overlay {
+      top: auto;
+      bottom: 1rem;
+      right: 30px; /* Align with mobile chart margin */
+      padding: 0;
+      gap: 0;
+      flex-direction: column;
+      align-items: stretch;
+      background: transparent;
+      box-shadow: none;
+      border: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+    
+    /* Show dropdown elements on mobile */
+    .baseline-selector-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0.5rem 0.75rem;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(226, 232, 240, 0.5);
+    }
+    
+    .baseline-dropdown-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-primary);
+      cursor: pointer;
+      font-family: var(--font-sans);
+    }
+    
+    .dropdown-arrow {
+      transition: transform 0.2s ease;
+    }
+    
+    .baseline-selector-overlay.dropdown-open .dropdown-arrow {
+      transform: rotate(180deg);
+    }
+    
+    .baseline-label {
+      font-size: 12px;
+    }
+    
+    /* Hide desktop-only label on mobile */
+    .baseline-label.desktop-only {
+      display: none;
+    }
+    
+    /* Dropdown menu on mobile */
+    .baseline-selector {
+      display: none;
+      position: absolute;
+      bottom: 100%;
+      right: 0;
+      margin-bottom: 8px;
+      padding: 8px;
+      flex-direction: column;
+      gap: 4px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(226, 232, 240, 0.5);
+      min-width: 200px;
+    }
+    
+    .baseline-selector-overlay.dropdown-open .baseline-selector {
+      display: flex;
+    }
+    
+    .tab-button {
+      font-size: 12px;
+      padding: 8px 12px;
+      text-align: left;
+      border-radius: 6px;
+    }
+    
     .text-content {
       padding: 1rem 1rem 30vh 1rem;
       max-width: 100%;
+      margin-top: 3rem; /* Less space needed on mobile */
     }
     
     .text-section {
@@ -1280,6 +1587,7 @@
       margin-left: auto !important;
       margin-right: auto !important;
     }
+    
     
     .text-section h2 {
       font-size: 1.25rem;
@@ -1313,14 +1621,60 @@
   
   /* Small mobile devices */
   @media (max-width: 480px) {
+    .title-overlay {
+      top: 0.5rem;
+      padding: 0.5rem 1rem;
+    }
+    
+    .overlay-title {
+      font-size: 0.875rem;
+    }
+    
+    /* Ensure mobile title is shown on small screens too */
+    .title-full {
+      display: none;
+    }
+    
+    .title-mobile {
+      display: inline;
+    }
+    
+    .baseline-selector-overlay {
+      bottom: 0.5rem;
+      right: 15px; /* Align with small mobile chart margin */
+    }
+    
+    .baseline-selector-header {
+      padding: 0.375rem 0.5rem;
+    }
+    
+    .baseline-dropdown-toggle {
+      font-size: 11px;
+    }
+    
+    .baseline-label {
+      font-size: 11px;
+    }
+    
+    .baseline-selector {
+      padding: 6px;
+    }
+    
+    .tab-button {
+      font-size: 11px;
+      padding: 6px 10px;
+    }
+    
     .text-content {
       padding: 0.75rem 0.75rem 20vh 0.75rem;
+      margin-top: 2.5rem;
     }
     
     .text-section {
       padding: 0.875rem;
       margin-bottom: 50vh;
     }
+    
     
     .text-section h2 {
       font-size: 1.125rem;
