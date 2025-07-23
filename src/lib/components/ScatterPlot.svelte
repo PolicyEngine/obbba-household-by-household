@@ -56,12 +56,12 @@
     // Create a magical starfield effect - randomize the order completely
     const shuffledPoints = [...dataPoints].sort(() => Math.random() - 0.5);
 
-    // ULTRA-FAST ANIMATION: Complete all stars within 8 seconds maximum
-    const maxAnimationDuration = 8000; // 8 seconds total
-
-    // For small datasets (samples), ensure minimum animation time for visual appeal
-    const minAnimationDuration = Math.min(2000, dataPoints.length * 5); // At least 2s or 5ms per point
-    const actualAnimationDuration = Math.max(minAnimationDuration, Math.min(maxAnimationDuration, dataPoints.length * 8));
+    // Limit animation duration based on point count
+    const maxAnimationDuration = Math.min(3000, dataPoints.length * 3); // Max 3 seconds
+    
+    // For small datasets, ensure minimum animation time
+    const minAnimationDuration = Math.min(1000, dataPoints.length * 2); // At least 1s
+    const actualAnimationDuration = Math.max(minAnimationDuration, maxAnimationDuration);
 
     const baseDelay = actualAnimationDuration / Math.max(dataPoints.length, 1);
 

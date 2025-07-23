@@ -7,6 +7,7 @@
   import { loadDatasetsUltraFast } from '$lib/data/optimizedDataLoader.js';
   import { loadDatasetUltraFast } from '$lib/data/ultraFastLoader.js';
   import { loadInstantVisualization, loadFullDataBackground } from '$lib/data/instantLoader.js';
+  import { loadTinyVisualization } from '$lib/data/tinyLoader.js';
   import { 
     parseUrlParams, 
     updateUrlWithHousehold, 
@@ -452,14 +453,14 @@
         // Don't show loading spinner - minimal data loads instantly
         isLoadingData = true; // Set the flag to prevent duplicate loads
         
-        // Use INSTANT visualization loading - all 41k dots with minimal data
-        console.log('Starting instant visualization loading...');
+        // Use TINY sample for instant visualization - 1000 dots
+        console.log('Starting tiny sample loading for instant display...');
         
-        // STEP 1: Load minimal data for instant starfield
-        loadInstantVisualization((update) => {
+        // STEP 1: Load 1000-point sample for instant starfield
+        loadTinyVisualization((update) => {
           try {
-            if (update.phase === 'instant') {
-              console.log(`✨ Instant visualization data ready: ${update.visualData.length} dots`);
+            if (update.phase === 'sample') {
+              console.log(`✨ Sample visualization data ready: ${update.visualData.length} dots`);
               
               // Set data immediately for full starfield animation
               data = update.visualData;
