@@ -171,17 +171,41 @@
     if (data.length !== lastDatasetLength && data.length > 0) {
       console.log(`Data changed: ${lastDatasetLength} → ${data.length} points, starting starfield animation ✨`);
       
-      // PREVENT VISUAL JUMPS: Set all points to hidden IMMEDIATELY before any processing
-      data.forEach(point => {
-        pointAnimations.set(point.id, {
-          opacity: 0,
-          scale: 0.1,
-          isAnimating: true,
-          startTime: 0, // Will be set properly in initializePointAnimations
-          sparklePhase: Math.random() * Math.PI * 2,
-          hasSparkled: false
+      // For initial load (0 → some data), show dots immediately
+      const isInitialLoad = lastDatasetLength === 0;
+      
+      if (isInitialLoad) {
+        // Initial load: Show all dots immediately at full opacity
+        data.forEach(point => {
+          pointAnimations.set(point.id, {
+            opacity: 1,
+            scale: 1,
+            isAnimating: false,
+            sparklePhase: Math.random() * Math.PI * 2,
+            hasSparkled: false
+          });
         });
-      });
+      } else {
+        // Subsequent loads: Only animate NEW points
+        // Keep existing points visible
+        const existingAnimations = new Map(pointAnimations);
+        
+        // Set up animations only for new points
+        data.forEach(point => {
+          if (!existingAnimations.has(point.id)) {
+            // New point - start hidden for animation
+            pointAnimations.set(point.id, {
+              opacity: 0,
+              scale: 0.1,
+              isAnimating: true,
+              startTime: 0, // Will be set properly in initializePointAnimations
+              sparklePhase: Math.random() * Math.PI * 2,
+              hasSparkled: false
+            });
+          }
+          // Existing points keep their current state
+        });
+      }
       
       lastDatasetLength = data.length;
       
@@ -190,19 +214,17 @@
         cancelAnimationFrame(animationFrame);
       }
       
-      // Only start animations if we're not transitioning
-      if (!isTransitioning) {
-        // Start animations immediately - no delay needed since points are pre-hidden
-        initializePointAnimations(data);
-      } else {
-        // If transitioning, set all points to fully visible
-        data.forEach(point => {
-          pointAnimations.set(point.id, {
-            opacity: 1,
-            scale: 1,
-            isAnimating: false
-          });
+      // Only animate if there are new points and not initial load
+      if (!isTransitioning && !isInitialLoad) {
+        // Get only the new points for animation
+        const newPoints = data.filter(point => {
+          const anim = pointAnimations.get(point.id);
+          return anim && anim.isAnimating;
         });
+        
+        if (newPoints.length > 0) {
+          initializePointAnimations(newPoints);
+        }
       }
     }
   }
@@ -481,16 +503,8 @@
       if (staggeredAnimationState) {
         radius = radius * staggeredAnimationState.scale;
         baseOpacity = baseOpacity * staggeredAnimationState.opacity;
-      } else if (pointAnimations.size > 0 || isInitializingAnimations) {
-        // If we have animations running but this point isn't in them, hide it
-        // This prevents the flash of all dots before animations start
-        baseOpacity = 0;
       }
-      
-      // EXTRA SAFETY: During initialization or if animation hasn't started, keep hidden
-      if (isInitializingAnimations || (staggeredAnimationState && staggeredAnimationState.startTime > performance.now())) {
-        baseOpacity = 0;
-      }
+      // Remove the hiding logic - let the animation state control visibility
       
       // Fade other points during individual view
       if (currentState?.viewType === 'individual' && !isIndividualHighlighted) {
