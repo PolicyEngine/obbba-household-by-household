@@ -168,6 +168,9 @@
   
   // Check if we need to restart animations
   function checkForDataChange() {
+    // Prevent re-checking if we're already processing
+    if (isInitializingAnimations) return;
+    
     if (data.length !== lastDatasetLength && data.length > 0) {
       console.log(`Data changed: ${lastDatasetLength} → ${data.length} points, starting starfield animation ✨`);
       
@@ -692,9 +695,16 @@
     isInitializingAnimations = false;
   });
   
+  // Track if we're currently rendering to prevent loops
+  let isRendering = false;
+  
   // Re-render when data or state changes
-  $: if (data.length && canvasRef) {
-    renderVisualization();
+  $: if (data.length && canvasRef && !isRendering) {
+    isRendering = true;
+    requestAnimationFrame(() => {
+      renderVisualization();
+      isRendering = false;
+    });
   }
 </script>
 
