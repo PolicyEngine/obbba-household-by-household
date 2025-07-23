@@ -1000,6 +1000,7 @@
   .text-content {
     padding: 2rem 3rem 50vh 3rem;
     padding-left: calc(120px + 3rem); /* Space for y-axis - matches chart margin */
+    padding-right: calc(120px + 3rem); /* Match left side for symmetry */
     margin-top: 4rem; /* Add space below header for first section */
     width: 100%;
     position: relative;
