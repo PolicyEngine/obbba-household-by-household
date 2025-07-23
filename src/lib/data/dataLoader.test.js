@@ -158,7 +158,7 @@ describe('dataLoader', () => {
 
   describe('processDataAsync', () => {
     it('processes data in chunks without blocking', async () => {
-      const rawData = Array.from({ length: 2500 }, (_, i) => ({
+      const rawData = Array.from({ length: 600 }, (_, i) => ({
         'Household ID': String(i + 1),
         'Gross Income': '50000',
         'Total change in net income': '1000',
@@ -166,9 +166,9 @@ describe('dataLoader', () => {
         'Household weight': '100'
       }));
 
-      const processed = await processDataAsync(rawData, 1000);
+      const processed = await processDataAsync(rawData, 250);
 
-      expect(processed).toHaveLength(2500);
+      expect(processed).toHaveLength(600);
       expect(processed[0]).toMatchObject({
         id: '1',
         householdId: '1',

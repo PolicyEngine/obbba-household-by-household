@@ -1,5 +1,5 @@
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import * as d3 from 'd3';
   import { COLORS, getPointColor } from '../config/colors.js';
   import { getFontFamily } from '../utils/formatting.js';
@@ -19,6 +19,13 @@
   let svgRef;
   let renderedPoints = [];
   
+  // Staggered animation state
+  let pointAnimations = new Map(); // Map of point ID to animation state
+  let animationStartTime = 0;
+  let lastDatasetLength = 0;
+  let animationFrame = null;
+  let isInitializingAnimations = false;
+  
   // Chart dimensions
   let margin = { top: 60, right: 100, bottom: 100, left: 120 };
   let width = 900;
@@ -26,6 +33,8 @@
   
   // Responsive margins
   function updateMargins() {
+    if (typeof window === 'undefined') return; // SSR safety
+    
     const viewportWidth = window.innerWidth;
     if (viewportWidth <= 480) {
       margin = { top: 40, right: 15, bottom: 50, left: 50 };
@@ -33,6 +42,168 @@
       margin = { top: 50, right: 30, bottom: 70, left: 65 };
     } else {
       margin = { top: 60, right: 100, bottom: 100, left: 120 };
+    }
+  }
+  
+  // Initialize staggered animations for points
+  function initializePointAnimations(dataPoints) {
+    if (typeof window === 'undefined' || typeof performance === 'undefined') return;
+
+    isInitializingAnimations = true;
+    // Don't clear pointAnimations here - we want to keep the hidden state set in checkForDataChange
+    animationStartTime = performance.now();
+
+    // Create a magical starfield effect - randomize the order completely
+    const shuffledPoints = [...dataPoints].sort(() => Math.random() - 0.5);
+
+    // ULTRA-FAST ANIMATION: Complete all stars within 8 seconds maximum
+    const maxAnimationDuration = 8000; // 8 seconds total
+
+    // For small datasets (samples), ensure minimum animation time for visual appeal
+    const minAnimationDuration = Math.min(2000, dataPoints.length * 5); // At least 2s or 5ms per point
+    const actualAnimationDuration = Math.max(minAnimationDuration, Math.min(maxAnimationDuration, dataPoints.length * 8));
+
+    const baseDelay = actualAnimationDuration / Math.max(dataPoints.length, 1);
+
+    shuffledPoints.forEach((point, index) => {
+      // Restore linear scheduling for appearance time
+      const scheduledDelay = index * baseDelay;
+
+      // Add small random variation (±200ms) for organic feel while staying within bounds
+      const randomVariation = (Math.random() - 0.5) * 400; // ±200ms
+      const finalDelay = Math.max(0, Math.min(scheduledDelay + randomVariation, actualAnimationDuration - 400));
+
+      // Add some clustering for more organic feel (some stars appear in small groups)
+      const clusterChance = Math.random();
+      let clusterDelay = 0;
+      if (clusterChance < 0.3) {
+        // 30% chance to be part of a cluster (appear close to previous star)
+        clusterDelay = Math.random() * 100; // Smaller cluster delay
+      }
+
+      const totalDelay = Math.min(finalDelay + clusterDelay, actualAnimationDuration - 400);
+
+      // Get existing animation state (which should be hidden) or create new
+      const existingState = pointAnimations.get(point.id);
+      pointAnimations.set(point.id, {
+        startTime: animationStartTime + totalDelay,
+        opacity: existingState?.opacity ?? 0, // Keep hidden state
+        scale: existingState?.scale ?? 0.1,   // Keep small scale
+        isAnimating: true,
+        sparklePhase: existingState?.sparklePhase ?? Math.random() * Math.PI * 2,
+        hasSparkled: false
+      });
+    });
+
+    console.log(`🌟 Starfield animation initialized: ${dataPoints.length} stars over ${actualAnimationDuration/1000}s (linear)`);
+
+    // Start animation loop
+    if (typeof window !== 'undefined') {
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+      isInitializingAnimations = false;
+      animatePoints();
+    }
+  }
+  
+  // Animation loop for smooth point reveals
+  function animatePoints() {
+    if (typeof window === 'undefined' || typeof performance === 'undefined') return;
+    
+    const currentTime = performance.now();
+    const animationDuration = 400; // Faster individual star animation (was 600ms)
+    let needsRerender = false;
+    
+    pointAnimations.forEach((animation, pointId) => {
+      if (!animation.isAnimating) return;
+      
+      const elapsed = currentTime - animation.startTime;
+      
+      if (elapsed >= 0) {
+        const progress = Math.min(elapsed / animationDuration, 1);
+        
+        // Smooth easing function (ease-out quad for gentler feel)
+        const eased = 1 - Math.pow(1 - progress, 2);
+        
+        // Create sparkle effect - stars get brighter then settle
+        let sparkleMultiplier = 1;
+        if (progress > 0.3 && progress < 0.8 && !animation.hasSparkled) {
+          // Add sparkle during the middle phase
+          const sparkleProgress = (progress - 0.3) / 0.5; // 0 to 1 over sparkle period
+          const sparkleIntensity = Math.sin(sparkleProgress * Math.PI + animation.sparklePhase);
+          sparkleMultiplier = 1 + (sparkleIntensity * 0.4); // Up to 40% brighter
+          
+          if (sparkleProgress > 0.8) {
+            animation.hasSparkled = true; // Sparkle only once
+          }
+        }
+        
+        animation.opacity = Math.min(eased * sparkleMultiplier, 1.5); // Cap brightness for readability
+        animation.scale = 0.2 + (0.8 * eased);
+        
+        // Add slight scale sparkle too
+        if (sparkleMultiplier > 1) {
+          animation.scale *= (1 + (sparkleMultiplier - 1) * 0.2);
+        }
+        
+        if (progress >= 1) {
+          animation.isAnimating = false;
+          animation.opacity = 1;
+          animation.scale = 1;
+        }
+        
+        needsRerender = true;
+      }
+    });
+    
+    if (needsRerender) {
+      renderVisualization();
+    }
+    
+    // Continue animation if any points are still animating
+    const stillAnimating = Array.from(pointAnimations.values()).some(a => a.isAnimating);
+    if (stillAnimating && typeof window !== 'undefined') {
+      animationFrame = requestAnimationFrame(animatePoints);
+    }
+  }
+  
+  // Check if we need to restart animations
+  function checkForDataChange() {
+    if (data.length !== lastDatasetLength && data.length > 0) {
+      console.log(`Data changed: ${lastDatasetLength} → ${data.length} points, starting starfield animation ✨`);
+      
+      // PREVENT VISUAL JUMPS: Set all points to hidden IMMEDIATELY before any processing
+      data.forEach(point => {
+        pointAnimations.set(point.id, {
+          opacity: 0,
+          scale: 0.1,
+          isAnimating: true,
+          startTime: 0, // Will be set properly in initializePointAnimations
+          sparklePhase: Math.random() * Math.PI * 2,
+          hasSparkled: false
+        });
+      });
+      
+      lastDatasetLength = data.length;
+      
+      // ALWAYS clear existing animations to prevent old slow animations
+      if (animationFrame && typeof window !== 'undefined') {
+        cancelAnimationFrame(animationFrame);
+      }
+      
+      // Only start animations if we're not transitioning
+      if (!isTransitioning) {
+        // Start animations immediately - no delay needed since points are pre-hidden
+        initializePointAnimations(data);
+      } else {
+        // If transitioning, set all points to fully visible
+        data.forEach(point => {
+          pointAnimations.set(point.id, {
+            opacity: 1,
+            scale: 1,
+            isAnimating: false
+          });
+        });
+      }
     }
   }
   
@@ -71,6 +242,15 @@
   // Main rendering function
   export function renderVisualization() {
     if (!canvasRef || !data.length) return;
+    
+    // Check if we need to start new animations
+    checkForDataChange();
+    
+    // If we just started initializing animations, wait a frame for them to be set up
+    if (isInitializingAnimations && typeof window !== 'undefined') {
+      requestAnimationFrame(() => renderVisualization());
+      return;
+    }
     
     try {
       const ctx = canvasRef.getContext('2d', { 
@@ -287,11 +467,29 @@
       const weightBasedOpacity = 0.3 + (0.55 * normalizedWeight);
       let baseOpacity = isHighlighted ? 1 : Math.min(Math.max(weightBasedOpacity, 0.3), 0.85);
       
-      // Apply animation effects
-      const animationState = animatedHouseholds.get(d.id);
-      if (animationState && animationState.isAnimating) {
-        radius = radius * animationState.scale;
-        baseOpacity = Math.min(baseOpacity * animationState.opacity, 1);
+      // Apply animation effects (both existing and new staggered animations)
+      const existingAnimationState = animatedHouseholds.get(d.id);
+      const staggeredAnimationState = pointAnimations.get(d.id);
+      
+      // Apply existing animation system (for emphasis/click effects)
+      if (existingAnimationState && existingAnimationState.isAnimating) {
+        radius = radius * existingAnimationState.scale;
+        baseOpacity = Math.min(baseOpacity * existingAnimationState.opacity, 1);
+      }
+      
+      // Apply staggered reveal animation
+      if (staggeredAnimationState) {
+        radius = radius * staggeredAnimationState.scale;
+        baseOpacity = baseOpacity * staggeredAnimationState.opacity;
+      } else if (pointAnimations.size > 0 || isInitializingAnimations) {
+        // If we have animations running but this point isn't in them, hide it
+        // This prevents the flash of all dots before animations start
+        baseOpacity = 0;
+      }
+      
+      // EXTRA SAFETY: During initialization or if animation hasn't started, keep hidden
+      if (isInitializingAnimations || (staggeredAnimationState && staggeredAnimationState.startTime > performance.now())) {
+        baseOpacity = 0;
       }
       
       // Fade other points during individual view
@@ -352,7 +550,7 @@
     const g = svg.append('g');
     
     // Responsive settings
-    const isMobile = window.innerWidth <= 768;
+    const isMobile = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
     const xAxisFontSize = isMobile ? '10px' : '14px';
     const yAxisFontSize = isMobile ? '10px' : '14px';
     
@@ -413,6 +611,8 @@
   
   // Handle resize
   function handleResize() {
+    if (typeof window === 'undefined') return; // SSR safety
+    
     if (canvasRef && svgRef) {
       const container = canvasRef.parentElement;
       width = container.clientWidth;
@@ -427,12 +627,31 @@
   }
   
   onMount(() => {
-    handleResize();
-    window.addEventListener('resize', handleResize);
+    // Clear any existing animation state from previous sessions
+    pointAnimations.clear();
+    lastDatasetLength = 0;
+    isInitializingAnimations = false;
+    if (animationFrame && typeof window !== 'undefined') {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = null;
+    }
     
-    return () => {
+    handleResize();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+    }
+  });
+  
+  onDestroy(() => {
+    if (typeof window !== 'undefined') {
       window.removeEventListener('resize', handleResize);
-    };
+    }
+    // Cleanup animations
+    if (animationFrame && typeof window !== 'undefined') {
+      cancelAnimationFrame(animationFrame);
+    }
+    pointAnimations.clear();
+    isInitializingAnimations = false;
   });
   
   // Re-render when data or state changes

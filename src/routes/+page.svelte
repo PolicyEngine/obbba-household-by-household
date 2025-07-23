@@ -314,8 +314,10 @@
   
   // Handle dataset change
   function handleDatasetChange(dataset) {
+    // Always allow switching, even if dataset isn't fully loaded yet
     if (!allDatasets[dataset]) {
-      console.error('Dataset not loaded:', dataset);
+      console.log(`Switching to ${dataset} - will use when available`);
+      selectedDataset = dataset;
       return;
     }
     
@@ -439,45 +441,102 @@
           
           // Load datasets progressively - don't await, handle everything in callbacks
           loadDatasetsProgressive(
-            // First dataset loaded callback
-            (partialDatasets) => {
-              // Callback when first dataset is loaded
-              console.log('First dataset loaded:', Object.keys(partialDatasets));
-              allDatasets = { ...partialDatasets };
+            // First dataset sample loaded callback
+            (sampleDatasets) => {
+              // Callback when first dataset sample is loaded
+              console.log('First dataset sample loaded:', Object.keys(sampleDatasets));
+              allDatasets = { ...sampleDatasets };
               
-              // Always stop loading overlay once first dataset is available
+              // Always stop loading overlay once first dataset sample is available
               isLoading = false;
               
-              // If current selection is TCJA expiration, show it immediately
-              if (selectedDataset === 'tcja-expiration' && partialDatasets['tcja-expiration']) {
-                data = partialDatasets['tcja-expiration'];
-                initializeRandomHouseholds();
-                secondDatasetLoading = true; // But indicate background loading
-                
-                // Handle household selection now that data is loaded
-                handleHouseholdSelection(householdId);
-              } else if (selectedDataset === 'tcja-extension') {
-                // If user wants extension dataset but it's not loaded yet, 
-                // show expiration dataset temporarily and indicate loading
-                if (partialDatasets['tcja-expiration']) {
-                  data = partialDatasets['tcja-expiration'];
-                  initializeRandomHouseholds();
-                  secondDatasetLoading = true;
-                }
+              // SMOOTH TRANSITION: Only set data if we don't already have data to prevent jumps
+              if (data.length === 0) {
+                                  // If current selection is TCJA expiration, show it immediately
+                  if (selectedDataset === 'tcja-expiration' && sampleDatasets['tcja-expiration']) {
+                    data = sampleDatasets['tcja-expiration'];
+                    initializeRandomHouseholds();
+                    secondDatasetLoading = true; // But indicate background loading
+                    
+                    // Force immediate chart render
+                    if (chartComponent?.renderVisualization) {
+                      setTimeout(() => chartComponent.renderVisualization(), 0);
+                    }
+                    
+                    // Handle household selection now that data is loaded
+                    handleHouseholdSelection(householdId);
+                  } else if (selectedDataset === 'tcja-extension') {
+                    // If user wants extension dataset but it's not loaded yet, 
+                    // show expiration dataset temporarily and indicate loading
+                    if (sampleDatasets['tcja-expiration']) {
+                      data = sampleDatasets['tcja-expiration'];
+                      initializeRandomHouseholds();
+                      secondDatasetLoading = true;
+                      
+                      // Force immediate chart render
+                      if (chartComponent?.renderVisualization) {
+                        setTimeout(() => chartComponent.renderVisualization(), 0);
+                      }
+                    }
+                  }
+                  
+                  // CHECK FOR ULTRA-FAST COMPLETION: If both datasets loaded in first phase
+                  if (sampleDatasets['tcja-expiration'] && sampleDatasets['tcja-extension']) {
+                    secondDatasetLoading = false;
+                  }
               }
             },
-            // Second dataset loaded callback
+            // Second dataset sample loaded callback
             (completeDatasets) => {
-              console.log('Second dataset loaded in background');
+              console.log('Second dataset sample loaded in background');
               allDatasets = { ...completeDatasets };
-              secondDatasetLoading = false;
+              
+              // SMOOTH TRANSITION: Only update if significant improvement or user switched datasets
+              const currentDataSize = data.length;
+              const newDataSize = completeDatasets[selectedDataset]?.length || 0;
+              const isSignificantImprovement = newDataSize > currentDataSize * 1.5; // 50% more data
               
               // If user switched to extension dataset while it was loading, update now
-              if (selectedDataset === 'tcja-extension' && completeDatasets['tcja-extension']) {
+              if (selectedDataset === 'tcja-extension' && completeDatasets['tcja-extension'] && 
+                  (currentDataSize === 0 || isSignificantImprovement)) {
                 data = completeDatasets['tcja-extension'];
                 initializeRandomHouseholds();
                 // Handle household selection for extension dataset
                 handleHouseholdSelection(householdId);
+              }
+              
+              // CHECK FOR COMPLETION: If both datasets are now available, remove loading indicator
+              if (completeDatasets['tcja-expiration'] && completeDatasets['tcja-extension']) {
+                secondDatasetLoading = false;
+              }
+            },
+            // Full dataset loaded callback
+            (fullDatasets, datasetKey) => {
+              console.log(`Full dataset loaded: ${datasetKey}`);
+              allDatasets = { ...fullDatasets };
+              
+              // If this is the currently selected dataset, update the view
+              if (selectedDataset === datasetKey) {
+                console.log(`Updating view with full ${datasetKey} dataset (${fullDatasets[datasetKey].length} households)`);
+                data = fullDatasets[datasetKey];
+                initializeRandomHouseholds();
+                
+                // Re-handle household selection with full dataset
+                handleHouseholdSelection(householdId);
+                
+                // Force chart re-render with full data
+                if (chartComponent?.renderVisualization) {
+                  chartComponent.renderVisualization();
+                }
+              }
+              
+              // SIMPLIFIED COMPLETION LOGIC: Just check if both datasets exist
+              if (fullDatasets['tcja-expiration'] && fullDatasets['tcja-extension']) {
+                const expirationSize = fullDatasets['tcja-expiration'].length;
+                const extensionSize = fullDatasets['tcja-extension'].length;
+                
+                // Both datasets have data, so remove loading indicator
+                secondDatasetLoading = false;
               }
             }
           ).catch(error => {
@@ -770,8 +829,6 @@
 <div class="app-container">
   <Header 
     {selectedDataset} 
-    {secondDatasetLoading}
-    {allDatasets}
     onDatasetChange={handleDatasetChange}
   />
   
