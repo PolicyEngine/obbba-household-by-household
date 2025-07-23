@@ -999,11 +999,9 @@
   
   .text-content {
     padding: 2rem 3rem 50vh 3rem;
+    padding-left: calc(120px + 3rem); /* Space for y-axis - matches chart margin */
     margin-top: 4rem; /* Add space below header for first section */
     width: 100%;
-    max-width: 1400px; /* Increased to accommodate side positioning */
-    margin-left: auto;
-    margin-right: auto;
     position: relative;
   }
   
@@ -1089,12 +1087,12 @@
   /* Right-aligned sections */
   .text-section.align-right {
     margin-left: auto;
-    margin-right: 120px; /* Space from right edge to align with chart */
+    margin-right: 0;
   }
   
   /* Left-aligned sections */
   .text-section.align-left {
-    margin-left: 120px; /* Space for y-axis - matches chart margin */
+    margin-left: 0;
     margin-right: auto;
   }
   
