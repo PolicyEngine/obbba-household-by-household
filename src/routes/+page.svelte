@@ -1476,6 +1476,11 @@
       font-size: 12px;
     }
     
+    /* Hide desktop label on mobile */
+    .baseline-selector-overlay > .baseline-label {
+      display: none;
+    }
+    
     /* Dropdown menu on mobile */
     .baseline-selector {
       display: none;
