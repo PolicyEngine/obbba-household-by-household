@@ -1075,20 +1075,14 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    background: rgba(255, 255, 255, 0.95);
-    padding: 0.75rem 1.25rem;
-    border-radius: 12px;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(226, 232, 240, 0.5);
   }
 
   .baseline-label {
     font-size: 14px;
-    font-weight: 500;
-    color: var(--text-secondary);
+    font-weight: 600;
+    color: var(--text-primary);
     font-family: var(--font-sans);
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8), 0 0 4px rgba(255, 255, 255, 0.8);
   }
   
   /* Hide dropdown elements on desktop */
@@ -1099,10 +1093,11 @@
 
   .baseline-selector {
     display: flex;
-    background: var(--grid-lines);
+    background: rgba(248, 250, 252, 0.9);
     border-radius: 8px;
     padding: 4px;
     gap: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   }
 
   .tab-button {
