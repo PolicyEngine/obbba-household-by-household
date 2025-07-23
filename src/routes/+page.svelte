@@ -5,6 +5,7 @@
   import { scrollStates } from '$lib/config/views.js';
   import { loadDatasets, loadDatasetsProgressive } from '$lib/data/dataLoader.js';
   import { loadDatasetsUltraFast } from '$lib/data/optimizedDataLoader.js';
+  import { loadDatasetUltraFast } from '$lib/data/ultraFastLoader.js';
   import { 
     parseUrlParams, 
     updateUrlWithHousehold, 
@@ -425,8 +426,17 @@
     }
   }
   
+  // Track if data is currently loading to prevent duplicate loads
+  let isLoadingData = false;
+  
   // Handle URL parameters
   async function handleUrlParams() {
+    // Prevent duplicate loads
+    if (isLoadingData) {
+      console.log('Already loading data, skipping duplicate call');
+      return;
+    }
+    
     try {
       const { householdId, baseline } = parseUrlParams();
       console.log('handleUrlParams called with:', { householdId, baseline });
@@ -439,49 +449,55 @@
       // Load all datasets if needed
       if (Object.keys(allDatasets).length === 0) {
         isLoading = true;
+        isLoadingData = true; // Set the flag
         
-        // Use ultra-fast optimized loading with pre-computed samples
-        console.log('Starting ultra-fast data loading...');
-        loadDatasetsUltraFast(
-            (phase, datasets) => {
-              console.log(`📊 Phase ${phase} complete with ${Object.keys(datasets).length} datasets`);
-              allDatasets = { ...datasets };
-              
-              // Stop loading overlay after micro sample (instant)
-              if (phase === 'micro') {
-                isLoading = false;
-              }
-              
-              // Update data if it's the selected dataset
-              if (datasets[selectedDataset]) {
-                console.log(`Setting data for ${selectedDataset}: ${datasets[selectedDataset].length} rows`);
-                data = datasets[selectedDataset];
-                console.log(`Data array now has ${data.length} rows`);
-                initializeRandomHouseholds();
-                
-                // Force chart render
-                if (chartComponent?.renderVisualization) {
-                  setTimeout(() => chartComponent.renderVisualization(), 0);
-                }
-                
-                // Handle household selection if needed
-                if (householdId && phase !== 'micro') { // Skip on micro to avoid jumps
-                  handleHouseholdSelection(householdId);
-                }
-              }
-              
-              // Show loading indicator for background phases
-              if (phase === 'micro' || phase === 'small') {
-                secondDatasetLoading = true;
-              } else if (phase === 'full') {
-                secondDatasetLoading = false;
-              }
+        // Use NEW ultra-fast single dataset loading
+        console.log(`Starting ultra-fast loading of ${selectedDataset}...`);
+        loadDatasetUltraFast(selectedDataset, (update) => {
+          console.log(`📊 Phase ${update.phase} - ${Object.keys(update).filter(k => k !== 'phase' && k !== 'isComplete').join(', ')}`);
+          
+          // Update all datasets
+          Object.keys(update).forEach(key => {
+            if (key !== 'phase' && key !== 'isComplete' && update[key]) {
+              allDatasets[key] = update[key];
             }
-        ).catch(error => {
+          });
+          
+          // Update displayed data if it's the selected dataset
+          if (update[selectedDataset]) {
+            console.log(`Setting data for ${selectedDataset}: ${update[selectedDataset].length} rows`);
+            data = update[selectedDataset];
+            initializeRandomHouseholds();
+            
+            // Force immediate chart render on first load
+            if (update.phase === 'micro') {
+              isLoading = false;
+              if (chartComponent?.renderVisualization) {
+                chartComponent.renderVisualization();
+              }
+            } else if (chartComponent?.renderVisualization) {
+              setTimeout(() => chartComponent.renderVisualization(), 0);
+            }
+            
+            // Handle household selection after initial micro load
+            if (householdId && update.phase !== 'micro') {
+              handleHouseholdSelection(householdId);
+            }
+          }
+          
+          // Update loading indicators
+          if (update.isComplete) {
+            secondDatasetLoading = false;
+            isLoadingData = false;
+          } else if (update.phase !== 'micro') {
+            secondDatasetLoading = true;
+          }
+        }).catch(error => {
           console.error('Error loading data:', error);
           loadError = error.message;
           isLoading = false;
           secondDatasetLoading = false;
+          isLoadingData = false; // Clear on error too
         });
         
         // FALLBACK: Keep old progressive loader as backup
