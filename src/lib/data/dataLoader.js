@@ -23,17 +23,30 @@ export async function loadDataset(datasetKey) {
     
     const raw = await response.text();
     
-    // Use Papa Parse in worker mode to avoid blocking the main thread
-    const result = await new Promise((resolve, reject) => {
-      Papa.parse(raw, {
+    // Detect if we're in a test environment (no DOM/Worker support)
+    const isTestEnvironment = typeof window === 'undefined' || typeof Worker === 'undefined';
+    
+    let result;
+    if (isTestEnvironment) {
+      // Use synchronous parsing in test environment
+      result = Papa.parse(raw, {
         header: true,
         dynamicTyping: true,
-        skipEmptyLines: true,
-        worker: true, // Use web worker to avoid blocking
-        complete: resolve,
-        error: reject
+        skipEmptyLines: true
       });
-    });
+    } else {
+      // Use Papa Parse in worker mode to avoid blocking the main thread
+      result = await new Promise((resolve, reject) => {
+        Papa.parse(raw, {
+          header: true,
+          dynamicTyping: true,
+          skipEmptyLines: true,
+          worker: true, // Use web worker to avoid blocking
+          complete: resolve,
+          error: reject
+        });
+      });
+    }
     
     if (result.errors.length > 0) {
       console.warn('CSV parsing warnings:', result.errors);

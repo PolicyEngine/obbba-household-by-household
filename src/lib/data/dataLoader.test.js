@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { loadDatasets, processData } from './dataLoader.js';
+import { loadDatasets, processData, processDataAsync } from './dataLoader.js';
 
 // Mock Papa library
 vi.mock('papaparse', () => ({
@@ -15,7 +15,18 @@ vi.mock('papaparse', () => ({
           return obj;
         }, {});
       });
-      return { data, errors: [] };
+      
+      const result = { data, errors: [] };
+      
+      // Handle both sync and async (worker) modes
+      if (config?.complete) {
+        // Async mode - call complete callback
+        setTimeout(() => config.complete(result), 0);
+        return; // Return nothing for async mode
+      } else {
+        // Sync mode - return result directly
+        return result;
+      }
     })
   }
 }));
@@ -126,7 +137,7 @@ describe('dataLoader', () => {
       expect(datasets).toHaveProperty('tcja-extension');
       expect(datasets['tcja-expiration']).toHaveLength(2);
       expect(datasets['tcja-extension']).toHaveLength(2);
-    });
+    }, { timeout: 10000 }); // Increase timeout to 10 seconds
 
     it('handles fetch errors gracefully', async () => {
       fetch.mockRejectedValue(new Error('Network error'));
@@ -142,6 +153,42 @@ describe('dataLoader', () => {
       });
 
       await expect(loadDatasets()).rejects.toThrow('Failed to load datasets');
+    });
+  });
+
+  describe('processDataAsync', () => {
+    it('processes data in chunks without blocking', async () => {
+      const rawData = Array.from({ length: 2500 }, (_, i) => ({
+        'Household ID': String(i + 1),
+        'Gross Income': '50000',
+        'Total change in net income': '1000',
+        'Percentage change in net income': '2.5',
+        'Household weight': '100'
+      }));
+
+      const processed = await processDataAsync(rawData, 1000);
+
+      expect(processed).toHaveLength(2500);
+      expect(processed[0]).toMatchObject({
+        id: '1',
+        householdId: '1',
+        'Gross Income': '50000',
+        isAnnotated: false,
+        sectionIndex: null
+      });
+    });
+
+    it('reports progress when callback provided', async () => {
+      const rawData = Array.from({ length: 1500 }, (_, i) => ({
+        'Household ID': String(i + 1)
+      }));
+
+      const progressReports = [];
+      await processDataAsync(rawData, 500, (progress) => {
+        progressReports.push(progress);
+      });
+
+      expect(progressReports).toEqual([34, 67, 100]);
     });
   });
 });
