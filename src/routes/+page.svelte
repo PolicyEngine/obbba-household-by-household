@@ -816,6 +816,7 @@
   
   <!-- Baseline selector overlay (always visible on right) -->
   <div class="baseline-selector-overlay" class:dropdown-open={baselineDropdownOpen}>
+    <span class="baseline-label desktop-only">Baseline:</span>
     <div class="baseline-selector-header">
       <span class="baseline-label">Baseline:</span>
       <button 
@@ -1493,8 +1494,8 @@
       font-size: 12px;
     }
     
-    /* Hide desktop label on mobile */
-    .baseline-selector-overlay > .baseline-label {
+    /* Hide desktop-only label on mobile */
+    .baseline-label.desktop-only {
       display: none;
     }
     
