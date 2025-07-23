@@ -36,9 +36,12 @@ export async function loadDatasetSample(datasetKey, sampleSize = 'full') {
   const normalizedBase = base.endsWith('/') ? base : base + '/';
   const url = `${normalizedBase}${filename}`;
   
+  console.log(`Loading ${sampleSize} sample from: ${url}`);
+  
   try {
     const response = await fetch(url);
     if (!response.ok) {
+      console.error(`Failed to load CSV from ${url}: ${response.status} ${response.statusText}`);
       throw new Error(`Failed to load CSV: ${response.status} ${response.statusText}`);
     }
     
@@ -112,8 +115,12 @@ export async function loadDatasetsUltraFast(onPhaseComplete) {
       loadDatasetSample('tcja-extension', 'micro')
     ]);
     
+    console.log(`Micro samples loaded: ${tcjaExpMicro.length} + ${tcjaExtMicro.length} rows`);
+    
     allDatasets['tcja-expiration'] = processDataMinimal(tcjaExpMicro);
     allDatasets['tcja-extension'] = processDataMinimal(tcjaExtMicro);
+    
+    console.log(`Processed datasets: tcja-expiration has ${allDatasets['tcja-expiration'].length} rows`);
     
     const phase1Time = performance.now() - startTime;
     console.log(`✅ PHASE 1 complete in ${phase1Time.toFixed(0)}ms - Instant visualization ready!`);

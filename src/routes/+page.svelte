@@ -436,12 +436,12 @@
         selectedDataset = baseline;
       }
       
-              // Load all datasets if needed
-        if (Object.keys(allDatasets).length === 0) {
-          isLoading = true;
-          
-          // Use ultra-fast optimized loading with pre-computed samples
-          loadDatasetsUltraFast(
+      // Load all datasets if needed
+      if (Object.keys(allDatasets).length === 0) {
+        isLoading = true;
+        
+        // Use ultra-fast optimized loading with pre-computed samples
+        loadDatasetsUltraFast(
             (phase, datasets) => {
               console.log(`📊 Phase ${phase} complete with ${Object.keys(datasets).length} datasets`);
               allDatasets = { ...datasets };
@@ -474,15 +474,15 @@
                 secondDatasetLoading = false;
               }
             }
-          ).catch(error => {
-            console.error('Error loading data:', error);
-            loadError = error.message;
-            isLoading = false;
-            secondDatasetLoading = false;
-          });
-          
-          // FALLBACK: Keep old progressive loader as backup
-          /*loadDatasetsProgressive(
+        ).catch(error => {
+          console.error('Error loading data:', error);
+          loadError = error.message;
+          isLoading = false;
+          secondDatasetLoading = false;
+        });
+        
+        // FALLBACK: Keep old progressive loader as backup
+        /*loadDatasetsProgressive(
             // First dataset sample loaded callback
             (sampleDatasets) => {
               // Callback when first dataset sample is loaded
