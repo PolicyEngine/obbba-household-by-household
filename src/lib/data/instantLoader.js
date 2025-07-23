@@ -44,11 +44,16 @@ export async function loadInstantVisualization(onUpdate) {
       householdId: d['Household ID'],
       'Market Income': d['Market Income'] || 0,
       'Total change in net income': d['Total change in net income'] || 0,
+      'Change in Household Net Income': d['Total change in net income'] || 0, // Alias
       'Household weight': d['Household weight'] || 1,
-      // Calculate percentage for color (approximate)
-      'Percentage change in net income': d['Market Income'] > 0 
-        ? (d['Total change in net income'] / d['Market Income']) * 100 
-        : 0
+      // Don't calculate percentage - let color be based on absolute change for now
+      'Percentage change in net income': 0,
+      // Add minimal demographic fields with defaults
+      'Number of Dependents': 0,
+      'Dependents': 0,
+      'Age of Head': 40,
+      'Age': 40,
+      'Is Married': false
     }));
     
     const processTime = performance.now() - processStart;

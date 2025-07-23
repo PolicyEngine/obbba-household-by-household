@@ -449,32 +449,39 @@
       
       // Load all datasets if needed
       if (Object.keys(allDatasets).length === 0) {
-        isLoading = true;
-        isLoadingData = true; // Set the flag
+        // Don't show loading spinner - minimal data loads instantly
+        isLoadingData = true; // Set the flag to prevent duplicate loads
         
         // Use INSTANT visualization loading - all 41k dots with minimal data
         console.log('Starting instant visualization loading...');
         
         // STEP 1: Load minimal data for instant starfield
         loadInstantVisualization((update) => {
-          if (update.phase === 'instant') {
-            console.log(`✨ Instant visualization data ready: ${update.visualData.length} dots`);
-            
-            // Set data immediately for full starfield animation
-            data = update.visualData;
-            isLoading = false;
-            
-            // Initialize random households with minimal data
-            initializeRandomHouseholds();
-            
-            // Force immediate render
-            if (chartComponent?.renderVisualization) {
-              chartComponent.renderVisualization();
+          try {
+            if (update.phase === 'instant') {
+              console.log(`✨ Instant visualization data ready: ${update.visualData.length} dots`);
+              
+              // Set data immediately for full starfield animation
+              data = update.visualData;
+              isLoading = false;
+              
+              // Initialize random households with minimal data
+              initializeRandomHouseholds();
+              
+              // Force immediate render
+              if (chartComponent?.renderVisualization) {
+                chartComponent.renderVisualization();
+              }
             }
+          } catch (error) {
+            console.error('Error processing instant visualization:', error);
+            loadError = `Failed to process visualization: ${error.message}`;
+            isLoading = false;
+            isLoadingData = false;
           }
         }).catch(error => {
           console.error('Error loading instant visualization:', error);
-          loadError = error.message;
+          loadError = `Failed to load minimal data: ${error.message}`;
           isLoading = false;
           isLoadingData = false;
         });
