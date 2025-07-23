@@ -1129,9 +1129,7 @@
   
   
   .integrated-household-profile {
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border);
+    margin-top: 0.75rem;
     /* Prevent layout shifts by maintaining minimum height */
     min-height: 400px;
     position: relative;
@@ -1223,8 +1221,7 @@
     }
     
     .integrated-household-profile {
-      margin-top: 1rem;
-      padding-top: 1rem;
+      margin-top: 0.5rem;
     }
     
     .scroll-indicator {
