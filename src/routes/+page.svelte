@@ -838,10 +838,17 @@
           >
             <div class="section-content">
               <div class="drag-handle" title="Drag to move">⋮⋮</div>
-              <h2>{state.title}</h2>
+              {#if state.id !== 'intro'}
+                <h2>{state.title}</h2>
+              {/if}
               
+              <!-- Intro section content -->
+              {#if state.id === 'intro'}
+                {#if state.description}
+                  <p>{@html state.description}</p>
+                {/if}
               <!-- Dynamic content for income sections -->
-              {#if state.id !== 'intro' && data.length > 0}
+              {:else if data.length > 0}
                 {@const sectionData = data.filter(d => state.filter(d))}
                 {@const stats = calculateSectionStats(sectionData, false, state.id)}
                 {#if stats}
