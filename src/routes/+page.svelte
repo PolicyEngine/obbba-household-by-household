@@ -1066,11 +1066,11 @@
     animation: arrow-bounce 2s infinite;
   }
   
-  /* Baseline selector overlay (bottom-right on all devices) */
+  /* Baseline selector overlay (aligned with chart edge) */
   .baseline-selector-overlay {
     position: fixed;
     bottom: 2rem;
-    right: 2rem;
+    right: calc(100px + 3rem); /* Align with chart's right margin */
     z-index: 20; /* Same as title overlay, above content */
     display: flex;
     align-items: center;
@@ -1093,16 +1093,12 @@
 
   .baseline-selector {
     display: flex;
-    background: rgba(248, 250, 252, 0.9);
-    border-radius: 8px;
-    padding: 4px;
-    gap: 4px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    gap: 8px;
   }
 
   .tab-button {
-    background: transparent;
-    border: none;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(226, 232, 240, 0.5);
     color: var(--text-secondary);
     font-size: 14px;
     font-weight: 500;
@@ -1112,6 +1108,7 @@
     transition: all 0.2s ease;
     white-space: nowrap;
     font-family: var(--font-sans);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   }
 
   .tab-button:hover:not(:disabled):not(.active) {
@@ -1437,7 +1434,7 @@
     .baseline-selector-overlay {
       top: auto;
       bottom: 1rem;
-      right: 1rem;
+      right: 30px; /* Align with mobile chart margin */
       padding: 0;
       gap: 0;
       flex-direction: column;
@@ -1595,7 +1592,7 @@
     
     .baseline-selector-overlay {
       bottom: 0.5rem;
-      right: 0.5rem;
+      right: 15px; /* Align with small mobile chart margin */
     }
     
     .baseline-selector-header {
