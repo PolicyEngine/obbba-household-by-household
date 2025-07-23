@@ -4,6 +4,10 @@
   import { DATASETS } from '$lib/config/datasets.js';
   import { scrollStates } from '$lib/config/views.js';
   import { loadDatasets, loadDatasetsProgressive } from '$lib/data/dataLoader.js';
+  import { loadDatasetsUltraFast } from '$lib/data/optimizedDataLoader.js';
+  import { loadDatasetUltraFast } from '$lib/data/ultraFastLoader.js';
+  import { loadInstantVisualization, loadFullDataBackground } from '$lib/data/instantLoader.js';
+  import { loadTinyVisualization } from '$lib/data/tinyLoader.js';
   import { 
     parseUrlParams, 
     updateUrlWithHousehold, 
@@ -286,8 +290,8 @@
     updateUrlWithHousehold(household.id, selectedDataset);
     
     // Force chart re-render
-    if (chartComponent?.renderVisualization) {
-      chartComponent.renderVisualization();
+    if (chartComponent?.forceRender) {
+      chartComponent.forceRender();
     }
   }
   
@@ -314,8 +318,10 @@
   
   // Handle dataset change
   function handleDatasetChange(dataset) {
+    // Always allow switching, even if dataset isn't fully loaded yet
     if (!allDatasets[dataset]) {
-      console.error('Dataset not loaded:', dataset);
+      console.log(`Switching to ${dataset} - will use when available`);
+      selectedDataset = dataset;
       return;
     }
     
@@ -410,8 +416,8 @@
     updateUrlWithHousehold(selectedHousehold?.id, dataset);
     
     // Force chart re-render
-    if (chartComponent?.renderVisualization) {
-      chartComponent.renderVisualization();
+    if (chartComponent?.forceRender) {
+      chartComponent.forceRender();
     }
     
     // Restore scroll position after a brief delay to allow for any layout changes
@@ -422,8 +428,17 @@
     }
   }
   
+  // Track if data is currently loading to prevent duplicate loads
+  let isLoadingData = false;
+  
   // Handle URL parameters
   async function handleUrlParams() {
+    // Prevent duplicate loads
+    if (isLoadingData) {
+      console.log('Already loading data, skipping duplicate call');
+      return;
+    }
+    
     try {
       const { householdId, baseline } = parseUrlParams();
       console.log('handleUrlParams called with:', { householdId, baseline });
@@ -435,68 +450,196 @@
       
       // Load all datasets if needed
       if (Object.keys(allDatasets).length === 0) {
-        isLoading = true;
-        try {
-          console.log('Loading datasets progressively...');
-          
-          // Load datasets progressively
-          allDatasets = await loadDatasetsProgressive(
-            // First dataset loaded callback
-            (partialDatasets) => {
-              // Callback when first dataset is loaded
-              console.log('First dataset loaded:', Object.keys(partialDatasets));
-              allDatasets = { ...partialDatasets };
+        // Don't show loading spinner - minimal data loads instantly
+        isLoadingData = true; // Set the flag to prevent duplicate loads
+        
+        // Use TINY sample for instant visualization - 1000 dots
+        console.log('Starting tiny sample loading for instant display...');
+        
+        // STEP 1: Load 1000-point sample for instant starfield
+        loadTinyVisualization((update) => {
+          try {
+            if (update.phase === 'sample') {
+              console.log(`✨ Sample visualization data ready: ${update.visualData.length} dots`);
               
-              // If current selection is TCJA expiration, show it immediately
-              if (selectedDataset === 'tcja-expiration' && partialDatasets['tcja-expiration']) {
-                data = partialDatasets['tcja-expiration'];
-                initializeRandomHouseholds();
-                isLoading = false; // Stop showing loading overlay
-                secondDatasetLoading = true; // But indicate background loading
-                
-                // Handle household selection now that data is loaded
+              // Set data immediately for full starfield animation
+              data = update.visualData;
+              isLoading = false;
+              
+              // Initialize random households with minimal data
+              initializeRandomHouseholds();
+              
+              // Force immediate render
+              if (chartComponent?.forceRender) {
+                chartComponent.forceRender();
+              }
+            }
+          } catch (error) {
+            console.error('Error processing instant visualization:', error);
+            loadError = `Failed to process visualization: ${error.message}`;
+            isLoading = false;
+            isLoadingData = false;
+          }
+        }).catch(error => {
+          console.error('Error loading instant visualization:', error);
+          loadError = `Failed to load minimal data: ${error.message}`;
+          isLoading = false;
+          isLoadingData = false;
+        });
+        
+        // STEP 2: Load full datasets in background
+        setTimeout(() => {
+          console.log('Starting background full data loading...');
+          
+          // Load selected dataset first
+          loadFullDataBackground(selectedDataset, (update) => {
+            if (update[selectedDataset]) {
+              console.log(`Full ${selectedDataset} data ready: ${update[selectedDataset].length} rows`);
+              
+              // Update with full data (keeps same visual positions)
+              allDatasets[selectedDataset] = update[selectedDataset];
+              data = update[selectedDataset];
+              
+              // Re-initialize to get full household data
+              initializeRandomHouseholds();
+              
+              // Handle household selection if pending
+              if (householdId) {
                 handleHouseholdSelection(householdId);
               }
+              
+              // Now load the other dataset
+              const otherDataset = selectedDataset === 'tcja-expiration' ? 'tcja-extension' : 'tcja-expiration';
+              loadFullDataBackground(otherDataset, (otherUpdate) => {
+                if (otherUpdate[otherDataset]) {
+                  console.log(`Full ${otherDataset} data ready: ${otherUpdate[otherDataset].length} rows`);
+                  allDatasets[otherDataset] = otherUpdate[otherDataset];
+                  
+                  // All done!
+                  secondDatasetLoading = false;
+                  isLoadingData = false;
+                }
+              }).catch(error => {
+                console.error(`Error loading ${otherDataset}:`, error);
+                secondDatasetLoading = false;
+                isLoadingData = false;
+              });
+            }
+          }).catch(error => {
+          console.error('Error loading data:', error);
+          loadError = error.message;
+          isLoading = false;
+          secondDatasetLoading = false;
+          isLoadingData = false; // Clear on error too
+        });
+        }, 500); // Small delay to let starfield animation start
+        
+        // FALLBACK: Keep old progressive loader as backup
+        /*loadDatasetsProgressive(
+            // First dataset sample loaded callback
+            (sampleDatasets) => {
+              // Callback when first dataset sample is loaded
+              console.log('First dataset sample loaded:', Object.keys(sampleDatasets));
+              allDatasets = { ...sampleDatasets };
+              
+              // Always stop loading overlay once first dataset sample is available
+              isLoading = false;
+              
+              // SMOOTH TRANSITION: Only set data if we don't already have data to prevent jumps
+              if (data.length === 0) {
+                                  // If current selection is TCJA expiration, show it immediately
+                  if (selectedDataset === 'tcja-expiration' && sampleDatasets['tcja-expiration']) {
+                    data = sampleDatasets['tcja-expiration'];
+                    initializeRandomHouseholds();
+                    secondDatasetLoading = true; // But indicate background loading
+                    
+                    // Force immediate chart render
+                    if (chartComponent?.forceRender) {
+                      setTimeout(() => chartComponent.forceRender(), 0);
+                    }
+                    
+                    // Handle household selection now that data is loaded
+                    handleHouseholdSelection(householdId);
+                  } else if (selectedDataset === 'tcja-extension') {
+                    // If user wants extension dataset but it's not loaded yet, 
+                    // show expiration dataset temporarily and indicate loading
+                    if (sampleDatasets['tcja-expiration']) {
+                      data = sampleDatasets['tcja-expiration'];
+                      initializeRandomHouseholds();
+                      secondDatasetLoading = true;
+                      
+                      // Force immediate chart render
+                      if (chartComponent?.renderVisualization) {
+                        setTimeout(() => chartComponent.renderVisualization(), 0);
+                      }
+                    }
+                  }
+                  
+                  // CHECK FOR ULTRA-FAST COMPLETION: If both datasets loaded in first phase
+                  if (sampleDatasets['tcja-expiration'] && sampleDatasets['tcja-extension']) {
+                    secondDatasetLoading = false;
+                  }
+              }
             },
-            // Second dataset loaded callback
+            // Second dataset sample loaded callback
             (completeDatasets) => {
-              console.log('Second dataset loaded in background');
+              console.log('Second dataset sample loaded in background');
               allDatasets = { ...completeDatasets };
-              secondDatasetLoading = false;
+              
+              // SMOOTH TRANSITION: Only update if significant improvement or user switched datasets
+              const currentDataSize = data.length;
+              const newDataSize = completeDatasets[selectedDataset]?.length || 0;
+              const isSignificantImprovement = newDataSize > currentDataSize * 1.5; // 50% more data
               
               // If user switched to extension dataset while it was loading, update now
-              if (selectedDataset === 'tcja-extension' && completeDatasets['tcja-extension']) {
+              if (selectedDataset === 'tcja-extension' && completeDatasets['tcja-extension'] && 
+                  (currentDataSize === 0 || isSignificantImprovement)) {
                 data = completeDatasets['tcja-extension'];
                 initializeRandomHouseholds();
                 // Handle household selection for extension dataset
                 handleHouseholdSelection(householdId);
               }
+              
+              // CHECK FOR COMPLETION: If both datasets are now available, remove loading indicator
+              if (completeDatasets['tcja-expiration'] && completeDatasets['tcja-extension']) {
+                secondDatasetLoading = false;
+              }
+            },
+            // Full dataset loaded callback
+            (fullDatasets, datasetKey) => {
+              console.log(`Full dataset loaded: ${datasetKey}`);
+              allDatasets = { ...fullDatasets };
+              
+              // If this is the currently selected dataset, update the view
+              if (selectedDataset === datasetKey) {
+                console.log(`Updating view with full ${datasetKey} dataset (${fullDatasets[datasetKey].length} households)`);
+                data = fullDatasets[datasetKey];
+                initializeRandomHouseholds();
+                
+                // Re-handle household selection with full dataset
+                handleHouseholdSelection(householdId);
+                
+                // Force chart re-render with full data
+                if (chartComponent?.renderVisualization) {
+                  chartComponent.renderVisualization();
+                }
+              }
+              
+              // SIMPLIFIED COMPLETION LOGIC: Just check if both datasets exist
+              if (fullDatasets['tcja-expiration'] && fullDatasets['tcja-extension']) {
+                const expirationSize = fullDatasets['tcja-expiration'].length;
+                const extensionSize = fullDatasets['tcja-extension'].length;
+                
+                // Both datasets have data, so remove loading indicator
+                secondDatasetLoading = false;
+              }
             }
-          );
-          
-          // All datasets are now loaded
-          console.log('All datasets loaded:', Object.keys(allDatasets), 'lengths:', {
-            'tcja-expiration': allDatasets['tcja-expiration']?.length,
-            'tcja-extension': allDatasets['tcja-extension']?.length
-          });
-          
-          // Update data if not already set
-          if (!data.length && allDatasets[selectedDataset]) {
-            data = allDatasets[selectedDataset];
-            initializeRandomHouseholds();
-            // Handle household selection now that data is loaded
-            handleHouseholdSelection(householdId);
-          }
-          
-          secondDatasetLoading = false;
-        } catch (error) {
-          console.error('Error loading data:', error);
-          loadError = error.message;
-          isLoading = false;
-          secondDatasetLoading = false;
-          return;
-        }
-        isLoading = false;
+          ).catch(error => {
+            console.error('Error loading data:', error);
+            loadError = error.message;
+            isLoading = false;
+            secondDatasetLoading = false;
+          });*/
       } else {
         // Datasets already loaded, just switch
         if (allDatasets[selectedDataset]) {
@@ -558,9 +701,12 @@
     }
   }
   
+  // Track performance timing
+  let pageLoadStart = typeof window !== 'undefined' ? performance.now() : 0;
+  
   // Lifecycle
   onMount(async () => {
-    console.log('Component mounted, starting initialization...');
+    console.log(`Component mounted at ${performance.now().toFixed(0)}ms (${(performance.now() - pageLoadStart).toFixed(0)}ms since page load)`);
     
     // Add global error handler
     const handleError = (event) => {
@@ -790,6 +936,7 @@
 </svelte:head>
 
 <div class="app-container">
+  
   <!-- Full-screen chart background -->
   <div class="chart-background">
     <ScatterPlot
