@@ -823,13 +823,20 @@
                 {@const stats = calculateSectionStats(sectionData, false, state.id)}
                 {#if stats}
                   {#if state.id === 'lower-income'}
-                    <p>Of the {stats.total} million households with market income below $50,000, OBBBA will increase the net income of {stats.positivePercent}% and reduce the net income of {stats.negativePercent}%. Let's take a look at one of them at random. You can also click on a dot to view information about a household.</p>
+                    <p>Of the {stats.total} million households with market income below $50,000, OBBBA will increase the net income of {stats.positivePercent}% and reduce the net income of {stats.negativePercent}%.</p>
+                    <p>Each dot represents a household. Click any dot to explore that household's details, or scroll to see the randomly selected household below.</p>
                   {:else if state.id === 'middle-income'}
-                    <p>Of the {stats.total} million households with market income between $50,000 and $200,000, OBBBA will increase the net income of {stats.positivePercent}% and reduce the net income of {stats.negativePercent}%. Let's take a look at one of them at random. You can also click on a dot to view information about a household.</p>
+                    {@const lowerStats = calculateSectionStats(data.filter(d => d['Market Income'] >= 0 && d['Market Income'] < 50000))}
+                    <p>Among the {stats.total} million households earning $50,000–$200,000, {stats.positivePercent}% will see gains and {stats.negativePercent}% will see losses.</p>
+                    <p>Notice how this middle-income group has {stats.positivePercent > lowerStats.positivePercent ? 'more winners' : 'fewer winners'} than the lower-income group ({stats.positivePercent}% vs {lowerStats.positivePercent}%). The impact patterns shift as income rises.</p>
                   {:else if state.id === 'upper-income'}
-                    <p>Of the {stats.total} million households with market income between $200,000 and $1 million, OBBBA will increase the net income of {stats.positivePercent}% and reduce the net income of {stats.negativePercent}%. Let's take a look at one of them at random. You can also click on a dot to view information about a household.</p>
+                    {@const middleStats = calculateSectionStats(data.filter(d => d['Market Income'] >= 50000 && d['Market Income'] < 200000))}
+                    <p>For the {stats.total} million households earning $200,000–$1 million, the reform creates {stats.positivePercent}% winners and {stats.negativePercent}% losers.</p>
+                    <p>This upper-income bracket shows {stats.positivePercent > middleStats.positivePercent ? 'higher' : 'lower'} gain rates than middle-income households. The concentration of impacts increases at higher incomes.</p>
                   {:else if state.id === 'highest-income'}
-                    <p>Of the {stats.total} million households with market income over $1 million, OBBBA will increase the net income of {stats.positivePercent}% and reduce the net income of {stats.negativePercent}%. Let's take a look at one of them at random. You can also click on a dot to view information about a household.</p>
+                    {@const upperStats = calculateSectionStats(data.filter(d => d['Market Income'] >= 200000 && d['Market Income'] < 1000000))}
+                    <p>Among the {stats.total} million households with income over $1 million, {stats.positivePercent}% benefit while {stats.negativePercent}% pay more.</p>
+                    <p>At the highest incomes, the pattern {stats.positivePercent > upperStats.positivePercent ? 'continues with more households gaining' : 'shifts with fewer households benefiting'} compared to the $200k–$1M group. These households see the largest absolute changes in both directions.</p>
                   {:else if state.id === 'all-households'}
                     {@const allStats = calculateSectionStats(sectionData, true, state.id)}
                     <p>{@html state.description.replace('{totalPercentage}', allStats.affectedPercent).replace('{medianImpact}', allStats.medianChange)}</p>
@@ -991,7 +998,7 @@
     padding: 2rem 3rem 50vh 3rem;
     margin-left: 120px; /* Space for y-axis - matches chart margin */
     margin-top: 4rem; /* Add space below header for first section */
-    max-width: 680px; /* Keep text content constrained to left side */
+    max-width: 640px; /* Keep text content constrained to left side */
   }
   
   
@@ -1122,9 +1129,7 @@
   
   
   .integrated-household-profile {
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border);
+    margin-top: 0.75rem;
     /* Prevent layout shifts by maintaining minimum height */
     min-height: 400px;
     position: relative;
@@ -1216,8 +1221,7 @@
     }
     
     .integrated-household-profile {
-      margin-top: 1rem;
-      padding-top: 1rem;
+      margin-top: 0.5rem;
     }
     
     .scroll-indicator {

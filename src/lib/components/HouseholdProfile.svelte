@@ -227,6 +227,7 @@
     <h3>
       Household #{Math.round($householdId)}
       <div class="header-buttons">
+        <span class="random-indicator">Representative sample</span>
         <button 
           class="action-button random-button" 
           on:click|preventDefault|stopPropagation={(e) => {
@@ -240,7 +241,7 @@
             // Call the randomize function
             onRandomize();
           }}
-          title="Pick a new random household"
+          title="Show another representative household"
         >
           🔀
         </button>
@@ -406,6 +407,17 @@
     gap: 0.5rem;
   }
 
+  .random-indicator {
+    font-size: 0.7em;
+    font-weight: 400;
+    color: var(--text-secondary);
+    opacity: 0.6;
+    margin-right: 0.25rem;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+  }
+
   .action-button {
     background: none;
     border: none;
@@ -460,13 +472,13 @@
   }
 
   .detail-item .label {
-    font-size: 12px;
+    font-size: 13px;
     color: var(--text-secondary);
     font-weight: 500;
   }
 
   .detail-item .value {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
   }
 
@@ -574,6 +586,10 @@
       gap: 0.25rem;
     }
     
+    .random-indicator {
+      font-size: 0.65em;
+    }
+    
     .action-button {
       font-size: 14px;
       padding: 2px;
@@ -586,13 +602,13 @@
     }
     
     .detail-item .label {
-      font-size: 11px;
+      font-size: 12px;
       flex: 1 1 auto;
       min-width: 120px;
     }
     
     .detail-item .value {
-      font-size: 12px;
+      font-size: 13px;
       text-align: right;
       flex: 0 0 auto;
     }
@@ -639,12 +655,16 @@
       font-size: 0.875rem;
     }
     
+    .random-indicator {
+      display: none;
+    }
+    
     .detail-item .label {
-      font-size: 10px;
+      font-size: 11px;
     }
     
     .detail-item .value {
-      font-size: 11px;
+      font-size: 12px;
     }
     
     .impact-section h4 {
