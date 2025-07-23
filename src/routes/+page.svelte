@@ -805,9 +805,12 @@
       {#each scrollStates as state, i}
         {#if state.viewType === 'group'}
           <section 
-            class="text-section"
+            class="text-section {state.id}"
             class:active={$currentStateIndex === i}
             class:dragging={draggingSectionIndex === i}
+            class:centered={state.id === 'intro' || state.id === 'all-households'}
+            class:align-right={['lower-income', 'upper-income'].includes(state.id)}
+            class:align-left={['middle-income', 'highest-income'].includes(state.id)}
             data-index={i}
             bind:this={textSections[i]}
             style="transform: translate({sectionPositions[i]?.x || 0}px, {sectionPositions[i]?.y || 0}px)"
@@ -996,9 +999,12 @@
   
   .text-content {
     padding: 2rem 3rem 50vh 3rem;
-    margin-left: 120px; /* Space for y-axis - matches chart margin */
     margin-top: 4rem; /* Add space below header for first section */
-    max-width: 640px; /* Keep text content constrained to left side */
+    width: 100%;
+    max-width: 1400px; /* Increased to accommodate side positioning */
+    margin-left: auto;
+    margin-right: auto;
+    position: relative;
   }
   
   
@@ -1070,6 +1076,26 @@
     /* Prevent any scroll snap behavior */
     scroll-snap-align: none !important;
     scroll-margin: 0 !important;
+    max-width: 640px;
+    width: 100%;
+  }
+  
+  /* Centered sections (intro and all-households) */
+  .text-section.centered {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  /* Right-aligned sections */
+  .text-section.align-right {
+    margin-left: auto;
+    margin-right: 120px; /* Space from right edge to align with chart */
+  }
+  
+  /* Left-aligned sections */
+  .text-section.align-left {
+    margin-left: 120px; /* Space for y-axis - matches chart margin */
+    margin-right: auto;
   }
   
   .text-section:not(.active) {
@@ -1192,7 +1218,6 @@
     
     .text-content {
       padding: 1rem 1rem 30vh 1rem;
-      margin-left: 0; /* Full width on mobile */
       max-width: 100%;
     }
     
@@ -1203,6 +1228,9 @@
       background: rgba(255, 255, 255, 0.85);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
+      /* Center all sections on mobile */
+      margin-left: auto !important;
+      margin-right: auto !important;
     }
     
     .text-section h2 {
