@@ -460,13 +460,13 @@
   }
 
   .detail-item .label {
-    font-size: 12px;
+    font-size: 13px;
     color: var(--text-secondary);
     font-weight: 500;
   }
 
   .detail-item .value {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
   }
 
@@ -586,13 +586,13 @@
     }
     
     .detail-item .label {
-      font-size: 11px;
+      font-size: 12px;
       flex: 1 1 auto;
       min-width: 120px;
     }
     
     .detail-item .value {
-      font-size: 12px;
+      font-size: 13px;
       text-align: right;
       flex: 0 0 auto;
     }
@@ -640,11 +640,11 @@
     }
     
     .detail-item .label {
-      font-size: 10px;
+      font-size: 11px;
     }
     
     .detail-item .value {
-      font-size: 11px;
+      font-size: 12px;
     }
     
     .impact-section h4 {

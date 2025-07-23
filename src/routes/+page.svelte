@@ -998,7 +998,7 @@
     padding: 2rem 3rem 50vh 3rem;
     margin-left: 120px; /* Space for y-axis - matches chart margin */
     margin-top: 4rem; /* Add space below header for first section */
-    max-width: 680px; /* Keep text content constrained to left side */
+    max-width: 640px; /* Keep text content constrained to left side */
   }
   
   
