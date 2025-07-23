@@ -290,8 +290,8 @@
     updateUrlWithHousehold(household.id, selectedDataset);
     
     // Force chart re-render
-    if (chartComponent?.renderVisualization) {
-      chartComponent.renderVisualization();
+    if (chartComponent?.forceRender) {
+      chartComponent.forceRender();
     }
   }
   
@@ -416,8 +416,8 @@
     updateUrlWithHousehold(selectedHousehold?.id, dataset);
     
     // Force chart re-render
-    if (chartComponent?.renderVisualization) {
-      chartComponent.renderVisualization();
+    if (chartComponent?.forceRender) {
+      chartComponent.forceRender();
     }
     
     // Restore scroll position after a brief delay to allow for any layout changes
@@ -470,8 +470,8 @@
               initializeRandomHouseholds();
               
               // Force immediate render
-              if (chartComponent?.renderVisualization) {
-                chartComponent.renderVisualization();
+              if (chartComponent?.forceRender) {
+                chartComponent.forceRender();
               }
             }
           } catch (error) {
@@ -554,8 +554,8 @@
                     secondDatasetLoading = true; // But indicate background loading
                     
                     // Force immediate chart render
-                    if (chartComponent?.renderVisualization) {
-                      setTimeout(() => chartComponent.renderVisualization(), 0);
+                    if (chartComponent?.forceRender) {
+                      setTimeout(() => chartComponent.forceRender(), 0);
                     }
                     
                     // Handle household selection now that data is loaded
