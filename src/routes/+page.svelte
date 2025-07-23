@@ -4,6 +4,7 @@
   import { DATASETS } from '$lib/config/datasets.js';
   import { scrollStates } from '$lib/config/views.js';
   import { loadDatasets, loadDatasetsProgressive } from '$lib/data/dataLoader.js';
+  import { loadDatasetsUltraFast } from '$lib/data/optimizedDataLoader.js';
   import { 
     parseUrlParams, 
     updateUrlWithHousehold, 
@@ -439,8 +440,49 @@
         if (Object.keys(allDatasets).length === 0) {
           isLoading = true;
           
-          // Load datasets progressively - don't await, handle everything in callbacks
-          loadDatasetsProgressive(
+          // Use ultra-fast optimized loading with pre-computed samples
+          loadDatasetsUltraFast(
+            (phase, datasets) => {
+              console.log(`📊 Phase ${phase} complete with ${Object.keys(datasets).length} datasets`);
+              allDatasets = { ...datasets };
+              
+              // Stop loading overlay after micro sample (instant)
+              if (phase === 'micro') {
+                isLoading = false;
+              }
+              
+              // Update data if it's the selected dataset
+              if (datasets[selectedDataset]) {
+                data = datasets[selectedDataset];
+                initializeRandomHouseholds();
+                
+                // Force chart render
+                if (chartComponent?.renderVisualization) {
+                  setTimeout(() => chartComponent.renderVisualization(), 0);
+                }
+                
+                // Handle household selection if needed
+                if (householdId && phase !== 'micro') { // Skip on micro to avoid jumps
+                  handleHouseholdSelection(householdId);
+                }
+              }
+              
+              // Show loading indicator for background phases
+              if (phase === 'micro' || phase === 'small') {
+                secondDatasetLoading = true;
+              } else if (phase === 'full') {
+                secondDatasetLoading = false;
+              }
+            }
+          ).catch(error => {
+            console.error('Error loading data:', error);
+            loadError = error.message;
+            isLoading = false;
+            secondDatasetLoading = false;
+          });
+          
+          // FALLBACK: Keep old progressive loader as backup
+          /*loadDatasetsProgressive(
             // First dataset sample loaded callback
             (sampleDatasets) => {
               // Callback when first dataset sample is loaded
@@ -544,7 +586,7 @@
             loadError = error.message;
             isLoading = false;
             secondDatasetLoading = false;
-          });
+          });*/
       } else {
         // Datasets already loaded, just switch
         if (allDatasets[selectedDataset]) {
