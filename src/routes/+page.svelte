@@ -6,6 +6,7 @@
   import { loadDatasets, loadDatasetsProgressive } from '$lib/data/dataLoader.js';
   import { loadDatasetsUltraFast } from '$lib/data/optimizedDataLoader.js';
   import { loadDatasetUltraFast } from '$lib/data/ultraFastLoader.js';
+  import { loadInstantVisualization, loadFullDataBackground } from '$lib/data/instantLoader.js';
   import { 
     parseUrlParams, 
     updateUrlWithHousehold, 
@@ -451,54 +452,79 @@
         isLoading = true;
         isLoadingData = true; // Set the flag
         
-        // Use NEW ultra-fast single dataset loading
-        console.log(`Starting ultra-fast loading of ${selectedDataset}...`);
-        loadDatasetUltraFast(selectedDataset, (update) => {
-          console.log(`📊 Phase ${update.phase} - ${Object.keys(update).filter(k => k !== 'phase' && k !== 'isComplete').join(', ')}`);
-          
-          // Update all datasets
-          Object.keys(update).forEach(key => {
-            if (key !== 'phase' && key !== 'isComplete' && update[key]) {
-              allDatasets[key] = update[key];
-            }
-          });
-          
-          // Update displayed data if it's the selected dataset
-          if (update[selectedDataset]) {
-            console.log(`Setting data for ${selectedDataset}: ${update[selectedDataset].length} rows`);
-            data = update[selectedDataset];
+        // Use INSTANT visualization loading - all 41k dots with minimal data
+        console.log('Starting instant visualization loading...');
+        
+        // STEP 1: Load minimal data for instant starfield
+        loadInstantVisualization((update) => {
+          if (update.phase === 'instant') {
+            console.log(`✨ Instant visualization data ready: ${update.visualData.length} dots`);
+            
+            // Set data immediately for full starfield animation
+            data = update.visualData;
+            isLoading = false;
+            
+            // Initialize random households with minimal data
             initializeRandomHouseholds();
             
-            // Force immediate chart render on first load
-            if (update.phase === 'micro') {
-              isLoading = false;
-              if (chartComponent?.renderVisualization) {
-                chartComponent.renderVisualization();
-              }
-            } else if (chartComponent?.renderVisualization) {
-              setTimeout(() => chartComponent.renderVisualization(), 0);
+            // Force immediate render
+            if (chartComponent?.renderVisualization) {
+              chartComponent.renderVisualization();
             }
-            
-            // Handle household selection after initial micro load
-            if (householdId && update.phase !== 'micro') {
-              handleHouseholdSelection(householdId);
-            }
-          }
-          
-          // Update loading indicators
-          if (update.isComplete) {
-            secondDatasetLoading = false;
-            isLoadingData = false;
-          } else if (update.phase !== 'micro') {
-            secondDatasetLoading = true;
           }
         }).catch(error => {
+          console.error('Error loading instant visualization:', error);
+          loadError = error.message;
+          isLoading = false;
+          isLoadingData = false;
+        });
+        
+        // STEP 2: Load full datasets in background
+        setTimeout(() => {
+          console.log('Starting background full data loading...');
+          
+          // Load selected dataset first
+          loadFullDataBackground(selectedDataset, (update) => {
+            if (update[selectedDataset]) {
+              console.log(`Full ${selectedDataset} data ready: ${update[selectedDataset].length} rows`);
+              
+              // Update with full data (keeps same visual positions)
+              allDatasets[selectedDataset] = update[selectedDataset];
+              data = update[selectedDataset];
+              
+              // Re-initialize to get full household data
+              initializeRandomHouseholds();
+              
+              // Handle household selection if pending
+              if (householdId) {
+                handleHouseholdSelection(householdId);
+              }
+              
+              // Now load the other dataset
+              const otherDataset = selectedDataset === 'tcja-expiration' ? 'tcja-extension' : 'tcja-expiration';
+              loadFullDataBackground(otherDataset, (otherUpdate) => {
+                if (otherUpdate[otherDataset]) {
+                  console.log(`Full ${otherDataset} data ready: ${otherUpdate[otherDataset].length} rows`);
+                  allDatasets[otherDataset] = otherUpdate[otherDataset];
+                  
+                  // All done!
+                  secondDatasetLoading = false;
+                  isLoadingData = false;
+                }
+              }).catch(error => {
+                console.error(`Error loading ${otherDataset}:`, error);
+                secondDatasetLoading = false;
+                isLoadingData = false;
+              });
+            }
+          }).catch(error => {
           console.error('Error loading data:', error);
           loadError = error.message;
           isLoading = false;
           secondDatasetLoading = false;
           isLoadingData = false; // Clear on error too
         });
+        }, 500); // Small delay to let starfield animation start
         
         // FALLBACK: Keep old progressive loader as backup
         /*loadDatasetsProgressive(

@@ -175,16 +175,20 @@
       const isInitialLoad = lastDatasetLength === 0;
       
       if (isInitialLoad) {
-        // Initial load: Show all dots immediately at full opacity
+        // Initial load: Start all dots hidden for starfield animation
         data.forEach(point => {
           pointAnimations.set(point.id, {
-            opacity: 1,
-            scale: 1,
-            isAnimating: false,
+            opacity: 0,
+            scale: 0.1,
+            isAnimating: true,
+            startTime: 0, // Will be set in initializePointAnimations
             sparklePhase: Math.random() * Math.PI * 2,
             hasSparkled: false
           });
         });
+        
+        // Start starfield animation for all dots
+        initializePointAnimations(data);
       } else {
         // Subsequent loads: Only animate NEW points
         // Keep existing points visible
@@ -214,7 +218,7 @@
         cancelAnimationFrame(animationFrame);
       }
       
-      // Only animate if there are new points and not initial load
+      // Only animate if there are new points
       if (!isTransitioning && !isInitialLoad) {
         // Get only the new points for animation
         const newPoints = data.filter(point => {
@@ -226,6 +230,7 @@
           initializePointAnimations(newPoints);
         }
       }
+      // Initial load animation is already started above
     }
   }
   
