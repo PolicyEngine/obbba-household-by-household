@@ -42,7 +42,8 @@ export async function loadTinyVisualization(onUpdate) {
       'Dependents': 0,
       'Age of Head': 40,
       'Age': 40,
-      'Is Married': false
+      'Is Married': false,
+      'State': null // Will be filled when full data loads
     }));
     
     const totalTime = performance.now() - startTime;

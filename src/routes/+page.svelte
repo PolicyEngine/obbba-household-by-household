@@ -466,12 +466,17 @@
               data = update.visualData;
               isLoading = false;
               
-              // Initialize random households with minimal data
-              initializeRandomHouseholds();
+              // Delay household initialization to let dots render first
+              setTimeout(() => {
+                initializeRandomHouseholds();
+              }, 50);
               
-              // Force immediate render
+              // Force immediate render without waiting for next frame
               if (chartComponent?.forceRender) {
-                chartComponent.forceRender();
+                // Use microtask to ensure data is set first
+                Promise.resolve().then(() => {
+                  chartComponent.forceRender();
+                });
               }
             }
           } catch (error) {
@@ -487,7 +492,7 @@
           isLoadingData = false;
         });
         
-        // STEP 2: Load full datasets in background
+        // STEP 2: Load full datasets in background after dots are rendering
         setTimeout(() => {
           console.log('Starting background full data loading...');
           
@@ -500,8 +505,15 @@
               allDatasets[selectedDataset] = update[selectedDataset];
               data = update[selectedDataset];
               
-              // Re-initialize to get full household data
-              initializeRandomHouseholds();
+              // Clear and re-initialize random households with full data
+              randomHouseholds = {};
+              // Delay household initialization to prevent UI blocking
+              setTimeout(() => {
+                initializeRandomHouseholds();
+              }, 100);
+              
+              // Clear selected household to force re-selection with full data
+              selectedHousehold = null;
               
               // Handle household selection if pending
               if (householdId) {
@@ -532,7 +544,7 @@
           secondDatasetLoading = false;
           isLoadingData = false; // Clear on error too
         });
-        }, 500); // Small delay to let starfield animation start
+        }, 300); // Delay to ensure dots are rendering before loading full data
         
         // FALLBACK: Keep old progressive loader as backup
         /*loadDatasetsProgressive(
@@ -1016,7 +1028,22 @@
             <div class="section-content">
               <div class="drag-handle" title="Drag to move">⋮⋮</div>
               {#if state.id !== 'intro'}
-                <h2>{state.title}</h2>
+                <h2>
+                  <span class="title-desktop">{state.title}</span>
+                  <span class="title-mobile">
+                    {#if state.id === 'lower-income'}
+                      Households with income below $50k
+                    {:else if state.id === 'middle-income'}
+                      Households with income $50k to $200k
+                    {:else if state.id === 'upper-income'}
+                      Households with income $200k to $1M
+                    {:else if state.id === 'highest-income'}
+                      Households with income over $1M
+                    {:else}
+                      {state.title}
+                    {/if}
+                  </span>
+                </h2>
               {/if}
               
               <!-- Intro section content -->
@@ -1185,7 +1212,7 @@
   }
   
   .overlay-title {
-    font-size: 1.5rem;
+    font-size: 2rem;
     font-weight: 700;
     color: var(--text-primary);
     margin: 0;
@@ -1195,6 +1222,10 @@
   /* Show full title on desktop, hide mobile title */
   .title-mobile {
     display: none;
+  }
+  
+  .title-desktop {
+    display: inline;
   }
   
   
@@ -1402,7 +1433,7 @@
     /* Prevent any scroll snap behavior */
     scroll-snap-align: none !important;
     scroll-margin: 0 !important;
-    max-width: 640px;
+    max-width: 480px;
     width: 100%;
   }
   
@@ -1441,7 +1472,7 @@
   }
   
   .text-section h2 {
-    font-size: 2rem;
+    font-size: 24px;
     font-weight: 700;
     margin: 0 0 1rem 0;
     color: var(--text-primary);
@@ -1566,7 +1597,7 @@
     }
     
     .overlay-title {
-      font-size: 1.125rem;
+      font-size: 1.5rem;
     }
     
     /* Hide full title, show mobile title */
@@ -1578,9 +1609,14 @@
       display: inline;
     }
     
+    /* Switch section titles on mobile */
+    .title-desktop {
+      display: none;
+    }
+    
     .baseline-selector-overlay {
       top: auto;
-      bottom: 1rem;
+      bottom: 3rem;
       right: 30px; /* Align with mobile chart margin */
       padding: 0;
       gap: 0;
@@ -1671,7 +1707,14 @@
     .text-content {
       padding: 1rem 1rem 30vh 1rem;
       max-width: 100%;
-      margin-top: 3rem; /* Less space needed on mobile */
+      margin-top: 10vh; /* Base spacing for mobile */
+    }
+    
+    /* Specific centering for intro section on mobile */
+    .text-section.intro {
+      position: relative;
+      top: calc(40vh - 150px); /* Push intro down to center */
+      margin-bottom: calc(60vh + 40vh - 150px); /* Ensure next box is full screen away */
     }
     
     .text-section {
@@ -1688,7 +1731,7 @@
     
     
     .text-section h2 {
-      font-size: 1.25rem;
+      font-size: 18px;
       line-height: 1.3;
       margin-bottom: 0.75rem;
     }
@@ -1713,7 +1756,7 @@
     }
     
     .chart-background {
-      top: 90px; /* Match multi-row header height */
+      top: 50px; /* Reduce top spacing on mobile */
     }
   }
   
@@ -1725,7 +1768,7 @@
     }
     
     .overlay-title {
-      font-size: 0.875rem;
+      font-size: 1.125rem;
     }
     
     /* Ensure mobile title is shown on small screens too */
@@ -1775,7 +1818,7 @@
     
     
     .text-section h2 {
-      font-size: 1.125rem;
+      font-size: 16px;
     }
     
     .text-section p {

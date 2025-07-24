@@ -100,15 +100,16 @@
     width: 100%;
     max-width: none;
     margin: 0;
-    padding: 0 1.5rem 0 calc(120px + 3rem); /* Left padding: y-axis space (120px) + text padding (3rem) */
+    padding: 0 calc(120px + 3rem) 0 calc(120px + 3rem); /* Symmetric padding to center content */
   }
   
 
   .app-title {
-    font-size: 24px;
+    font-size: 36px !important;
     font-weight: 700;
     color: var(--text-primary);
     margin: 0;
+    line-height: 1.2;
   }
 
   /* Baseline selector container */
@@ -174,6 +175,10 @@
       height: auto; /* Allow height to grow for stacked layout */
     }
     
+    .app-title {
+      font-size: 28px !important;
+    }
+    
     .header-content {
       padding: 12px;
       flex-direction: column; /* Stack vertically */
@@ -219,7 +224,7 @@
   
   @media (max-width: 480px) {
     .app-title {
-      font-size: 14px;
+      font-size: 22px !important;
     }
 
     .baseline-selector {
