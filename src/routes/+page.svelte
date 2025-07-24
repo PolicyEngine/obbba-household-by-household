@@ -1720,7 +1720,7 @@
     }
     
     .chart-background {
-      top: 90px; /* Match multi-row header height */
+      top: 50px; /* Reduce top spacing on mobile */
     }
   }
   
