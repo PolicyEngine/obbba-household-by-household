@@ -500,7 +500,30 @@
               allDatasets[selectedDataset] = update[selectedDataset];
               data = update[selectedDataset];
               
-              // Re-initialize to get full household data
+              // Update existing random households with full data
+              const updatedRandomHouseholds = { ...randomHouseholds };
+              Object.keys(updatedRandomHouseholds).forEach(stateId => {
+                const existingHousehold = updatedRandomHouseholds[stateId];
+                if (existingHousehold && existingHousehold.id) {
+                  // Find the same household in the full dataset
+                  const fullHousehold = data.find(d => d.id === existingHousehold.id);
+                  if (fullHousehold) {
+                    // Update with full data including State
+                    updatedRandomHouseholds[stateId] = fullHousehold;
+                  }
+                }
+              });
+              randomHouseholds = updatedRandomHouseholds;
+              
+              // Update selected household if it exists
+              if (selectedHousehold && selectedHousehold.id) {
+                const fullSelectedHousehold = data.find(d => d.id === selectedHousehold.id);
+                if (fullSelectedHousehold) {
+                  selectedHousehold = fullSelectedHousehold;
+                }
+              }
+              
+              // Also initialize any missing households
               initializeRandomHouseholds();
               
               // Handle household selection if pending
