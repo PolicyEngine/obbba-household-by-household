@@ -1678,6 +1678,7 @@
     .text-section.intro {
       position: relative;
       top: calc(40vh - 150px); /* Push intro down to center */
+      margin-bottom: calc(60vh + 40vh - 150px); /* Ensure next box is full screen away */
     }
     
     .text-section {
