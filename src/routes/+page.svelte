@@ -1671,8 +1671,7 @@
     .text-content {
       padding: 1rem 1rem 30vh 1rem;
       max-width: 100%;
-      margin-top: 0;
-      padding-top: calc(50vh - 200px); /* Center first box accounting for its height */
+      margin-top: 35vh; /* More aggressive centering for mobile viewport */
     }
     
     .text-section {
