@@ -162,14 +162,12 @@
     selectedHousehold = household;
     
     const isInIframe = window.self !== window.top;
-    // if (!isInIframe) {
     // Scroll to the section
     setTimeout(() => {
       if (textSections[targetIndex]) {
         textSections[targetIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }, 200);
-    // }
     
     // Clear the pending scroll
     pendingScrollToHousehold = null;
