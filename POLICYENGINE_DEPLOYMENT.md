@@ -4,9 +4,9 @@
 
 ### The Problem
 
-Deep links like `https://policyengine.org/us/obbba-household-explorer?household=39519&baseline=tcja-expiration` are not working because:
+Deep links like `https://policyengine.org/us/obbba-household-by-household?household=39519&baseline=tcja-expiration` are not working because:
 
-1. **Base Path Mismatch**: The app is built with base path `/obbba-scatter` but deployed at `/us/obbba-household-explorer`
+1. **Base Path Mismatch**: The app is built with base path `/obbba-scatter` but deployed at `/us/obbba-household-by-household`
 2. **Iframe Parameter Passing**: When embedded as an iframe, URL parameters from the parent page aren't automatically passed to the iframe src
 
 ### Solution 1: Build with Correct Base Path
@@ -15,7 +15,7 @@ When building for PolicyEngine deployment, use the correct base path:
 
 ```bash
 # Build with PolicyEngine base path
-BASE_PATH=/us/obbba-household-explorer npm run build
+BASE_PATH=/us/obbba-household-by-household npm run build
 ```
 
 ### Solution 2: Proper Iframe Integration
@@ -25,10 +25,10 @@ PolicyEngine needs to:
 1. **Pass parameters to iframe src**:
 ```javascript
 // Instead of:
-<iframe src="/us/obbba-household-explorer/"></iframe>
+<iframe src="/us/obbba-household-by-household/"></iframe>
 
 // Use:
-<iframe src="/us/obbba-household-explorer/?household=39519&baseline=tcja-expiration"></iframe>
+<iframe src="/us/obbba-household-by-household/?household=39519&baseline=tcja-expiration"></iframe>
 ```
 
 2. **Handle parameter synchronization** between parent and iframe (see `policyengine-integration.html` for example)
@@ -45,7 +45,7 @@ If PolicyEngine can't modify their iframe integration, consider:
 
 To test if deep links are working:
 
-1. Direct URL: `https://your-deployment.com/us/obbba-household-explorer/?household=39519&baseline=tcja-expiration`
+1. Direct URL: `https://your-deployment.com/us/obbba-household-by-household/?household=39519&baseline=tcja-expiration`
 2. Should automatically:
    - Load the specified household (39519)
    - Set the baseline to "tcja-expiration"
@@ -58,7 +58,7 @@ The quickest fix is to ensure the iframe src includes URL parameters:
 ```javascript
 // In PolicyEngine's code where they embed the iframe
 const currentParams = new URLSearchParams(window.location.search);
-const iframeSrc = `/us/obbba-household-explorer/${currentParams.toString() ? '?' + currentParams.toString() : ''}`;
+const iframeSrc = `/us/obbba-household-by-household/${currentParams.toString() ? '?' + currentParams.toString() : ''}`;
 document.getElementById('obbba-iframe').src = iframeSrc;
 ```
 
@@ -69,7 +69,7 @@ document.getElementById('obbba-iframe').src = iframeSrc;
 {
   "scripts": {
     "build:github": "vite build",
-    "build:policyengine": "BASE_PATH=/us/obbba-household-explorer vite build"
+    "build:policyengine": "BASE_PATH=/us/obbba-household-by-household vite build"
   }
 }
 ```

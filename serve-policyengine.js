@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const buildDir = join(__dirname, 'build');
-const basePath = '/us/obbba-household-explorer';
+const basePath = '/us/obbba-household-by-household';
 
 const mimeTypes = {
   '.html': 'text/html',

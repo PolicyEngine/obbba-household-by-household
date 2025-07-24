@@ -133,7 +133,7 @@ describe('clipboard utilities', () => {
 
       // When in iframe, it uses PolicyEngine URL
       expect(writeTextMock).toHaveBeenCalledWith(
-        'https://policyengine.org/us/obbba-household-explorer?household=12345&baseline=tcja-expiration'
+        'https://policyengine.org/us/obbba-household-by-household?household=12345&baseline=tcja-expiration'
       );
     });
   });

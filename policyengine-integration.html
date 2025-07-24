@@ -34,7 +34,7 @@
         // Function to update iframe src with current URL parameters
         function updateIframeSrc() {
             const urlParams = new URLSearchParams(window.location.search);
-            const baseUrl = '/us/obbba-household-explorer/'; // Or full URL for PolicyEngine
+            const baseUrl = '/us/obbba-household-by-household/'; // Or full URL for PolicyEngine
             
             // Pass URL parameters to iframe
             const fullUrl = baseUrl + (urlParams.toString() ? '?' + urlParams.toString() : '');
@@ -115,8 +115,8 @@
         window.syncParameters = syncParameters;
         
         // Example deep links that should work:
-        // https://policyengine.org/us/obbba-household-explorer?household=39519&baseline=tcja-expiration
-        // https://policyengine.org/us/obbba-household-explorer?household=12345&baseline=tcja-extension
+        // https://policyengine.org/us/obbba-household-by-household?household=39519&baseline=tcja-expiration
+        // https://policyengine.org/us/obbba-household-by-household?household=12345&baseline=tcja-extension
         
         console.log('PolicyEngine integration ready. Test with: testDeepLink(39519, "tcja-expiration")');
     </script>

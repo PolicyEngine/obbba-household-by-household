@@ -44,7 +44,7 @@ npm run preview
 ```
 
 Test with these URLs (adjust port if needed):
-- http://localhost:4173/us/obbba-household-explorer/?household=39519&baseline=tcja-expiration
+- http://localhost:4173/us/obbba-household-by-household/?household=39519&baseline=tcja-expiration
 
 ## Detailed Test Cases
 
