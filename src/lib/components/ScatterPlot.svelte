@@ -19,6 +19,13 @@
   let svgRef;
   let renderedPoints = [];
   
+  // Progressive reveal state
+  let hasScrolled = false;
+  let reservedPoints = new Set(); // Points saved for scroll reveal
+  let revealedReserved = false; // Track if we've revealed the reserved points
+  let currentBatch = 0; // Track which batch we're revealing
+  let batchTimeouts = []; // Store timeout IDs for cleanup
+  
   // Staggered animation state
   let pointAnimations = new Map(); // Map of point ID to animation state
   let animationStartTime = 0;
@@ -56,11 +63,11 @@
     // Create a magical starfield effect - randomize the order completely
     const shuffledPoints = [...dataPoints].sort(() => Math.random() - 0.5);
 
-    // Much faster animation for better perceived performance
-    const maxAnimationDuration = Math.min(1500, dataPoints.length * 1); // Max 1.5 seconds
+    // Slower, more graceful animation
+    const maxAnimationDuration = Math.min(3000, dataPoints.length * 2); // Max 3 seconds
     
-    // For small datasets, even faster
-    const minAnimationDuration = Math.min(500, dataPoints.length * 0.5); // Min 0.5s
+    // For small datasets, still take some time
+    const minAnimationDuration = Math.min(1500, dataPoints.length * 1.5); // Min 1.5s
     const actualAnimationDuration = Math.max(minAnimationDuration, maxAnimationDuration);
 
     const baseDelay = actualAnimationDuration / Math.max(dataPoints.length, 1);
@@ -179,10 +186,60 @@
       const isInitialLoad = lastDatasetLength === 0;
       
       if (isInitialLoad) {
-        // Initial load: Show first 50 dots immediately, animate the rest
-        data.forEach((point, index) => {
-          if (index < 50) {
-            // First 50 dots appear instantly
+        // Progressive batch reveal: 50 → 100 → 150 → etc.
+        const totalPoints = data.length;
+        const reserveCount = Math.floor(totalPoints * 0.2); // Still reserve 20% for scroll
+        
+        // Define batch sizes: 50, 100, 150, 200, ...
+        const batchSizes = [];
+        let accumulatedPoints = 0;
+        let batchSize = 50;
+        
+        while (accumulatedPoints < totalPoints - reserveCount) {
+          const pointsInBatch = Math.min(batchSize, totalPoints - reserveCount - accumulatedPoints);
+          if (pointsInBatch > 0) {
+            batchSizes.push(pointsInBatch);
+            accumulatedPoints += pointsInBatch;
+            batchSize += 50; // Increase by 50 each time
+          }
+        }
+        
+        console.log(`📊 Progressive batches: ${batchSizes.join(' → ')} (${reserveCount} reserved)`);
+        
+        // Randomly assign points to batches
+        const shuffledIndices = Array.from({length: totalPoints}, (_, i) => i)
+          .sort(() => Math.random() - 0.5);
+        
+        // Assign points to batches
+        let currentIndex = 0;
+        const pointBatches = new Map(); // point.id -> batch number
+        
+        // First batch (immediate)
+        for (let i = 0; i < batchSizes[0] && currentIndex < shuffledIndices.length; i++) {
+          const dataIndex = shuffledIndices[currentIndex++];
+          pointBatches.set(data[dataIndex].id, 0);
+        }
+        
+        // Subsequent batches
+        for (let batch = 1; batch < batchSizes.length; batch++) {
+          for (let i = 0; i < batchSizes[batch] && currentIndex < shuffledIndices.length; i++) {
+            const dataIndex = shuffledIndices[currentIndex++];
+            pointBatches.set(data[dataIndex].id, batch);
+          }
+        }
+        
+        // Reserve remaining points for scroll
+        while (currentIndex < shuffledIndices.length) {
+          const dataIndex = shuffledIndices[currentIndex++];
+          reservedPoints.add(data[dataIndex].id);
+        }
+        
+        // Set up initial animation states
+        data.forEach((point) => {
+          const batch = pointBatches.get(point.id);
+          
+          if (batch === 0) {
+            // First batch appears instantly
             pointAnimations.set(point.id, {
               opacity: 1,
               scale: 1,
@@ -190,12 +247,35 @@
               sparklePhase: Math.random() * Math.PI * 2,
               hasSparkled: false
             });
-          } else {
-            // Rest animate in
+          } else if (batch !== undefined) {
+            // Later batches start hidden
             pointAnimations.set(point.id, {
               opacity: 0,
               scale: 0.1,
-              isAnimating: true,
+              isAnimating: false,
+              startTime: 0,
+              sparklePhase: Math.random() * Math.PI * 2,
+              hasSparkled: false,
+              batch: batch // Store batch number
+            });
+          } else if (reservedPoints.has(point.id)) {
+            // Reserved for scroll - keep completely hidden
+            pointAnimations.set(point.id, {
+              opacity: 0,
+              scale: 0,
+              isAnimating: false,
+              startTime: 0,
+              sparklePhase: Math.random() * Math.PI * 2,
+              hasSparkled: false,
+              isReserved: true
+            });
+          } else {
+            // Fallback - this shouldn't happen but just in case
+            console.warn(`Point ${point.id} has no batch assignment or reservation`);
+            pointAnimations.set(point.id, {
+              opacity: 0,
+              scale: 0,
+              isAnimating: false,
               startTime: 0,
               sparklePhase: Math.random() * Math.PI * 2,
               hasSparkled: false
@@ -203,10 +283,34 @@
           }
         });
         
-        // Start starfield animation for remaining dots
-        const dotsToAnimate = data.filter((_, i) => i >= 50);
-        if (dotsToAnimate.length > 0) {
-          initializePointAnimations(dotsToAnimate);
+        // Schedule batch reveals
+        currentBatch = 0;
+        batchTimeouts = [];
+        
+        for (let batch = 1; batch < batchSizes.length; batch++) {
+          const delay = batch * 1500; // 1.5 seconds between batches
+          const timeout = setTimeout(() => {
+            console.log(`✨ Revealing batch ${batch + 1} (${batchSizes[batch]} points)`);
+            currentBatch = batch;
+            
+            // Get points in this batch
+            const batchPoints = data.filter(point => {
+              const anim = pointAnimations.get(point.id);
+              return anim && anim.batch === batch;
+            });
+            
+            // Start their animation
+            batchPoints.forEach(point => {
+              const anim = pointAnimations.get(point.id);
+              if (anim) {
+                anim.isAnimating = true;
+              }
+            });
+            
+            initializePointAnimations(batchPoints);
+          }, delay);
+          
+          batchTimeouts.push(timeout);
         }
       } else {
         // Subsequent loads: Only animate NEW points
@@ -237,6 +341,10 @@
       if (animationFrame && typeof window !== 'undefined') {
         cancelAnimationFrame(animationFrame);
       }
+      
+      // Clear any pending batch timeouts when data changes
+      batchTimeouts.forEach(timeout => clearTimeout(timeout));
+      batchTimeouts = [];
       
       // Only animate if not already animating
       if (!isTransitioning && !isInitializingAnimations) {
@@ -441,7 +549,7 @@
     
     data.forEach(d => {
       const x = xScale(d['Percentage change in net income']);
-      const y = yScale(d['Gross Income']);
+      const y = yScale(d['Market Income'] || d['Gross Income']);
       
       if (x >= margin.left && x <= width - margin.right && 
           y >= margin.top && y <= height - margin.bottom) {
@@ -469,7 +577,7 @@
     
     dataToRender.forEach(d => {
       let x = xScale(d['Percentage change in net income']);
-      let y = yScale(d['Gross Income']);
+      let y = yScale(d['Market Income'] || d['Gross Income']);
       
       // Check if point is outside bounds and clamp to edge
       const isOutOfBounds = x < margin.left || x > width - margin.right || y < margin.top || y > height - margin.bottom;
@@ -505,17 +613,19 @@
       
       // Determine if highlighted
       const isGroupHighlighted = d.isHighlighted && d.stateIndex === Math.floor(currentStateIndex / 2);
-      const baseViewId = scrollStates[Math.floor(currentStateIndex / 2)]?.id?.replace('-individual', '');
+      const baseViewId = currentState?.id;
       const currentRandomHousehold = randomHouseholds[baseViewId];
-      const isIndividualHighlighted = currentState?.viewType === 'individual' && 
-                                     currentRandomHousehold && 
-                                     d.id === currentRandomHousehold.id;
+      // Highlight the random household for the current section (except intro and all-households)
+      const isRandomHighlighted = currentRandomHousehold && 
+                                 d.id === currentRandomHousehold.id &&
+                                 baseViewId !== 'intro' && 
+                                 baseViewId !== 'all-households';
       const isSelectedHousehold = selectedHousehold && d.id === selectedHousehold.id;
-      const isHighlighted = isGroupHighlighted || isIndividualHighlighted || isSelectedHousehold;
+      const isHighlighted = isGroupHighlighted || isRandomHighlighted || isSelectedHousehold;
       
       // Set radius
       const weight = d['Household weight'] || d['Household weight'] || 1;
-      let radius = isHighlighted ? (isIndividualHighlighted || isSelectedHousehold ? 6 : 4) : 2;
+      let radius = isHighlighted ? (isRandomHighlighted || isSelectedHousehold ? 6 : 4) : 2;
       
       // Calculate opacity based on weight
       const logWeight = Math.log10(weight + 1);
@@ -539,11 +649,16 @@
       if (staggeredAnimationState) {
         radius = radius * staggeredAnimationState.scale;
         baseOpacity = baseOpacity * staggeredAnimationState.opacity;
+      } else {
+        // No animation state - this point shouldn't be visible yet
+        baseOpacity = 0;
       }
-      // Remove the hiding logic - let the animation state control visibility
       
-      // Fade other points during individual view
-      if (currentState?.viewType === 'individual' && !isIndividualHighlighted) {
+      // Fade other points when showing a random household (but not for intro/all views)
+      if (isRandomHighlighted && currentState?.id !== 'intro' && currentState?.id !== 'all-households') {
+        // This point IS the highlighted one, keep full opacity
+      } else if (currentRandomHousehold && currentState?.id !== 'intro' && currentState?.id !== 'all-households') {
+        // There is a highlighted household but this isn't it, fade it
         baseOpacity *= 0.3;
       }
       
@@ -687,6 +802,49 @@
     }
   }
   
+  // Function to reveal reserved points on scroll
+  function revealReservedPoints() {
+    if (revealedReserved || reservedPoints.size === 0) return;
+    
+    console.log(`✨ Revealing ${reservedPoints.size} reserved points on scroll`);
+    revealedReserved = true;
+    
+    // Get reserved points and start their animation
+    const reservedData = data.filter(point => reservedPoints.has(point.id));
+    
+    // Clear their reserved state and start animation
+    reservedData.forEach(point => {
+      const anim = pointAnimations.get(point.id);
+      if (anim) {
+        anim.isAnimating = true;
+        anim.opacity = 0;
+        anim.scale = 0.1;
+        anim.isReserved = false; // Remove reserved flag
+      }
+    });
+    
+    // Animate the reserved points
+    initializePointAnimations(reservedData);
+  }
+  
+  // Scroll handler
+  function handleScroll() {
+    // In iframe, check if currentStateIndex has moved past intro
+    const scrollTrigger = window.self !== window.top 
+      ? currentStateIndex > 0  // In iframe, trigger on any state change past intro
+      : window.scrollY > 100;  // In standalone, trigger on scroll
+      
+    if (!hasScrolled && scrollTrigger) {
+      hasScrolled = true;
+      revealReservedPoints();
+    }
+  }
+  
+  // Also trigger on state changes
+  $: if (currentStateIndex > 0 && !hasScrolled) {
+    handleScroll();
+  }
+  
   onMount(() => {
     // Clear any existing animation state from previous sessions
     pointAnimations.clear();
@@ -696,10 +854,14 @@
       cancelAnimationFrame(animationFrame);
       animationFrame = null;
     }
+    // Clear any pending batch timeouts
+    batchTimeouts.forEach(timeout => clearTimeout(timeout));
+    batchTimeouts = [];
     
     handleResize();
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', handleResize);
+      window.addEventListener('scroll', handleScroll, { passive: true });
     }
     
     // In iframe contexts, dimensions might settle after initial render
@@ -714,11 +876,14 @@
   onDestroy(() => {
     if (typeof window !== 'undefined') {
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll);
     }
     // Cleanup animations
     if (animationFrame && typeof window !== 'undefined') {
       cancelAnimationFrame(animationFrame);
     }
+    // Clear batch timeouts
+    batchTimeouts.forEach(timeout => clearTimeout(timeout));
     pointAnimations.clear();
     isInitializingAnimations = false;
   });
