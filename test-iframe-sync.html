@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Iframe URL Sync</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #ccc;
+            margin: 20px 0;
+        }
+        .info {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .log {
+            background: #333;
+            color: #0f0;
+            padding: 10px;
+            font-family: monospace;
+            height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .url-display {
+            background: #e0e0e0;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Iframe URL Synchronization</h1>
+    
+    <div class="info">
+        <p>This page tests the iframe URL synchronization fix. When you click on a household in the scatter plot below:</p>
+        <ul>
+            <li>The iframe should update its URL to show the selected household</li>
+            <li>This parent page should receive the CORRECT household ID via postMessage</li>
+            <li>The parent URL should stay in sync with the iframe's selected household</li>
+        </ul>
+    </div>
+
+    <div class="url-display">
+        <strong>Current Parent URL:</strong> <span id="parent-url"></span>
+    </div>
+
+    <iframe 
+        id="obbba-iframe" 
+        src="http://localhost:5173/obbba-scatter"
+        title="OBBBA Scatter Plot">
+    </iframe>
+
+    <h2>Message Log</h2>
+    <div class="log" id="log"></div>
+
+    <script>
+        const iframe = document.getElementById('obbba-iframe');
+        const log = document.getElementById('log');
+        const parentUrlDisplay = document.getElementById('parent-url');
+        
+        function addLog(message, data = null) {
+            const timestamp = new Date().toLocaleTimeString();
+            let logEntry = `[${timestamp}] ${message}`;
+            if (data) {
+                logEntry += '\n' + JSON.stringify(data, null, 2);
+            }
+            log.textContent = logEntry + '\n\n' + log.textContent;
+        }
+
+        function updateParentUrlDisplay() {
+            parentUrlDisplay.textContent = window.location.href;
+        }
+
+        // Listen for messages from iframe
+        window.addEventListener('message', (event) => {
+            // Only handle messages from our iframe
+            if (event.source !== iframe.contentWindow) return;
+            
+            if (event.data.type === 'urlUpdate') {
+                addLog('Received urlUpdate from iframe', {
+                    params: event.data.params,
+                    origin: event.origin
+                });
+                
+                // Update parent URL to match iframe
+                const url = new URL(window.location);
+                const iframeParams = new URLSearchParams(event.data.params);
+                
+                // Copy iframe params to parent URL
+                for (const [key, value] of iframeParams) {
+                    url.searchParams.set(key, value);
+                }
+                
+                // Update URL without reload
+                window.history.replaceState({}, '', url);
+                updateParentUrlDisplay();
+                
+                addLog('Updated parent URL', {
+                    newUrl: url.toString(),
+                    household: iframeParams.get('household'),
+                    baseline: iframeParams.get('baseline')
+                });
+            }
+        });
+
+        // Initial setup
+        updateParentUrlDisplay();
+        addLog('Test page loaded and ready');
+        
+        // Also log when iframe loads
+        iframe.addEventListener('load', () => {
+            addLog('Iframe loaded');
+        });
+    </script>
+</body>
+</html>

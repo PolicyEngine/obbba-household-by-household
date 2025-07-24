@@ -1,10 +1,11 @@
 import { goto } from '$app/navigation';
 
 // Helper function to notify parent window of URL changes (for iframe integration)
-export function notifyParentOfUrlChange() {
+export function notifyParentOfUrlChange(explicitParams = null) {
   if (typeof window !== 'undefined' && window.parent !== window) {
     // We're in an iframe, notify parent of URL change
-    const params = new URLSearchParams(window.location.search);
+    // Use explicit params if provided, otherwise read from URL
+    const params = explicitParams || new URLSearchParams(window.location.search);
     window.parent.postMessage({
       type: 'urlUpdate',
       params: params.toString()
@@ -13,7 +14,7 @@ export function notifyParentOfUrlChange() {
 }
 
 // Update URL with household selection
-export function updateUrlWithHousehold(householdId, selectedDataset) {
+export async function updateUrlWithHousehold(householdId, selectedDataset) {
   if (typeof window !== 'undefined') {
     const url = new URL(window.location);
     
@@ -28,8 +29,13 @@ export function updateUrlWithHousehold(householdId, selectedDataset) {
     // Update URL without triggering navigation
     // Use the full path including search params for SvelteKit goto
     const newUrl = url.pathname + url.search;
-    goto(newUrl, { replaceState: true, noScroll: true });
-    notifyParentOfUrlChange();
+    
+    // Pass the new params to notifyParentOfUrlChange BEFORE goto
+    // This ensures the parent gets the correct (new) state
+    notifyParentOfUrlChange(url.searchParams);
+    
+    // Then update the local URL
+    await goto(newUrl, { replaceState: true, noScroll: true });
   }
 }
 

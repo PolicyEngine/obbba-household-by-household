@@ -207,7 +207,7 @@
   }
   
   // Handle household selection
-  function selectHousehold(household, shouldScroll = true) {
+  async function selectHousehold(household, shouldScroll = true) {
     // If not scrolling, lock the scroll position
     if (!shouldScroll && scrollContainer) {
       // Save current scroll position
@@ -284,7 +284,7 @@
     animateHouseholdEmphasis(household.id);
     
     // Update URL
-    updateUrlWithHousehold(household.id, selectedDataset);
+    await updateUrlWithHousehold(household.id, selectedDataset);
     
     // Force chart re-render
     if (chartComponent?.forceRender) {
@@ -314,7 +314,7 @@
   }
   
   // Handle dataset change
-  function handleDatasetChange(dataset) {
+  async function handleDatasetChange(dataset) {
     // Always allow switching, even if dataset isn't fully loaded yet
     if (!allDatasets[dataset]) {
       console.log(`Switching to ${dataset} - will use when available`);
@@ -410,7 +410,7 @@
     
     // Update URL with internal flag to prevent re-triggering
     isInternalUpdate = true;
-    updateUrlWithHousehold(selectedHousehold?.id, dataset);
+    await updateUrlWithHousehold(selectedHousehold?.id, dataset);
     
     // Force chart re-render
     if (chartComponent?.forceRender) {
