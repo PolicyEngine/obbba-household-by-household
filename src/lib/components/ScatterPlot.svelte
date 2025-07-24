@@ -570,6 +570,9 @@
   function renderPoints(ctx, data, xScale, yScale, weightRange, currentState, fromState) {
     const { minWeight, maxWeight } = weightRange;
     
+    // Determine if we're in a zoomed state (not intro or all-households)
+    const isZoomedView = currentState?.id !== 'intro' && currentState?.id !== 'all-households';
+    
     // Limit rendering for performance on Safari
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     const maxPointsToRender = isSafari ? 10000 : data.length;
@@ -617,23 +620,30 @@
       const currentRandomHousehold = randomHouseholds[baseViewId];
       // Highlight the random household for the current section (except intro and all-households)
       const isRandomHighlighted = currentRandomHousehold && 
-                                 d.id === currentRandomHousehold.id &&
-                                 baseViewId !== 'intro' && 
-                                 baseViewId !== 'all-households';
+                                d.id === currentRandomHousehold.id &&
+                                baseViewId !== 'intro' && 
+                                baseViewId !== 'all-households';
       const isSelectedHousehold = selectedHousehold && d.id === selectedHousehold.id;
       const isHighlighted = isGroupHighlighted || isRandomHighlighted || isSelectedHousehold;
       
-      // Set radius
+      // Set radius - larger when zoomed for better visibility
       const weight = d['Household weight'] || d['Household weight'] || 1;
-      let radius = isHighlighted ? (isRandomHighlighted || isSelectedHousehold ? 6 : 4) : 2;
-      
+      const baseRadius = isZoomedView ? 2.2 : 1.8;  // Smaller dots
+      let radius = isHighlighted ? (isRandomHighlighted || isSelectedHousehold ? 5 : 3.5) : baseRadius;  // Increased highlighted sizes
+        
       // Calculate opacity based on weight
       const logWeight = Math.log10(weight + 1);
       const logMinWeight = Math.log10(minWeight + 1);
       const logMaxWeight = Math.log10(maxWeight + 1);
       const normalizedWeight = (logWeight - logMinWeight) / (logMaxWeight - logMinWeight);
-      const weightBasedOpacity = 0.3 + (0.55 * normalizedWeight);
-      let baseOpacity = isHighlighted ? 1 : Math.min(Math.max(weightBasedOpacity, 0.3), 0.85);
+      
+      // Much higher opacity for sharper appearance
+      const minOpacity = isZoomedView ? 0.7 : 0.5;   // Increased from 0.5/0.3
+      const maxOpacity = isZoomedView ? 1.0 : 0.9;   // Increased from 0.95/0.85
+      const opacityRange = maxOpacity - minOpacity;
+      
+      const weightBasedOpacity = minOpacity + (opacityRange * normalizedWeight);
+      let baseOpacity = isHighlighted ? 1 : Math.min(Math.max(weightBasedOpacity, minOpacity), maxOpacity);
       
       // Apply animation effects (both existing and new staggered animations)
       const existingAnimationState = animatedHouseholds.get(d.id);
@@ -655,11 +665,12 @@
       }
       
       // Fade other points when showing a random household (but not for intro/all views)
-      if (isRandomHighlighted && currentState?.id !== 'intro' && currentState?.id !== 'all-households') {
+      if (isRandomHighlighted && isZoomedView) {
         // This point IS the highlighted one, keep full opacity
-      } else if (currentRandomHousehold && currentState?.id !== 'intro' && currentState?.id !== 'all-households') {
-        // There is a highlighted household but this isn't it, fade it
-        baseOpacity *= 0.3;
+      } else if (currentRandomHousehold && isZoomedView) {
+        // There is a highlighted household but this isn't it
+        // Much less aggressive fade for sharper appearance
+        baseOpacity *= 0.7;  // Increased from 0.5
       }
       
       const finalOpacity = baseOpacity * fadeOpacity;
