@@ -1671,7 +1671,14 @@
     .text-content {
       padding: 1rem 1rem 30vh 1rem;
       max-width: 100%;
-      margin-top: 15vh; /* Center the first box vertically on mobile */
+      margin-top: 20vh; /* Adjust top spacing for mobile */
+      display: flex;
+      flex-direction: column;
+    }
+    
+    /* Special handling for intro section on mobile */
+    .text-section.intro {
+      margin-top: calc(30vh - 150px); /* Additional offset to center vertically */
     }
     
     .text-section {
