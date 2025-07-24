@@ -37,7 +37,7 @@
     
     const viewportWidth = window.innerWidth;
     if (viewportWidth <= 480) {
-      margin = { top: 30, right: 50, bottom: 60, left: 50 };
+      margin = { top: 30, right: 50, bottom: 80, left: 50 };
     } else if (viewportWidth <= 768) {
       margin = { top: 40, right: 65, bottom: 60, left: 65 };
     } else {
