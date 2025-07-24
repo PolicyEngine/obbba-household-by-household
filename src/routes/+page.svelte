@@ -466,12 +466,17 @@
               data = update.visualData;
               isLoading = false;
               
-              // Initialize random households with minimal data
-              initializeRandomHouseholds();
+              // Delay household initialization to let dots render first
+              setTimeout(() => {
+                initializeRandomHouseholds();
+              }, 50);
               
-              // Force immediate render
+              // Force immediate render without waiting for next frame
               if (chartComponent?.forceRender) {
-                chartComponent.forceRender();
+                // Use microtask to ensure data is set first
+                Promise.resolve().then(() => {
+                  chartComponent.forceRender();
+                });
               }
             }
           } catch (error) {
@@ -487,7 +492,7 @@
           isLoadingData = false;
         });
         
-        // STEP 2: Load full datasets in background
+        // STEP 2: Load full datasets in background after dots are rendering
         setTimeout(() => {
           console.log('Starting background full data loading...');
           
@@ -502,7 +507,10 @@
               
               // Clear and re-initialize random households with full data
               randomHouseholds = {};
-              initializeRandomHouseholds();
+              // Delay household initialization to prevent UI blocking
+              setTimeout(() => {
+                initializeRandomHouseholds();
+              }, 100);
               
               // Clear selected household to force re-selection with full data
               selectedHousehold = null;
@@ -536,7 +544,7 @@
           secondDatasetLoading = false;
           isLoadingData = false; // Clear on error too
         });
-        }, 500); // Small delay to let starfield animation start
+        }, 300); // Delay to ensure dots are rendering before loading full data
         
         // FALLBACK: Keep old progressive loader as backup
         /*loadDatasetsProgressive(
