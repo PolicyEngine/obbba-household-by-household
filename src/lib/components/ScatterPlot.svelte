@@ -639,7 +639,7 @@
     // Axis labels
     g.append('text')
       .attr('x', width / 2)
-      .attr('y', height - (isMobile ? 20 : 30))
+      .attr('y', height - margin.bottom + (isMobile ? 35 : 45))
       .attr('text-anchor', 'middle')
       .style('font-family', getFontFamily('sans'))
       .style('font-size', isMobile ? '12px' : '16px')
