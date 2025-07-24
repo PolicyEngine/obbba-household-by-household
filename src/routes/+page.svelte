@@ -1421,7 +1421,7 @@
     /* Prevent any scroll snap behavior */
     scroll-snap-align: none !important;
     scroll-margin: 0 !important;
-    max-width: 640px;
+    max-width: 480px;
     width: 100%;
   }
   
@@ -1604,7 +1604,7 @@
     
     .baseline-selector-overlay {
       top: auto;
-      bottom: 1rem;
+      bottom: 2rem;
       right: 30px; /* Align with mobile chart margin */
       padding: 0;
       gap: 0;
