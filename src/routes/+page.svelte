@@ -1016,7 +1016,22 @@
             <div class="section-content">
               <div class="drag-handle" title="Drag to move">⋮⋮</div>
               {#if state.id !== 'intro'}
-                <h2>{state.title}</h2>
+                <h2>
+                  <span class="title-desktop">{state.title}</span>
+                  <span class="title-mobile">
+                    {#if state.id === 'lower-income'}
+                      Households with income below $50k
+                    {:else if state.id === 'middle-income'}
+                      Households with income $50k to $200k
+                    {:else if state.id === 'upper-income'}
+                      Households with income $200k to $1M
+                    {:else if state.id === 'highest-income'}
+                      Households with income over $1M
+                    {:else}
+                      {state.title}
+                    {/if}
+                  </span>
+                </h2>
               {/if}
               
               <!-- Intro section content -->
@@ -1195,6 +1210,10 @@
   /* Show full title on desktop, hide mobile title */
   .title-mobile {
     display: none;
+  }
+  
+  .title-desktop {
+    display: inline;
   }
   
   
@@ -1576,6 +1595,11 @@
     
     .title-mobile {
       display: inline;
+    }
+    
+    /* Switch section titles on mobile */
+    .title-desktop {
+      display: none;
     }
     
     .baseline-selector-overlay {
