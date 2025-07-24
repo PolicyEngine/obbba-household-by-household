@@ -1671,7 +1671,13 @@
     .text-content {
       padding: 1rem 1rem 30vh 1rem;
       max-width: 100%;
-      margin-top: 35vh; /* More aggressive centering for mobile viewport */
+      margin-top: 10vh; /* Base spacing for mobile */
+    }
+    
+    /* Specific centering for intro section on mobile */
+    .text-section.intro {
+      position: relative;
+      top: calc(40vh - 150px); /* Push intro down to center */
     }
     
     .text-section {
