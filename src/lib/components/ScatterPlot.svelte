@@ -37,7 +37,7 @@
     
     const viewportWidth = window.innerWidth;
     if (viewportWidth <= 480) {
-      margin = { top: 30, right: 50, bottom: 80, left: 50 };
+      margin = { top: 30, right: 50, bottom: 100, left: 50 };
     } else if (viewportWidth <= 768) {
       margin = { top: 40, right: 65, bottom: 60, left: 65 };
     } else {
@@ -639,7 +639,7 @@
     // Axis labels
     g.append('text')
       .attr('x', width / 2)
-      .attr('y', height - (isMobile ? 10 : 30))
+      .attr('y', height - (isMobile ? 20 : 30))
       .attr('text-anchor', 'middle')
       .style('font-family', getFontFamily('sans'))
       .style('font-size', isMobile ? '12px' : '16px')
