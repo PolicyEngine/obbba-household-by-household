@@ -781,7 +781,7 @@
       if (!window.location.search && parentUrl) {
         try {
           // Check if parent URL contains household explorer path with params
-          const parentUrlMatch = parentUrl.match(/obbba-household-explorer[^?]*\?(.+)/);
+          const parentUrlMatch = parentUrl.match(/obbba-household-by-household[^?]*\?(.+)/);
           if (parentUrlMatch) {
             console.log('Found parameters in parent path, applying to iframe');
             const parentParams = new URLSearchParams(parentUrlMatch[1]);
