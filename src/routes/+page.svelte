@@ -161,7 +161,6 @@
     // Ensure the household is selected
     selectedHousehold = household;
     
-    // Only scroll if not in iframe
     const isInIframe = window.self !== window.top;
     // if (!isInIframe) {
     // Scroll to the section
