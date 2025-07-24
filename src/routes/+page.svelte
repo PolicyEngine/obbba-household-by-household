@@ -968,8 +968,8 @@
   <!-- Title overlay (always visible) -->
   <div class="title-overlay">
     <h1 class="overlay-title">
-      <span class="title-full">{scrollStates[0]?.title || "The One Big Beautiful Bill Act, household by household"}</span>
-      <span class="title-mobile">OBBBA, household by household</span>
+      <span class="title-full">{scrollStates[0]?.title || "Introducing the OBBBA Household Explorer"}</span>
+      <span class="title-mobile">OBBBA Household Explorer</span>
     </h1>
   </div>
   
