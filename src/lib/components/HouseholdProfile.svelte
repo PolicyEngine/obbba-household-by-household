@@ -299,12 +299,21 @@
     ];
     
     return provisions
-      .map((provision, index) => ({
-        name: provision.name,
-        value: household[provision.key] || 0,
-        index: index,
-        description: provision.description
-      }))
+      .map((provision, index) => {
+        // Extract the provision suffix from the key
+        const suffix = provision.key.replace('Change in Net income after ', '');
+        
+        return {
+          name: provision.name,
+          value: household[provision.key] || 0,
+          index: index,
+          description: provision.description,
+          // Automatically generate the federal, state, and benefits keys
+          federalChange: household[`Change in Federal tax liability after ${suffix}`] || 0,
+          stateChange: household[`Change in State tax liability after ${suffix}`] || 0,
+          benefitsChange: household[`Change in Benefits after ${suffix}`] || 0
+        };
+      })
       .filter(p => Math.abs(p.value) > 0.01);
   }
   
@@ -448,8 +457,28 @@
                   {provision.name}
                   <span class="info-icon">ⓘ</span>
                 </span>
-                <span class="value impact" class:pos={provision.value > 0} class:neg={provision.value < 0}>
+                <span class="value impact value-with-breakdown" class:pos={provision.value > 0} class:neg={provision.value < 0} title="Click to see breakdown">
                   {formatDollarChange(provision.value)}
+                  <div class="breakdown-tooltip">
+                    <div class="breakdown-item">
+                      <span class="breakdown-label">Federal tax:</span>
+                      <span class="breakdown-value" class:pos={provision.federalChange < 0} class:neg={provision.federalChange > 0}>
+                        {formatDollarChange(-provision.federalChange)}
+                      </span>
+                    </div>
+                    <div class="breakdown-item">
+                      <span class="breakdown-label">State tax:</span>
+                      <span class="breakdown-value" class:pos={provision.stateChange < 0} class:neg={provision.stateChange > 0}>
+                        {formatDollarChange(-provision.stateChange)}
+                      </span>
+                    </div>
+                    <div class="breakdown-item">
+                      <span class="breakdown-label">Benefits:</span>
+                      <span class="breakdown-value" class:pos={provision.benefitsChange > 0} class:neg={provision.benefitsChange < 0}>
+                        {formatDollarChange(provision.benefitsChange)}
+                      </span>
+                    </div>
+                  </div>
                 </span>
                 <div class="provision-tooltip">{provision.description}</div>
               </div>
@@ -750,6 +779,78 @@
     border-top: 4px solid rgba(24, 35, 51, 0.95);
   }
   
+  /* Value breakdown tooltip */
+  .value-with-breakdown {
+    position: relative;
+    cursor: help;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
+  }
+  
+  .breakdown-tooltip {
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-right: 8px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.98);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    font-size: 12px;
+    line-height: 1.5;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    width: max-content;
+    min-width: 180px;
+    z-index: 1001;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    pointer-events: none;
+  }
+  
+  .value-with-breakdown:hover .breakdown-tooltip {
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  .breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 0;
+    gap: 12px;
+  }
+  
+  .breakdown-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  
+  .breakdown-value {
+    font-weight: 600;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  
+  /* Breakdown tooltip arrow pointing right */
+  .breakdown-tooltip::after {
+    content: '';
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-left: 4px solid var(--border);
+  }
+  
   /* Mobile responsive styles */
   @media (max-width: 768px) {
     .household-profile {
@@ -836,6 +937,37 @@
     .info-icon {
       font-size: 10px;
     }
+    
+    /* Mobile breakdown tooltip */
+    .breakdown-tooltip {
+      right: auto;
+      left: 50%;
+      top: auto;
+      bottom: 100%;
+      transform: translateX(-50%);
+      margin-bottom: 8px;
+      margin-right: 0;
+      font-size: 11px;
+      min-width: 160px;
+    }
+    
+    .breakdown-tooltip::after {
+      left: 50%;
+      top: 100%;
+      transform: translateX(-50%);
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 4px solid var(--border);
+      border-bottom: none;
+    }
+    
+    .breakdown-label {
+      font-size: 10px;
+    }
+    
+    .breakdown-value {
+      font-size: 11px;
+    }
   }
   
   @media (max-width: 480px) {
@@ -872,6 +1004,21 @@
       font-size: 10px;
       padding: 5px 8px;
       max-width: 200px;
+    }
+    
+    /* Small mobile breakdown tooltip */
+    .breakdown-tooltip {
+      font-size: 10px;
+      min-width: 140px;
+      padding: 8px 10px;
+    }
+    
+    .breakdown-label {
+      font-size: 9px;
+    }
+    
+    .breakdown-value {
+      font-size: 10px;
     }
   }
 </style>
