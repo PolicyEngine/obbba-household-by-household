@@ -318,6 +318,11 @@
   }
   
   $: provisionBreakdown = household ? getProvisionBreakdown(household) : [];
+  
+  // Calculate total federal, state, and benefits changes
+  $: totalFederalChange = household ? (household['Total change in federal tax liability'] || 0) : 0;
+  $: totalStateChange = household ? (household['Total change in state tax liability'] || 0) : 0;
+  $: totalBenefitsChange = household ? (household['Total Change in Benefits'] || 0) : 0;
 </script>
 
 {#if household}
@@ -426,8 +431,28 @@
         </div>
         <div class="detail-item">
           <span class="label">OBBBA absolute impact:</span>
-          <span class="value impact" class:pos={$absoluteImpact > 0} class:neg={$absoluteImpact < 0}>
+          <span class="value impact value-with-breakdown" class:pos={$absoluteImpact > 0} class:neg={$absoluteImpact < 0} title="Click to see breakdown">
             {formatDollarChange($absoluteImpact)}
+            <div class="breakdown-tooltip">
+              <div class="breakdown-item">
+                <span class="breakdown-label">Federal tax:</span>
+                <span class="breakdown-value" class:pos={totalFederalChange < 0} class:neg={totalFederalChange > 0}>
+                  {formatDollarChange(-totalFederalChange)}
+                </span>
+              </div>
+              <div class="breakdown-item">
+                <span class="breakdown-label">State tax:</span>
+                <span class="breakdown-value" class:pos={totalStateChange < 0} class:neg={totalStateChange > 0}>
+                  {formatDollarChange(-totalStateChange)}
+                </span>
+              </div>
+              <div class="breakdown-item">
+                <span class="breakdown-label">Benefits:</span>
+                <span class="breakdown-value" class:pos={totalBenefitsChange > 0} class:neg={totalBenefitsChange < 0}>
+                  {formatDollarChange(totalBenefitsChange)}
+                </span>
+              </div>
+            </div>
           </span>
         </div>
         <div class="detail-item">
