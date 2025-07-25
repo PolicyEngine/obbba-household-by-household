@@ -431,7 +431,7 @@
         </div>
         <div class="detail-item">
           <span class="label">OBBBA absolute impact:</span>
-          <span class="value impact value-with-breakdown" class:pos={$absoluteImpact > 0} class:neg={$absoluteImpact < 0} title="Click to see breakdown">
+          <span class="value impact value-with-breakdown" class:pos={$absoluteImpact > 0} class:neg={$absoluteImpact < 0}>
             {formatDollarChange($absoluteImpact)}
             <div class="breakdown-tooltip">
               <div class="breakdown-item">
@@ -478,10 +478,10 @@
           {#if provisionBreakdown.length > 0}
             {#each provisionBreakdown as provision}
               <div class="detail-item provision-item">
-                <span class="label provision-label" title={provision.description}>
+                <span class="label provision-label">
                   {provision.name}
                 </span>
-                <span class="value impact value-with-breakdown" class:pos={provision.value > 0} class:neg={provision.value < 0} title="Click to see breakdown">
+                <span class="value impact value-with-breakdown" class:pos={provision.value > 0} class:neg={provision.value < 0}>
                   {formatDollarChange(provision.value)}
                   <div class="breakdown-tooltip">
                     <div class="breakdown-item">
