@@ -480,7 +480,6 @@
               <div class="detail-item provision-item">
                 <span class="label provision-label" title={provision.description}>
                   {provision.name}
-                  <span class="info-icon">ⓘ</span>
                 </span>
                 <span class="value impact value-with-breakdown" class:pos={provision.value > 0} class:neg={provision.value < 0} title="Click to see breakdown">
                   {formatDollarChange(provision.value)}
@@ -729,21 +728,17 @@
   .provision-label {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
     cursor: help;
     position: relative;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
+    text-decoration-color: var(--text-secondary);
   }
   
-  .info-icon {
-    font-size: 11px;
-    color: var(--primary-blue);
-    opacity: 0.6;
-    font-style: normal;
-    transition: opacity 0.2s;
-  }
-  
-  .provision-label:hover .info-icon {
-    opacity: 1;
+  .provision-label:hover {
+    text-decoration-color: var(--text-primary);
   }
   
   .provision-tooltip {
@@ -957,10 +952,6 @@
       font-size: 11px;
       padding: 6px 10px;
       max-width: 250px;
-    }
-    
-    .info-icon {
-      font-size: 10px;
     }
     
     /* Mobile breakdown tooltip */
