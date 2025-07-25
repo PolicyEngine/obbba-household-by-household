@@ -354,12 +354,15 @@
     // Add other income sources
     sources.push(
       { name: 'Self-employment income', value: household['Self-employment income'] || 0 },
+      { name: 'Capital gains', value: household['Capital gains'] || 0 },
       { name: 'Dividend income', value: household['Dividend income'] || 0 },
-      { name: 'Farm income', value: household['Farm income'] || 0 },
       { name: 'Interest income', value: household['Taxable interest income'] || 0 },
       { name: 'Rental income', value: household['rental income'] || 0 },
+      { name: 'Farm income', value: household['Farm income'] || 0 },
       { name: 'Pension income', value: household['Taxable pension income'] || 0 },
+      { name: 'Retirement distributions', value: household['Taxable retirement distributions'] || 0 },
       { name: 'Social Security', value: household['Taxable Social Security'] || 0 },
+      { name: 'Unemployment compensation', value: household['Taxable Unemployment Compensation'] || 0 },
       { name: 'Other income', value: household['Miscellaneous income'] || 0 }
     );
     
