@@ -473,51 +473,11 @@
       <div class="impact-details">
         <div class="detail-item">
           <span class="label">Net income under TCJA {selectedDataset === 'tcja-expiration' ? 'expiration' : 'extension'}:</span>
-          <span class="value value-with-breakdown">
-            {formatCurrency($baselineNetIncome)}
-            <div class="breakdown-tooltip">
-              <div class="breakdown-item">
-                <span class="breakdown-label">Market income:</span>
-                <span class="breakdown-value">{formatCurrency(household['Market Income'] || 0)}</span>
-              </div>
-              <div class="breakdown-item">
-                <span class="breakdown-label">Federal tax:</span>
-                <span class="breakdown-value neg">{formatCurrency(-(household['Baseline federal tax liability'] || 0))}</span>
-              </div>
-              <div class="breakdown-item">
-                <span class="breakdown-label">State tax:</span>
-                <span class="breakdown-value neg">{formatCurrency(-(household['Baseline state tax liability'] || 0))}</span>
-              </div>
-              <div class="breakdown-item">
-                <span class="breakdown-label">Benefits:</span>
-                <span class="breakdown-value pos">{formatCurrency(household['Baseline benefits'] || 0)}</span>
-              </div>
-            </div>
-          </span>
+          <span class="value">{formatCurrency($baselineNetIncome)}</span>
         </div>
         <div class="detail-item">
           <span class="label">Net income under OBBBA:</span>
-          <span class="value value-with-breakdown">
-            {formatCurrency($obbbaNetIncome)}
-            <div class="breakdown-tooltip">
-              <div class="breakdown-item">
-                <span class="breakdown-label">Market income:</span>
-                <span class="breakdown-value">{formatCurrency(household['Market Income'] || 0)}</span>
-              </div>
-              <div class="breakdown-item">
-                <span class="breakdown-label">Federal tax:</span>
-                <span class="breakdown-value neg">{formatCurrency(-((household['Baseline federal tax liability'] || 0) + totalFederalChange))}</span>
-              </div>
-              <div class="breakdown-item">
-                <span class="breakdown-label">State tax:</span>
-                <span class="breakdown-value neg">{formatCurrency(-((household['Baseline state tax liability'] || 0) + totalStateChange))}</span>
-              </div>
-              <div class="breakdown-item">
-                <span class="breakdown-label">Benefits:</span>
-                <span class="breakdown-value pos">{formatCurrency((household['Baseline benefits'] || 0) + totalBenefitsChange)}</span>
-              </div>
-            </div>
-          </span>
+          <span class="value">{formatCurrency($obbbaNetIncome)}</span>
         </div>
         <div class="detail-item">
           <span class="label">OBBBA absolute impact:</span>
