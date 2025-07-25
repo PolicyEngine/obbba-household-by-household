@@ -323,6 +323,32 @@
   $: totalFederalChange = household ? (household['Total change in federal tax liability'] || 0) : 0;
   $: totalStateChange = household ? (household['Total change in state tax liability'] || 0) : 0;
   $: totalBenefitsChange = household ? (household['Total Change in Benefits'] || 0) : 0;
+  
+  // Get income sources breakdown
+  function getIncomeSources(household) {
+    if (!household) return [];
+    
+    const sources = [
+      { name: 'Employment income', value: household['Employment income'] || 0 },
+      { name: 'Self-employment income', value: household['Self-employment income'] || 0 },
+      { name: 'Dividend income', value: household['Dividend income'] || 0 },
+      { name: 'Farm income', value: household['Farm income'] || 0 },
+      { name: 'Interest income', value: household['Taxable interest income'] || 0 },
+      { name: 'Rental income', value: household['rental income'] || 0 },
+      { name: 'Pension income', value: household['Taxable pension income'] || 0 },
+      { name: 'Social Security', value: household['Taxable Social Security'] || 0 },
+      { name: 'Tip income', value: household['Tip income'] || 0 },
+      { name: 'Overtime income', value: household['Overtime income'] || 0 },
+      { name: 'Other income', value: household['Miscellaneous income'] || 0 }
+    ];
+    
+    // Filter out zero values and sort by amount descending
+    return sources
+      .filter(s => Math.abs(s.value) > 0.01)
+      .sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+  }
+  
+  $: incomeSources = household ? getIncomeSources(household) : [];
 </script>
 
 {#if household}
@@ -371,7 +397,21 @@
         </div>
         <div class="detail-item">
           <span class="label">Market income:</span>
-          <span class="value">{formatCurrency($marketIncome)}</span>
+          <span class="value value-with-breakdown">
+            {formatCurrency($marketIncome)}
+            {#if incomeSources.length > 0}
+              <div class="breakdown-tooltip income-sources-tooltip">
+                {#each incomeSources as source}
+                  <div class="breakdown-item">
+                    <span class="breakdown-label">{source.name}:</span>
+                    <span class="breakdown-value">
+                      {formatCurrency(source.value)}
+                    </span>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+          </span>
         </div>
         <button 
           class="expand-button" 
@@ -869,6 +909,27 @@
     border-top: 4px solid transparent;
     border-bottom: 4px solid transparent;
     border-left: 4px solid var(--border);
+  }
+  
+  /* Income sources tooltip - positioned below */
+  .income-sources-tooltip {
+    right: auto;
+    left: 0;
+    top: 100%;
+    bottom: auto;
+    transform: none;
+    margin-top: 8px;
+    margin-right: 0;
+  }
+  
+  /* Income sources tooltip arrow pointing up */
+  .income-sources-tooltip::after {
+    left: 20px;
+    top: -4px;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 4px solid var(--border);
+    border-top: none;
   }
   
   /* Mobile responsive styles */
