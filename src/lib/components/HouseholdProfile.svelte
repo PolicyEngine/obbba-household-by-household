@@ -362,18 +362,21 @@
       { name: 'Pension income', value: household['Taxable pension income'] || 0 },
       { name: 'Retirement distributions', value: household['Taxable retirement distributions'] || 0 },
       { name: 'Social Security', value: household['Taxable Social Security'] || 0 },
-      { name: 'Unemployment compensation', value: household['Taxable Unemployment Compensation'] || 0 },
-      { name: 'Other income', value: household['Miscellaneous income'] || 0 }
+      { name: 'Unemployment compensation', value: household['Taxable Unemployment Compensation'] || 0 }
     );
     
-    // Calculate total of itemized sources
+    // Calculate total of itemized sources (excluding misc income)
     const itemizedTotal = sources.reduce((sum, s) => sum + (s.value || 0), 0);
     const marketIncome = household['Market Income'] || 0;
-    const difference = marketIncome - itemizedTotal;
+    const miscIncome = household['Miscellaneous income'] || 0;
+    const difference = marketIncome - itemizedTotal - miscIncome;
     
-    // If there's a significant difference, add "Other sources"
-    if (Math.abs(difference) > 0.01) {
-      sources.push({ name: 'Other sources', value: difference });
+    // Combine miscellaneous income and any unaccounted difference as "Other income"
+    // This includes miscellaneous income plus any GI Bill assistance, illicit income, 
+    // or other sources not separately reported in the data
+    const otherIncome = miscIncome + difference;
+    if (Math.abs(otherIncome) > 0.01) {
+      sources.push({ name: 'Other income', value: otherIncome });
     }
     
     // Filter out zero values and sort by amount descending (positive first, then negative)
