@@ -596,7 +596,7 @@
   }
 
   .random-indicator {
-    font-size: 0.7em;
+    font-size: 0.6em;
     font-weight: 400;
     color: var(--text-secondary);
     opacity: 0.6;
@@ -950,7 +950,7 @@
     }
     
     .random-indicator {
-      font-size: 0.65em;
+      font-size: 0.55em;
     }
     
     .action-button {
