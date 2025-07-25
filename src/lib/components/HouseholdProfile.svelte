@@ -356,7 +356,7 @@
     <h3>
       Household #{Math.round($householdId)}
       <div class="header-buttons">
-        <span class="random-indicator">Representative sample</span>
+        <span class="random-indicator">Sample</span>
         <button 
           class="action-button random-button" 
           on:click|preventDefault|stopPropagation={(e) => {
