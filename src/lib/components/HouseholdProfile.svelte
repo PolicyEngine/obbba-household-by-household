@@ -194,7 +194,7 @@
       { 
         name: 'Standard deduction increase', 
         key: 'Change in Net income after Standard deduction increase',
-        description: 'Increases standard deduction to $15,750 for single filers and $31,500 for married filing jointly in 2025, indexed to inflation.'
+        description: 'Increases the standard deduction by $750 for single filers and $1,500 for married filing jointly, building on the TCJA amounts.'
       },
       { 
         name: 'Exemption repeal', 
