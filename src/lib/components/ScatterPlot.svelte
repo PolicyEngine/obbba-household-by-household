@@ -64,10 +64,10 @@
     const shuffledPoints = [...dataPoints].sort(() => Math.random() - 0.5);
 
     // Slower, more graceful animation
-    const maxAnimationDuration = Math.min(3000, dataPoints.length * 2); // Max 3 seconds
+    const maxAnimationDuration = Math.min(5000, dataPoints.length * 3); // Max 5 seconds
     
     // For small datasets, still take some time
-    const minAnimationDuration = Math.min(1500, dataPoints.length * 1.5); // Min 1.5s
+    const minAnimationDuration = Math.min(2500, dataPoints.length * 2.5); // Min 2.5s
     const actualAnimationDuration = Math.max(minAnimationDuration, maxAnimationDuration);
 
     const baseDelay = actualAnimationDuration / Math.max(dataPoints.length, 1);
@@ -117,7 +117,7 @@
     if (typeof window === 'undefined' || typeof performance === 'undefined') return;
     
     const currentTime = performance.now();
-    const animationDuration = 400; // Faster individual star animation (was 600ms)
+    const animationDuration = 600; // Slower individual star animation for more graceful appearance
     let needsRerender = false;
     
     pointAnimations.forEach((animation, pointId) => {
@@ -128,8 +128,8 @@
       if (elapsed >= 0) {
         const progress = Math.min(elapsed / animationDuration, 1);
         
-        // Smooth easing function (ease-out quad for gentler feel)
-        const eased = 1 - Math.pow(1 - progress, 2);
+        // Smooth easing function (ease-out cubic for even gentler feel)
+        const eased = 1 - Math.pow(1 - progress, 3);
         
         // Create sparkle effect - stars get brighter then settle
         let sparkleMultiplier = 1;
