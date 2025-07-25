@@ -352,10 +352,10 @@
       sources.push({ name: 'Other sources', value: difference });
     }
     
-    // Filter out zero values and sort by amount descending
+    // Filter out zero values and sort by amount descending (positive first, then negative)
     return sources
       .filter(s => Math.abs(s.value) > 0.01)
-      .sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+      .sort((a, b) => b.value - a.value);
   }
   
   $: incomeSources = household ? getIncomeSources(household) : [];
