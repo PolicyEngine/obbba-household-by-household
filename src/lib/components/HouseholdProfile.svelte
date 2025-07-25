@@ -706,7 +706,7 @@
   }
   
   .impact-section h4 {
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     font-weight: 700;
     color: var(--text-primary);
     margin: 0 0 1rem 0;
@@ -977,7 +977,7 @@
     }
     
     .impact-section h4 {
-      font-size: 0.95rem;
+      font-size: 0.85rem;
       margin-bottom: 0.75rem;
     }
     
@@ -1069,7 +1069,7 @@
     }
     
     .impact-section h4 {
-      font-size: 0.875rem;
+      font-size: 0.8rem;
     }
     
     .expand-button {
