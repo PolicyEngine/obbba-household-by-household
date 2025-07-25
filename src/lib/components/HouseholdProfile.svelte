@@ -752,7 +752,7 @@
     transform: translateY(4px);
   }
   
-  .provision-item:hover .provision-tooltip {
+  .provision-label:hover ~ .provision-tooltip {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
