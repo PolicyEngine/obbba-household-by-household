@@ -473,8 +473,10 @@
     min-height: 350px;
     /* Prevent being used as scroll anchor */
     overflow-anchor: none;
+    /* Allow tooltips to overflow */
+    overflow: visible;
     /* Prevent layout shifts during animations */
-    contain: layout style paint;
+    contain: layout style;
     will-change: transform;
     /* Force GPU acceleration for smoother updates */
     transform: translateZ(0);
@@ -579,6 +581,8 @@
     border-top: none;
     padding-top: 0;
     margin-top: 0.5rem;
+    overflow: visible;
+    position: relative;
   }
 
   .no-provisions {
@@ -652,6 +656,7 @@
   .expandable-details {
     margin-top: 1rem;
     padding-top: 1rem;
+    overflow: visible;
   }
   
   .impact-details .detail-item {
@@ -709,6 +714,15 @@
     pointer-events: none;
   }
   
+  /* Position tooltip above for last few items to prevent cutoff */
+  .provision-item:nth-last-child(-n+3) .provision-tooltip {
+    top: auto;
+    bottom: 100%;
+    margin-top: 0;
+    margin-bottom: 4px;
+    transform: translateY(4px);
+  }
+  
   .provision-item:hover .provision-tooltip {
     opacity: 1;
     visibility: visible;
@@ -726,6 +740,14 @@
     border-left: 4px solid transparent;
     border-right: 4px solid transparent;
     border-bottom: 4px solid rgba(24, 35, 51, 0.95);
+  }
+  
+  /* Arrow pointing down for tooltips above */
+  .provision-item:nth-last-child(-n+3) .provision-tooltip::before {
+    top: auto;
+    bottom: -4px;
+    border-bottom: none;
+    border-top: 4px solid rgba(24, 35, 51, 0.95);
   }
   
   /* Mobile responsive styles */
