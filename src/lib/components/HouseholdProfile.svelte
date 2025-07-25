@@ -328,8 +328,31 @@
   function getIncomeSources(household) {
     if (!household) return [];
     
-    const sources = [
-      { name: 'Employment income', value: household['Employment income'] || 0 },
+    // Get individual income components
+    const employmentIncome = household['Employment income'] || 0;
+    const tipIncome = household['Tip income'] || 0;
+    const overtimeIncome = household['Overtime income'] || 0;
+    
+    // Calculate wages and salaries (employment minus tips and overtime)
+    const wagesAndSalaries = employmentIncome - tipIncome - overtimeIncome;
+    
+    const sources = [];
+    
+    // Only add wages and salaries if employment income exists
+    if (Math.abs(employmentIncome) > 0.01) {
+      if (Math.abs(wagesAndSalaries) > 0.01) {
+        sources.push({ name: 'Wages and salaries', value: wagesAndSalaries });
+      }
+      if (Math.abs(tipIncome) > 0.01) {
+        sources.push({ name: 'Tip income', value: tipIncome });
+      }
+      if (Math.abs(overtimeIncome) > 0.01) {
+        sources.push({ name: 'Overtime income', value: overtimeIncome });
+      }
+    }
+    
+    // Add other income sources
+    sources.push(
       { name: 'Self-employment income', value: household['Self-employment income'] || 0 },
       { name: 'Dividend income', value: household['Dividend income'] || 0 },
       { name: 'Farm income', value: household['Farm income'] || 0 },
@@ -337,10 +360,8 @@
       { name: 'Rental income', value: household['rental income'] || 0 },
       { name: 'Pension income', value: household['Taxable pension income'] || 0 },
       { name: 'Social Security', value: household['Taxable Social Security'] || 0 },
-      { name: 'Tip income', value: household['Tip income'] || 0 },
-      { name: 'Overtime income', value: household['Overtime income'] || 0 },
       { name: 'Other income', value: household['Miscellaneous income'] || 0 }
-    ];
+    );
     
     // Calculate total of itemized sources
     const itemizedTotal = sources.reduce((sum, s) => sum + (s.value || 0), 0);
