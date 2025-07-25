@@ -264,7 +264,7 @@
       { 
         name: 'Overtime exemption', 
         key: 'Change in Net income after Overtime exemption',
-        description: 'Deduction up to $25,000 for overtime wages, 2025-2028. Applies to wages earned above regular hours.'
+        description: 'Deduction for overtime premium pay (the extra 50% only, not base wage) up to $12,500 for individuals or $25,000 for joint filers, 2025-2028.'
       },
       { 
         name: 'Auto loan interest deduction', 
