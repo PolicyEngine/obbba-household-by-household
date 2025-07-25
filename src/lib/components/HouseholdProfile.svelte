@@ -342,6 +342,16 @@
       { name: 'Other income', value: household['Miscellaneous income'] || 0 }
     ];
     
+    // Calculate total of itemized sources
+    const itemizedTotal = sources.reduce((sum, s) => sum + (s.value || 0), 0);
+    const marketIncome = household['Market Income'] || 0;
+    const difference = marketIncome - itemizedTotal;
+    
+    // If there's a significant difference, add "Other sources"
+    if (Math.abs(difference) > 0.01) {
+      sources.push({ name: 'Other sources', value: difference });
+    }
+    
     // Filter out zero values and sort by amount descending
     return sources
       .filter(s => Math.abs(s.value) > 0.01)
@@ -463,11 +473,51 @@
       <div class="impact-details">
         <div class="detail-item">
           <span class="label">Net income under TCJA {selectedDataset === 'tcja-expiration' ? 'expiration' : 'extension'}:</span>
-          <span class="value">{formatCurrency($baselineNetIncome)}</span>
+          <span class="value value-with-breakdown">
+            {formatCurrency($baselineNetIncome)}
+            <div class="breakdown-tooltip">
+              <div class="breakdown-item">
+                <span class="breakdown-label">Market income:</span>
+                <span class="breakdown-value">{formatCurrency(household['Market Income'] || 0)}</span>
+              </div>
+              <div class="breakdown-item">
+                <span class="breakdown-label">Federal tax:</span>
+                <span class="breakdown-value neg">{formatCurrency(-(household['Baseline federal tax liability'] || 0))}</span>
+              </div>
+              <div class="breakdown-item">
+                <span class="breakdown-label">State tax:</span>
+                <span class="breakdown-value neg">{formatCurrency(-(household['Baseline state tax liability'] || 0))}</span>
+              </div>
+              <div class="breakdown-item">
+                <span class="breakdown-label">Benefits:</span>
+                <span class="breakdown-value pos">{formatCurrency(household['Baseline benefits'] || 0)}</span>
+              </div>
+            </div>
+          </span>
         </div>
         <div class="detail-item">
           <span class="label">Net income under OBBBA:</span>
-          <span class="value">{formatCurrency($obbbaNetIncome)}</span>
+          <span class="value value-with-breakdown">
+            {formatCurrency($obbbaNetIncome)}
+            <div class="breakdown-tooltip">
+              <div class="breakdown-item">
+                <span class="breakdown-label">Market income:</span>
+                <span class="breakdown-value">{formatCurrency(household['Market Income'] || 0)}</span>
+              </div>
+              <div class="breakdown-item">
+                <span class="breakdown-label">Federal tax:</span>
+                <span class="breakdown-value neg">{formatCurrency(-((household['Baseline federal tax liability'] || 0) + totalFederalChange))}</span>
+              </div>
+              <div class="breakdown-item">
+                <span class="breakdown-label">State tax:</span>
+                <span class="breakdown-value neg">{formatCurrency(-((household['Baseline state tax liability'] || 0) + totalStateChange))}</span>
+              </div>
+              <div class="breakdown-item">
+                <span class="breakdown-label">Benefits:</span>
+                <span class="breakdown-value pos">{formatCurrency((household['Baseline benefits'] || 0) + totalBenefitsChange)}</span>
+              </div>
+            </div>
+          </span>
         </div>
         <div class="detail-item">
           <span class="label">OBBBA absolute impact:</span>
