@@ -341,7 +341,7 @@
     // Only add wages and salaries if employment income exists
     if (Math.abs(employmentIncome) > 0.01) {
       if (Math.abs(wagesAndSalaries) > 0.01) {
-        sources.push({ name: 'Base wages', value: wagesAndSalaries });
+        sources.push({ name: 'Regular wages and salaries', value: wagesAndSalaries });
       }
       if (Math.abs(tipIncome) > 0.01) {
         sources.push({ name: 'Tip income', value: tipIncome });
