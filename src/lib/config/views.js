@@ -3,7 +3,7 @@ export const baseViews = [
   {
     id: 'intro',
     title: "The One Big Beautiful Bill Act, household by household",
-    groupText: "On July 4, President Donald Trump signed into law the One Big Beautiful Bill Act (OBBBA). The bill extended the 2017 tax cuts, enacted additional tax reforms, and reduced spending on programs like Medicaid.<br><br>We've calculated how these changes will affect 40,000 representative households in 2026. As you scroll, you'll see how impacts vary across income levels—with patterns emerging as incomes rise.",
+    groupText: "On July 4, President Donald Trump signed into law the One Big Beautiful Bill Act (OBBBA). The bill extended the 2017 tax cuts, enacted additional tax reforms, and reduced spending on programs like Medicaid.<br><br>We've calculated how these changes will affect 20,000 representative households in 2026. As you scroll, you'll see how impacts vary across income levels—with patterns emerging as incomes rise.",
     view: {
       xDomain: [-20, 20],
       yDomain: [0, 350000],
