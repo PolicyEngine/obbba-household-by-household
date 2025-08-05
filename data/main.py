@@ -31,25 +31,25 @@ def main():
     print("=" * 50)
     baseline_reform = current_law_baseline()
 
-    # print(f"Analyzing {len(reforms)} reform components against Current Law baseline:")
-    # for i, reform_name in enumerate(reforms.keys(), 1):
-    #     print(f"  {i}. {reform_name}")
-    # print()
+    print(f"Analyzing {len(reforms)} reform components against Current Law baseline:")
+    for i, reform_name in enumerate(reforms.keys(), 1):
+        print(f"  {i}. {reform_name}")
+    print()
 
-    # # Calculate household-level impacts with Current Law baseline
-    # df_current_law = calculate_stacked_household_impacts(
-    #     reforms=reforms, baseline_reform=baseline_reform, year=2026
-    # )
+    # Calculate household-level impacts with Current Law baseline
+    df_current_law = calculate_stacked_household_impacts(
+        reforms=reforms, baseline_reform=baseline_reform, year=2026
+    )
 
-    # # Save Current Law baseline results
-    # output_file_current_law = "household_tax_income_changes_current_law_baseline.csv"
-    # df_current_law.to_csv(output_file_current_law, index=False)
-    # print(f"\nSaved Current Law baseline results to '{output_file_current_law}'")
-    # print(f"Total households analyzed: {len(df_current_law):,}")
+    # Save Current Law baseline results
+    output_file_current_law = "household_tax_income_changes_current_law_baseline.csv"
+    df_current_law.to_csv(output_file_current_law, index=False)
+    print(f"\nSaved Current Law baseline results to '{output_file_current_law}'")
+    print(f"Total households analyzed: {len(df_current_law):,}")
 
-    # # Display sample results
-    # print(f"\nFirst 5 rows of Current Law baseline results:")
-    # print(df_current_law.head())
+    # Display sample results
+    print(f"\nFirst 5 rows of Current Law baseline results:")
+    print(df_current_law.head())
 
     # Senate Finance analysis with Current Law baseline
     print("\n" + "=" * 40)
@@ -84,20 +84,20 @@ def main():
         print(f"  {i}. {reform_name}")
     print()
 
-    # Calculate household-level impacts with TCJA baseline
-    # df_tcja = calculate_stacked_household_impacts(
-    #     reforms=reforms, baseline_reform=tcja_baseline_reform, year=2026
-    # )
+    Calculate household-level impacts with TCJA baseline
+    df_tcja = calculate_stacked_household_impacts(
+        reforms=reforms, baseline_reform=tcja_baseline_reform, year=2026
+    )
 
-    # # Save TCJA baseline results
-    # output_file_tcja = "household_tax_income_changes_tcja_baseline.csv"
-    # df_tcja.to_csv(output_file_tcja, index=False)
-    # print(f"\nSaved TCJA baseline results to '{output_file_tcja}'")
-    # print(f"Total households analyzed: {len(df_tcja):,}")
+    # Save TCJA baseline results
+    output_file_tcja = "household_tax_income_changes_tcja_baseline.csv"
+    df_tcja.to_csv(output_file_tcja, index=False)
+    print(f"\nSaved TCJA baseline results to '{output_file_tcja}'")
+    print(f"Total households analyzed: {len(df_tcja):,}")
 
-    # # Display sample results
-    # print(f"\nFirst 5 rows of TCJA baseline results:")
-    # print(df_tcja.head())
+    # Display sample results
+    print(f"\nFirst 5 rows of TCJA baseline results:")
+    print(df_tcja.head())
 
     # Senate Finance analysis with TCJA baseline
     print("\n" + "=" * 40)
