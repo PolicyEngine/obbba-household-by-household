@@ -295,6 +295,11 @@
         name: 'Medicaid reform', 
         key: 'Change in net income after Medicaid reform',
         description: 'Changes to Medicaid eligibility and coverage, including potential work requirements and funding modifications.'
+      },
+      { 
+        name: 'ACA reform', 
+        key: 'Change in net income after ACA reform',
+        description: 'Changes to ACA eligibility and coverage, including potential work requirements and funding modifications.'
       }
     ];
     
