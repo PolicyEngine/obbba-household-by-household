@@ -375,10 +375,10 @@ def calculate_stacked_household_impacts(reforms, baseline_reform, year):
         net_income_change = reformed_net_income - previous_net_income
 
         # Store results
-        results[f"Change in Federal tax liability after {reform_name}"] = tax_change
-        results[f"Change in State tax liability after {reform_name}"] = state_tax_change
-        results[f"Change in Benefits after {reform_name}"] = benefits_change
-        results[f"Change in Net income after {reform_name}"] = net_income_change
+        results[f"Change in federal tax liability after {reform_name}"] = tax_change
+        results[f"Change in state tax liability after {reform_name}"] = state_tax_change
+        results[f"Change in benefits after {reform_name}"] = benefits_change
+        results[f"Change in net income after {reform_name}"] = net_income_change
 
         # Update previous values for next iteration
         previous_income_tax = reformed_income_tax.copy()
@@ -387,53 +387,53 @@ def calculate_stacked_household_impacts(reforms, baseline_reform, year):
         previous_net_income = reformed_net_income.copy()
 
     # Add final total changes (from baseline to fully reformed)
-    results[f"Total Change in Federal Tax Liability"] = (
+    results[f"Total change in federal tax liability"] = (
         previous_income_tax - baseline_income_tax
     )
-    results[f"Total Change in State Tax Liability"] = (
+    results[f"Total change in state tax liability"] = (
         previous_state_income_tax - state_income_tax
     )
-    results[f"Total Change in Benefits"] = previous_total_benefits - total_benefits
-    results[f"Total Change in Net Income"] = previous_net_income - baseline_net_income
+    results[f"Total change in benefits"] = previous_total_benefits - total_benefits
+    results[f"Total change in net income"] = previous_net_income - baseline_net_income
 
     # Calculate percentage changes
     # For tax: handle cases where baseline tax is zero or negative
     pct_tax_change = np.zeros_like(baseline_income_tax)
     mask = baseline_income_tax != 0
     pct_tax_change[mask] = (
-        results[f"Total Change in Federal Tax Liability"][mask]
+        results[f"Total change in federal tax liability"][mask]
         / np.abs(baseline_income_tax[mask])
     ) * 100
 
-    results[f"Percentage Change in Federal Tax Liability"] = pct_tax_change
+    results[f"Percentage change in federal tax liability"] = pct_tax_change
 
     # For net income: handle cases where baseline net income is zero
     pct_net_income_change = np.zeros_like(baseline_net_income)
     mask = baseline_net_income != 0
     pct_net_income_change[mask] = (
-        results[f"Total Change in Net Income"][mask] / np.abs(baseline_net_income[mask])
+        results[f"Total change in net income"][mask] / np.abs(baseline_net_income[mask])
     ) * 100
 
-    results[f"Percentage Change in Net Income"] = pct_net_income_change
+    results[f"Percentage change in net income"] = pct_net_income_change
 
     # Calculate percentage changes for state tax
     pct_state_tax_change = np.zeros_like(state_income_tax)
     mask = state_income_tax != 0
     pct_state_tax_change[mask] = (
-        results[f"Total Change in State Tax Liability"][mask]
+        results[f"Total change in state tax liability"][mask]
         / np.abs(state_income_tax[mask])
     ) * 100
 
-    results[f"Percentage Change in State Tax Liability"] = pct_state_tax_change
+    results[f"Percentage change in state tax liability"] = pct_state_tax_change
 
     # For benefits: handle cases where baseline benefits is zero
     pct_benefits_change = np.zeros_like(total_benefits)
     mask = total_benefits != 0
     pct_benefits_change[mask] = (
-        results[f"Total Change in Benefits"][mask] / np.abs(total_benefits[mask])
+        results[f"Total change in benefits"][mask] / np.abs(total_benefits[mask])
     ) * 100
 
-    results[f"Percentage Change in Benefits"] = pct_benefits_change
+    results[f"Percentage change in benefits"] = pct_benefits_change
 
     # Create DataFrame
     df = pd.DataFrame(results)
