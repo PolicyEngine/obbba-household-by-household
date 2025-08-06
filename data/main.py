@@ -84,7 +84,7 @@ def main():
         print(f"  {i}. {reform_name}")
     print()
 
-    Calculate household-level impacts with TCJA baseline
+    # Calculate household-level impacts with TCJA baseline
     df_tcja = calculate_stacked_household_impacts(
         reforms=reforms, baseline_reform=tcja_baseline_reform, year=2026
     )
