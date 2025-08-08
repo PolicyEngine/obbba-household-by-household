@@ -128,8 +128,8 @@
     if (headAge) ages.push(Math.round(headAge));
     
     // Add spouse age if married
-    if (household['Is Married'] && household['Age of spouse']) {
-      ages.push(Math.round(household['Age of spouse']));
+    if (household['Is Married'] && household['Age of Spouse']) {
+      ages.push(Math.round(household['Age of Spouse']));
     }
     
     // Add individual dependent ages
@@ -137,7 +137,7 @@
     if (numDependents > 0) {
       // Check for individual dependent ages
       for (let i = 1; i <= numDependents; i++) {
-        const depAge = household[`Age of dependent ${i}`];
+        const depAge = household[`Age of Dependent ${i}`];
         if (depAge && depAge > 0) {
           ages.push(Math.round(depAge));
         }
@@ -171,7 +171,7 @@
     });
     
     // Sort provisions by absolute value of net income impact
-    const provisions = fields.filter(f => f.type === 'provision' && f.key.includes('Net income'));
+    const provisions = fields.filter(f => f.type === 'provision' && f.key.includes('net income'));
     const sortedProvisions = provisions.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
     
     // Return organized data
@@ -188,120 +188,125 @@
     const provisions = [
       { 
         name: 'Rate adjustment', 
-        key: 'Change in Net income after Rate adjustments',
+        key: 'Change in net income after Tax Rate Reform',
         description: 'Permanently extends TCJA individual tax rates, including the 37% top rate. Rates are 10%, 12%, 22%, 24%, 32%, 35%, and 37%.'
       },
       { 
         name: 'Standard deduction increase', 
-        key: 'Change in Net income after Standard deduction increase',
+        key: 'Change in net income after Standard Deduction Reform',
         description: 'Increases the standard deduction by $750 for single filers and $1,500 for married filing jointly, building on the TCJA amounts.'
       },
       { 
         name: 'Exemption repeal', 
-        key: 'Change in Net income after Exemption repeal',
+        key: 'Change in net income after Exemption Reform',
         description: 'Continues TCJA\'s repeal of personal exemptions, which were $4,050 per person before 2018.'
       },
       { 
         name: 'Child tax credit social security number requirement', 
-        key: 'Change in Net income after Child tax credit social security number requirement',
+        key: 'Change in net income after Child tax credit social security number requirement',
         description: 'Requires work-eligible SSNs for both the child and at least one parent claiming the credit. Affects mixed-status families.'
       },
       { 
         name: 'Child tax credit expansion', 
-        key: 'Change in Net income after Child tax credit expansion',
+        key: 'Change in net income after Child tax credit expansion',
         description: 'Increases child tax credit from $2,000 to $2,200 per child, with inflation indexing starting in 2026. Refundable portion remains at $1,700.'
       },
       { 
         name: 'Qualified Business Income Deduction Reform', 
-        key: 'Change in Net income after Qualified business interest deduction reform',
+        key: 'Change in net income after Qualified business interest deduction reform',
         description: 'Makes permanent the 20% deduction for pass-through entities. Expands phase-in limits to $75,000 ($150,000 joint) with $400 minimum deduction.'
       },
       { 
         name: 'Alternative minimum tax reform', 
-        key: 'Change in Net income after Alternative minimum tax reform',
+        key: 'Change in net income after Alternative minimum tax reform',
         description: 'AMT exemption: $88,100 (single)/$137,000 (joint) for 2025. Starting 2026: phaseout at $500K/$1M with 50% phaseout rate.'
       },
       { 
         name: 'Miscellaneous deduction reform', 
-        key: 'Change in Net income after Miscellaneous deduction reform',
+        key: 'Change in net income after Miscellaneous deduction reform',
         description: 'Continues suspension of miscellaneous itemized deductions subject to 2% AGI floor, including unreimbursed employee expenses.'
       },
       { 
         name: 'Charitable deductions reform', 
-        key: 'Change in Net income after Charitable deductions reform',
+        key: 'Change in net income after Charitable deductions reform',
         description: 'Introduces 0.5% of AGI floor on charitable contributions, reducing deductible amounts. 37% bracket taxpayers limited to 35% benefit.'
       },
       { 
         name: 'Casualty loss deduction repeal', 
-        key: 'Change in Net income after Casualty loss deduction repeal',
+        key: 'Change in net income after Casualty loss deduction repeal',
         description: 'Continues limitation of casualty loss deductions to federally declared disaster areas only.'
       },
       { 
         name: 'Pease repeal', 
-        key: 'Change in Net income after Pease repeal',
+        key: 'Change in net income after Pease repeal',
         description: 'Maintains repeal of Pease limitation that previously reduced itemized deductions for high-income taxpayers by 3% of excess AGI.'
       },
       { 
         name: 'Limitation on itemized deductions reform', 
-        key: 'Change in Net income after Limitation on itemized deductions reform',
+        key: 'Change in net income after Limitation on itemized deductions reform',
         description: 'New limitation caps itemized deduction benefit at 35% of taxable income for taxpayers in 37% bracket.'
       },
       { 
         name: 'Estate tax reform', 
-        key: 'Change in Net income after Estate tax reform',
+        key: 'Change in net income after Estate tax reform',
         description: 'Increases estate and gift tax exemption to $15 million per person ($30 million per couple), indexed for inflation.'
       },
       { 
         name: 'New senior deduction', 
-        key: 'Change in Net income after New senior deduction',
+        key: 'Change in net income after New senior deduction',
         description: 'New $6,000 deduction for taxpayers age 65+, available 2025-2028. Reduces taxable income regardless of itemization.'
       },
       { 
         name: 'Tip exemption', 
-        key: 'Change in Net income after Tip exemption',
+        key: 'Change in net income after Tip exemption',
         description: 'Deduction up to $25,000 for tip income, 2025-2028. Tips remain reportable income but receive federal tax deduction.'
       },
       { 
         name: 'Overtime exemption', 
-        key: 'Change in Net income after Overtime exemption',
+        key: 'Change in net income after Overtime exemption',
         description: 'Deduction for overtime premium pay (the extra 50% only, not base wage) up to $12,500 for individuals or $25,000 for joint filers, 2025-2028.'
       },
       { 
         name: 'Auto loan interest deduction', 
-        key: 'Change in Net income after Auto loan interest deduction',
+        key: 'Change in net income after Auto loan interest deduction',
         description: 'Deduction up to $10,000 for auto loan interest, 2025-2028. Applies to qualifying vehicle loans.'
       },
       { 
         name: 'Cap on State and Local Tax Deduction', 
-        key: 'Change in Net income after Cap on state and local tax deduction',
+        key: 'Change in net income after Cap on state and local tax deduction',
         description: 'SALT deduction cap increases to $40,000 for taxpayers earning under $500,000, indexed annually. Reverts to $10,000 in 2030.'
       },
       { 
         name: 'Child and Dependent Care Credit Reform', 
-        key: 'Change in Net income after Child and dependent care credit reform',
+        key: 'Change in net income after Child and dependent care credit reform',
         description: 'Modifies child and dependent care credit structure and income phaseouts. Credit remains nonrefundable.'
       },
       { 
         name: 'Extension of ACA enhanced subsidies', 
-        key: 'Change in Net income after Extension of ACA enhanced subsidies',
+        key: 'Change in net income after Extension of ACA enhanced subsidies',
         description: 'Extends enhanced premium tax credits from American Rescue Plan, maintaining lower health insurance costs for eligible households.'
       },
       { 
         name: 'SNAP reform', 
-        key: 'Change in Net income after SNAP reform',
+        key: 'Change in net income after SNAP reform',
         description: 'Modifies SNAP (food stamp) eligibility and benefit calculations, potentially affecting household food assistance.'
       },
       { 
         name: 'Medicaid reform', 
-        key: 'Change in Net income after Medicaid reform',
+        key: 'Change in net income after Medicaid reform',
         description: 'Changes to Medicaid eligibility and coverage, including potential work requirements and funding modifications.'
+      },
+      { 
+        name: 'ACA reform', 
+        key: 'Change in net income after ACA reform',
+        description: 'Changes to ACA eligibility and coverage, including potential work requirements and funding modifications.'
       }
     ];
     
     return provisions
       .map((provision, index) => {
         // Extract the provision suffix from the key
-        const suffix = provision.key.replace('Change in Net income after ', '');
+        const suffix = provision.key.replace('Change in net income after ', '');
         
         return {
           name: provision.name,
@@ -309,9 +314,9 @@
           index: index,
           description: provision.description,
           // Automatically generate the federal, state, and benefits keys
-          federalChange: household[`Change in Federal tax liability after ${suffix}`] || 0,
-          stateChange: household[`Change in State tax liability after ${suffix}`] || 0,
-          benefitsChange: household[`Change in Benefits after ${suffix}`] || 0
+          federalChange: household[`Change in federal tax liability after ${suffix}`] || 0,
+          stateChange: household[`Change in state tax liability after ${suffix}`] || 0,
+          benefitsChange: household[`Change in benefits after ${suffix}`] || 0
         };
       })
       .filter(p => Math.abs(p.value) > 0.01);
@@ -322,16 +327,16 @@
   // Calculate total federal, state, and benefits changes
   $: totalFederalChange = household ? (household['Total change in federal tax liability'] || 0) : 0;
   $: totalStateChange = household ? (household['Total change in state tax liability'] || 0) : 0;
-  $: totalBenefitsChange = household ? (household['Total Change in Benefits'] || 0) : 0;
+  $: totalBenefitsChange = household ? (household['Total change in benefits'] || 0) : 0;
   
   // Get income sources breakdown
   function getIncomeSources(household) {
     if (!household) return [];
     
     // Get individual income components
-    const employmentIncome = household['Employment income'] || 0;
-    const tipIncome = household['Tip income'] || 0;
-    const overtimeIncome = household['Overtime income'] || 0;
+    const employmentIncome = household['Employment Income'] || 0;
+    const tipIncome = household['Tip Income'] || 0;
+    const overtimeIncome = household['Overtime Income'] || 0;
     
     // Calculate wages and salaries (employment minus tips and overtime)
     const wagesAndSalaries = employmentIncome - tipIncome - overtimeIncome;
@@ -353,14 +358,14 @@
     
     // Add other income sources
     sources.push(
-      { name: 'Self-employment income', value: household['Self-employment income'] || 0 },
-      { name: 'Capital gains', value: household['Capital gains'] || 0 },
-      { name: 'Dividend income', value: household['Dividend income'] || 0 },
-      { name: 'Interest income', value: household['Taxable interest income'] || 0 },
-      { name: 'Rental income', value: household['rental income'] || 0 },
-      { name: 'Farm income', value: household['Farm income'] || 0 },
-      { name: 'Pension income', value: household['Taxable pension income'] || 0 },
-      { name: 'Retirement distributions', value: household['Taxable retirement distributions'] || 0 },
+      { name: 'Self-employment income', value: household['Self-Employment Income'] || 0 },
+      { name: 'Capital gains', value: household['Capital Gains'] || 0 },
+      { name: 'Dividend income', value: household['Dividend Income'] || 0 },
+      { name: 'Interest income', value: household['Taxable Interest Income'] || 0 },
+      { name: 'Rental income', value: household['Rental Income'] || 0 },
+      { name: 'Farm income', value: household['Farm Income'] || 0 },
+      { name: 'Pension income', value: household['Taxable Pension Income'] || 0 },
+      { name: 'Retirement distributions', value: household['Taxable Retirement Distributions'] || 0 },
       { name: 'Social Security', value: household['Taxable Social Security'] || 0 },
       { name: 'Unemployment compensation', value: household['Taxable Unemployment Compensation'] || 0 }
     );

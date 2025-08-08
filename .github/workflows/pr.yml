@@ -73,7 +73,7 @@ jobs:
           const comment = `🚀 **Preview Build Ready**
           
           A preview build has been created for this PR. It will be available at:
-          \`https://policyengine.github.io/obbba-scatter/pr-preview/pr-${prNumber}\`
+          \`https://policyengine.github.io/obbba-household-by-household/pr-preview/pr-${prNumber}\`
           
           Note: The preview URL will be active after the PR is merged and deployed.`;
           

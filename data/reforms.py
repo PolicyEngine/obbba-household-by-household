@@ -256,15 +256,6 @@ def tcja_reform():
             "gov.irs.deductions.itemized.interest.mortgage.cap.HEAD_OF_HOUSEHOLD": {
                 "2026-01-01.2100-12-31": 750000
             },
-            "gov.aca.ptc_phase_out_rate[0].amount": {"2026-01-01.2100-12-31": 0},
-            "gov.aca.ptc_phase_out_rate[1].amount": {"2025-01-01.2100-12-31": 0},
-            "gov.aca.ptc_phase_out_rate[2].amount": {"2026-01-01.2100-12-31": 0},
-            "gov.aca.ptc_phase_out_rate[3].amount": {"2026-01-01.2100-12-31": 0.02},
-            "gov.aca.ptc_phase_out_rate[4].amount": {"2026-01-01.2100-12-31": 0.04},
-            "gov.aca.ptc_phase_out_rate[5].amount": {"2026-01-01.2100-12-31": 0.06},
-            "gov.aca.ptc_phase_out_rate[6].amount": {"2026-01-01.2100-12-31": 0.085},
-            "gov.aca.ptc_income_eligibility[2].amount": {"2026-01-01.2100-12-31": True},
-            "gov.aca.ptc_phase_out_rate[1].threshold": {"2026-01-01.2100-12-31": 0},
         },
         country_id="us",
     )
@@ -639,25 +630,6 @@ def hr1_salt_reform():
     )
 
 
-def aca_enhanced_subsidies_reform():
-    return Reform.from_dict(
-        {
-            "gov.aca.ptc_phase_out_rate[0].amount": {"2026-01-01.2100-12-31": 0.02},
-            "gov.aca.ptc_phase_out_rate[1].threshold": {"2026-01-01.2100-12-31": 1.33},
-            "gov.aca.ptc_phase_out_rate[1].amount": {"2025-01-01.2100-12-31": 0.03},
-            "gov.aca.ptc_phase_out_rate[2].amount": {"2026-01-01.2100-12-31": 0.04},
-            "gov.aca.ptc_phase_out_rate[3].amount": {"2026-01-01.2100-12-31": 0.063},
-            "gov.aca.ptc_phase_out_rate[4].amount": {"2026-01-01.2100-12-31": 0.0805},
-            "gov.aca.ptc_phase_out_rate[5].amount": {"2026-01-01.2100-12-31": 0.095},
-            "gov.aca.ptc_phase_out_rate[6].amount": {"2026-01-01.2100-12-31": 0.095},
-            "gov.aca.ptc_income_eligibility[2].amount": {
-                "2026-01-01.2100-12-31": False
-            },
-        },
-        country_id="us",
-    )
-
-
 def snap_takeup_reform():
     return Reform.from_dict(
         {
@@ -703,7 +675,6 @@ def get_all_reforms():
         "Overtime Income Exempt": hr1_overtime_reform(),
         "Auto Loan Interest ALD": hr1_auto_loan_reform(),
         "SALT Reform": hr1_salt_reform(),
-        "ACA Enhanced Subsidies Reform": aca_enhanced_subsidies_reform(),
         "SNAP Takeup Reform": snap_takeup_reform(),
         "ACA Takeup Reform": aca_takeup_reform(),
         "Medicaid Takeup Reform": medicaid_takeup_reform(),
@@ -1323,11 +1294,23 @@ def senate_finance_exemption_reform():
     )
 
 
-def senate_finance_ctc_reform():
+def senate_finance_ctc_ssn_reform():
     """Child Tax Credit reforms from Senate Finance package."""
     return Reform.from_dict(
         {
             "gov.contrib.reconciliation.ctc.in_effect": {"2025-01-01.2100-12-31": True},
+            "gov.contrib.reconciliation.ctc.one_person_ssn_req": {
+                "2025-01-01.2100-12-31": True
+            },
+        },
+        country_id="us",
+    )
+
+
+def senate_finance_ctc_expansion_reform():
+    """Child Tax Credit reforms from Senate Finance package."""
+    return Reform.from_dict(
+        {
             "gov.irs.credits.ctc.amount.base[0].amount": {
                 "2025-01-01.2026-12-31": 2200,
                 "2027-01-01.2028-12-31": 2300,
@@ -1355,9 +1338,6 @@ def senate_finance_ctc_reform():
             "gov.irs.credits.ctc.phase_out.threshold.SEPARATE": {
                 "2026-01-01.2100-12-31": 200000
             },
-            "gov.contrib.reconciliation.ctc.one_person_ssn_req": {
-                "2025-01-01.2100-12-31": True
-            },
             "gov.irs.credits.ctc.refundable.phase_in.threshold": {
                 "2026-01-01.2100-12-31": 2500
             },
@@ -1370,7 +1350,6 @@ def senate_finance_ctc_reform():
         },
         country_id="us",
     )
-
 
 def senate_finance_qbid_reform():
     """Qualified Business Income Deduction reform from Senate Finance package."""
@@ -1450,20 +1429,10 @@ def senate_finance_misc_reform():
         country_id="us",
     )
 
-
-def senate_finance_other_item_reform():
+def senate_finance_charitable_ded_reform():
     """Other itemized deductions reforms from Senate Finance package."""
     return Reform.from_dict(
         {
-            "gov.irs.deductions.itemized.interest.mortgage.cap.JOINT": {
-                "2026-01-01.2100-12-31": 750000
-            },
-            "gov.irs.deductions.itemized.interest.mortgage.cap.SINGLE": {
-                "2026-01-01.2100-12-31": 750000
-            },
-            "gov.irs.deductions.itemized.interest.mortgage.cap.SEPARATE": {
-                "2026-01-01.2100-12-31": 375000
-            },
             "gov.irs.deductions.itemized.charity.non_itemizers_amount.JOINT": {
                 "2026-01-01.2100-12-31": 2000
             },
@@ -1473,20 +1442,11 @@ def senate_finance_other_item_reform():
             "gov.irs.deductions.itemized.charity.non_itemizers_amount.SEPARATE": {
                 "2026-01-01.2100-12-31": 1000
             },
-            "gov.irs.deductions.itemized.interest.mortgage.cap.SURVIVING_SPOUSE": {
-                "2026-01-01.2100-12-31": 750000
-            },
-            "gov.irs.deductions.itemized.interest.mortgage.cap.HEAD_OF_HOUSEHOLD": {
-                "2026-01-01.2100-12-31": 750000
-            },
             "gov.irs.deductions.itemized.charity.non_itemizers_amount.SURVIVING_SPOUSE": {
                 "2026-01-01.2100-12-31": 1000
             },
             "gov.irs.deductions.itemized.charity.non_itemizers_amount.HEAD_OF_HOUSEHOLD": {
                 "2026-01-01.2100-12-31": 1000
-            },
-            "gov.irs.deductions.itemized.casualty.active": {
-                "2026-01-01.2100-12-31": False
             },
             "gov.irs.deductions.itemized.charity.ceiling.all": {
                 "2026-01-01.2100-12-31": 0.6
@@ -1500,6 +1460,26 @@ def senate_finance_other_item_reform():
         },
         country_id="us",
     )
+
+def senate_finance_casualty_loss_reform():
+    """Other itemized deductions reforms from Senate Finance package."""
+    return Reform.from_dict(
+        {
+            "gov.irs.deductions.itemized.casualty.active": {
+                "2026-01-01.2100-12-31": False
+            },
+        },
+        country_id="us",
+    )
+
+def senate_finance_pease_repeal_reform():
+    """PEASE repeal reform from Senate Finance package."""
+    return Reform.from_dict(
+        {"gov.irs.deductions.itemized.reduction.applies": {"2026-01-01.2100-12-31": False}},
+        country_id="us",
+    )
+
+
 
 
 def senate_finance_limitation_on_itemized_deductions_reform():
@@ -1632,25 +1612,6 @@ def senate_finance_cdcc_reform():
     )
 
 
-def senate_finance_aca_enhanced_subsidies_reform():
-    return Reform.from_dict(
-        {
-            "gov.aca.ptc_phase_out_rate[0].amount": {"2026-01-01.2100-12-31": 0.02},
-            "gov.aca.ptc_phase_out_rate[1].threshold": {"2026-01-01.2100-12-31": 1.33},
-            "gov.aca.ptc_phase_out_rate[1].amount": {"2025-01-01.2100-12-31": 0.03},
-            "gov.aca.ptc_phase_out_rate[2].amount": {"2026-01-01.2100-12-31": 0.04},
-            "gov.aca.ptc_phase_out_rate[3].amount": {"2026-01-01.2100-12-31": 0.063},
-            "gov.aca.ptc_phase_out_rate[4].amount": {"2026-01-01.2100-12-31": 0.0805},
-            "gov.aca.ptc_phase_out_rate[5].amount": {"2026-01-01.2100-12-31": 0.095},
-            "gov.aca.ptc_phase_out_rate[6].amount": {"2026-01-01.2100-12-31": 0.095},
-            "gov.aca.ptc_income_eligibility[2].amount": {
-                "2026-01-01.2100-12-31": False
-            },
-        },
-        country_id="us",
-    )
-
-
 def senate_finance_snap_takeup_reform():
     return Reform.from_dict(
         {
@@ -1684,21 +1645,23 @@ def get_all_senate_finance_reforms():
         "Tax Rate Reform": senate_finance_tax_rate_reform(),
         "Standard Deduction Reform": senate_finance_sd_reform(),
         "Exemption Reform": senate_finance_exemption_reform(),
-        "CTC Reform": senate_finance_ctc_reform(),
-        "QBID Reform": senate_finance_qbid_reform(),
-        "AMT Reform": senate_finance_amt_reform(),
-        "Miscellaneous Reform": senate_finance_misc_reform(),
-        "Other Itemized Deductions Reform": senate_finance_other_item_reform(),
-        "Limitation on Itemized Deductions Reform": senate_finance_limitation_on_itemized_deductions_reform(),
-        "Estate Tax Reform": senate_finance_estate_tax_reform(),
-        "Senior Deduction Reform": senate_finance_senior_deduction_reform(),
-        "Tip Income Exempt": senate_finance_tip_reform(),
-        "Overtime Income Exempt": senate_finance_overtime_reform(),
-        "Auto Loan Interest ALD": senate_finance_auto_loan_reform(),
-        "SALT Reform": senate_finance_salt_reform(),
-        "CDCC Reform": senate_finance_cdcc_reform(),
-        "ACA Enhanced Subsidies Reform": senate_finance_aca_enhanced_subsidies_reform(),
-        "SNAP Takeup Reform": senate_finance_snap_takeup_reform(),
-        "ACA Takeup Reform": senate_finance_aca_takeup_reform(),
-        "Medicaid Takeup Reform": senate_finance_medicaid_takeup_reform(),
+        "Child tax credit social security number requirement": senate_finance_ctc_ssn_reform(),
+        "Child tax credit expansion": senate_finance_ctc_expansion_reform(),
+        "Qualified business interest deduction reform": senate_finance_qbid_reform(),
+        "Alternative minimum tax reform": senate_finance_amt_reform(),
+        "Miscellaneous deduction reform": senate_finance_misc_reform(),
+        "Charitable deductions reform": senate_finance_charitable_ded_reform(),
+        "Casualty loss deduction repeal": senate_finance_casualty_loss_reform(),
+        "Pease repeal": senate_finance_pease_repeal_reform(),
+        "Limitation on itemized deductions reform": senate_finance_limitation_on_itemized_deductions_reform(),
+        "Estate tax reform": senate_finance_estate_tax_reform(),
+        "New senior deduction": senate_finance_senior_deduction_reform(),
+        "Tip exemption": senate_finance_tip_reform(),
+        "Overtime exemption": senate_finance_overtime_reform(),
+        "Auto loan interest deduction": senate_finance_auto_loan_reform(),
+        "Cap on state and local tax deduction": senate_finance_salt_reform(),
+        "Child and dependent care credit reform": senate_finance_cdcc_reform(),
+        "SNAP reform": senate_finance_snap_takeup_reform(),
+        "ACA reform": senate_finance_aca_takeup_reform(),
+        "Medicaid reform": senate_finance_medicaid_takeup_reform(),
     }

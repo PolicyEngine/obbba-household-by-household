@@ -36,13 +36,13 @@ jobs:
     - name: Create release archive
       run: |
         cd build
-        zip -r ../obbba-scatter-${{ github.ref_name }}.zip .
+        zip -r ../obbba-household-by-household-${{ github.ref_name }}.zip .
         cd ..
     
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        files: obbba-scatter-${{ github.ref_name }}.zip
+        files: obbba-household-by-household-${{ github.ref_name }}.zip
         generate_release_notes: true
         draft: false
         prerelease: false
