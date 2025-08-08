@@ -108,12 +108,21 @@
               <td colspan="2">Basic Information</td>
             </tr>
             {#each categorizedData.basicInfo as [key, value], index}
-              <tr>
-                <td class="key-column">{key}</td>
-                <td class="value-column">
-                  <span id="table-basic-{index}">{formatValue(key, value)}</span>
-                </td>
-              </tr>
+              {#if key === 'Is Married'}
+                <tr>
+                  <td class="key-column">Marital status</td>
+                  <td class="value-column">
+                    <span id="table-basic-{index}">{value ? 'Married' : 'Single'}</span>
+                  </td>
+                </tr>
+              {:else}
+                <tr>
+                  <td class="key-column">{key}</td>
+                  <td class="value-column">
+                    <span id="table-basic-{index}">{formatValue(key, value)}</span>
+                  </td>
+                </tr>
+              {/if}
             {/each}
           {/if}
           

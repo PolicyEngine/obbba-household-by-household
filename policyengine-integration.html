@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PolicyEngine Integration Example</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        #app-container {
+            width: 100%;
+            height: 100vh;
+            position: relative;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="app-container">
+        <iframe id="obbba-iframe" src=""></iframe>
+    </div>
+
+    <script>
+        // Get the iframe element
+        const iframe = document.getElementById('obbba-iframe');
+        
+        // Function to update iframe src with current URL parameters
+        function updateIframeSrc() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const baseUrl = '/us/obbba-household-by-household/'; // Or full URL for PolicyEngine
+            
+            // Pass URL parameters to iframe
+            const fullUrl = baseUrl + (urlParams.toString() ? '?' + urlParams.toString() : '');
+            iframe.src = fullUrl;
+            
+            console.log('Updated iframe src to:', fullUrl);
+        }
+        
+        // Function to extract parameters from current URL and sync with iframe
+        function syncParameters() {
+            // Check for parameters in current URL
+            const currentParams = new URLSearchParams(window.location.search);
+            console.log('Current page parameters:', currentParams.toString());
+            
+            // Always update iframe with current parameters
+            updateIframeSrc();
+        }
+        
+        // Initial load
+        syncParameters();
+        
+        // Listen for URL changes (e.g., from browser back/forward)
+        window.addEventListener('popstate', (event) => {
+            console.log('Browser navigation detected, syncing parameters');
+            syncParameters();
+        });
+        
+        // Listen for messages from the iframe
+        window.addEventListener('message', (event) => {
+            console.log('Received message from iframe:', event.data);
+            
+            if (event.data?.type === 'urlUpdate') {
+                // Update parent URL when iframe URL changes
+                const newUrl = new URL(window.location);
+                
+                // Clear existing parameters and set new ones
+                newUrl.search = '';
+                if (event.data.params) {
+                    newUrl.search = '?' + event.data.params;
+                }
+                
+                // Update parent URL without triggering a page reload
+                window.history.pushState({}, '', newUrl);
+                console.log('Updated parent URL to:', newUrl.toString());
+            } else if (event.data?.type === 'requestUrlParams') {
+                // Send current URL parameters to iframe
+                console.log('Iframe requested URL params, sending:', window.location.search);
+                iframe.contentWindow.postMessage({
+                    type: 'urlParams',
+                    params: window.location.search
+                }, '*');
+            }
+        });
+        
+        // Handle the case where URL parameters are added after initial load
+        // This simulates what would happen when someone clicks a deep link
+        function handleDeepLink(params) {
+            const url = new URL(window.location);
+            const paramObj = new URLSearchParams(params);
+            
+            // Update URL with new parameters
+            for (const [key, value] of paramObj) {
+                url.searchParams.set(key, value);
+            }
+            
+            window.history.pushState({}, '', url);
+            syncParameters();
+        }
+        
+        // Example function to test deep links programmatically
+        window.testDeepLink = function(household, baseline = 'tcja-expiration') {
+            const params = `household=${household}&baseline=${baseline}`;
+            console.log('Testing deep link with params:', params);
+            handleDeepLink(params);
+        };
+        
+        // For debugging: expose sync function globally
+        window.syncParameters = syncParameters;
+        
+        // Example deep links that should work:
+        // https://policyengine.org/us/obbba-household-by-household?household=39519&baseline=tcja-expiration
+        // https://policyengine.org/us/obbba-household-by-household?household=12345&baseline=tcja-extension
+        
+        console.log('PolicyEngine integration ready. Test with: testDeepLink(39519, "tcja-expiration")');
+    </script>
+</body>
+</html> 

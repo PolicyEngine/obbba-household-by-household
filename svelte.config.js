@@ -11,7 +11,8 @@ const config = {
 			strict: false
 		}),
 		paths: {
-			base: '/obbba-scatter'
+			// Use environment variable or fallback to GitHub Pages path
+			base: process.env.BASE_PATH || '/obbba-household-by-household'
 		}
 	}
 };

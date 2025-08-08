@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test PolicyEngine Deep Links</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-links {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-links h2 {
+            margin-top: 0;
+        }
+        .test-links a {
+            display: block;
+            margin: 10px 0;
+            color: #0066cc;
+            text-decoration: none;
+        }
+        .test-links a:hover {
+            text-decoration: underline;
+        }
+        .iframe-container {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: 800px;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .status {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status-item {
+            margin: 5px 0;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .highlight {
+            background: #ffeb3b;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test PolicyEngine Deep Links</h1>
+        
+        <div class="status" id="status">
+            <h3>Current Status</h3>
+            <div class="status-item">Parent URL: <span id="parent-url"></span></div>
+            <div class="status-item">Iframe URL: <span id="iframe-url"></span></div>
+            <div class="status-item">Parameters: <span id="params"></span></div>
+        </div>
+        
+        <div class="test-links">
+            <h2>Test Deep Links (click to test)</h2>
+            <a href="?household=39519&baseline=tcja-expiration">
+                Test Link 1: Household 39519 with TCJA Expiration
+            </a>
+            <a href="?household=12345&baseline=tcja-extension">
+                Test Link 2: Household 12345 with TCJA Extension
+            </a>
+            <a href="?household=67890">
+                Test Link 3: Household 67890 (default baseline)
+            </a>
+            <a href="?">
+                Test Link 4: No parameters (reset)
+            </a>
+        </div>
+        
+        <div class="iframe-container">
+            <iframe id="app-iframe" src=""></iframe>
+        </div>
+    </div>
+
+    <script>
+        // Configuration - adjust this based on your dev server
+        const IFRAME_BASE_URL = 'http://localhost:5173'; // Your dev server URL
+        
+        const iframe = document.getElementById('app-iframe');
+        const statusElements = {
+            parentUrl: document.getElementById('parent-url'),
+            iframeUrl: document.getElementById('iframe-url'),
+            params: document.getElementById('params')
+        };
+        
+        function updateStatus() {
+            const urlParams = new URLSearchParams(window.location.search);
+            statusElements.parentUrl.textContent = window.location.href;
+            statusElements.iframeUrl.textContent = iframe.src;
+            statusElements.params.innerHTML = urlParams.toString() ? 
+                `<span class="highlight">${urlParams.toString()}</span>` : 
+                '(none)';
+        }
+        
+        function updateIframe() {
+            const urlParams = new URLSearchParams(window.location.search);
+            iframe.src = `${IFRAME_BASE_URL}?${urlParams.toString()}`;
+            updateStatus();
+            
+            console.log('Updated iframe src to:', iframe.src);
+        }
+        
+        // Initial load
+        updateIframe();
+        
+        // Handle browser back/forward
+        window.addEventListener('popstate', updateIframe);
+        
+        // Listen for messages from iframe
+        window.addEventListener('message', (event) => {
+            console.log('Received message from iframe:', event.data);
+            
+            if (event.data?.type === 'urlUpdate') {
+                // Update parent URL when iframe URL changes
+                const newUrl = new URL(window.location);
+                newUrl.search = event.data.params ? '?' + event.data.params : '';
+                window.history.pushState({}, '', newUrl);
+                updateStatus();
+                
+                console.log('Updated parent URL to:', newUrl.toString());
+            } else if (event.data?.type === 'requestUrlParams') {
+                // Send current URL parameters to iframe
+                console.log('Iframe requested URL params, sending:', window.location.search);
+                iframe.contentWindow.postMessage({
+                    type: 'urlParams',
+                    params: window.location.search
+                }, '*');
+            }
+        });
+        
+        // Intercept link clicks to update via JavaScript
+        document.querySelectorAll('.test-links a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const url = new URL(link.href);
+                window.history.pushState({}, '', url);
+                updateIframe();
+            });
+        });
+    </script>
+</body>
+</html> 

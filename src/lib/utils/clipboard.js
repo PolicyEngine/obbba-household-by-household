@@ -20,7 +20,7 @@ export async function copyHouseholdUrl(household, selectedDataset, currentState,
   // Check if we're in an iframe
   if (isInIframe) {
     // We're in an iframe - always use PolicyEngine URL
-    url = new URL('https://policyengine.org/us/obbba-household-explorer');
+    url = new URL('https://policyengine.org/us/obbba-household-by-household');
   } else {
     // Not in iframe, use current location
     url = new URL(window.location.href);
@@ -29,9 +29,6 @@ export async function copyHouseholdUrl(household, selectedDataset, currentState,
   // Set household parameters
   url.searchParams.set('household', household.id);
   url.searchParams.set('baseline', selectedDataset);
-  if (currentState) {
-    url.searchParams.set('section', currentState.id);
-  }
   
   const fullUrl = url.toString();
   console.log('Full URL to copy:', fullUrl);

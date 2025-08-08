@@ -1,12 +1,46 @@
 <script>
+  import { onMount } from 'svelte';
   import { DATASETS } from '../config/datasets.js';
   
   export let selectedDataset = 'tcja-expiration';
-  export let loading = false;
   export let onDatasetChange = () => {};
+  
+
+  
+  let headerEl;
+  let isInIframe = false;
+  
+  onMount(() => {
+    // Check if we're in an iframe
+    isInIframe = window.self !== window.top;
+    
+    // If in iframe, ensure header stays visible on scroll
+    if (isInIframe && headerEl) {
+      // Force the header to stay at the top of the viewport
+      const ensureHeaderVisible = () => {
+        if (headerEl) {
+          headerEl.style.position = 'fixed';
+          headerEl.style.top = '0';
+          headerEl.style.transform = 'translateY(0)';
+        }
+      };
+      
+      // Monitor for any changes that might hide the header
+      window.addEventListener('scroll', ensureHeaderVisible, true);
+      window.addEventListener('resize', ensureHeaderVisible);
+      
+      // Initial call
+      ensureHeaderVisible();
+      
+      return () => {
+        window.removeEventListener('scroll', ensureHeaderVisible, true);
+        window.removeEventListener('resize', ensureHeaderVisible);
+      };
+    }
+  });
 </script>
 
-<header class="floating-header">
+<header class="floating-header" bind:this={headerEl}>
   <div class="header-content">
     <h1 class="app-title">OBBBA Household Explorer</h1>
     <div class="baseline-selector-container">
@@ -17,7 +51,6 @@
             class="tab-button" 
             class:active={selectedDataset === key}
             on:click={() => onDatasetChange(key)}
-            disabled={loading}
           >
             {dataset.label}
           </button>
@@ -28,34 +61,55 @@
 </header>
 
 <style>
-  /* Floating header styles */
-  .floating-header {
-    position: fixed;
+  header {
+    position: sticky;
     top: 0;
     left: 0;
     right: 0;
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
-    z-index: 1000;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    z-index: 9999;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    min-height: 60px;
+    width: 100%;
+    
+    /* Ensure header stays visible even when scrolling */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
   }
-
+  
+  /* Ensure header stays visible when embedded in iframe */
+  :global(body.in-iframe) header {
+    position: fixed !important;
+    top: 0 !important;
+    transform: translateY(0) !important;
+    -webkit-transform: translateY(0) !important;
+  }
+  
   .header-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 48px 16px calc(120px + 48px); /* Match text content margin-left (120px) + padding (48px) */
+    width: 100%;
     max-width: none;
     margin: 0;
+    padding: 0 calc(120px + 3rem) 0 calc(120px + 3rem); /* Symmetric padding to center content */
   }
   
 
   .app-title {
-    font-size: 24px;
+    font-size: 36px !important;
     font-weight: 700;
     color: var(--text-primary);
     margin: 0;
+    line-height: 1.2;
   }
 
   /* Baseline selector container */
@@ -111,40 +165,76 @@
     font-weight: 700;
   }
 
-  .tab-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+
+
+
 
   /* Mobile responsive header */
   @media (max-width: 768px) {
+    header {
+      height: auto; /* Allow height to grow for stacked layout */
+    }
+    
+    .app-title {
+      font-size: 28px !important;
+    }
+    
     .header-content {
-      padding: 12px 16px 12px calc(60px + 24px); /* Match mobile text content margin + padding */
-      flex-direction: column;
-      gap: 12px;
+      padding: 12px;
+      flex-direction: column; /* Stack vertically */
+      align-items: stretch;
+      gap: 10px;
     }
 
     .app-title {
-      font-size: 20px;
+      font-size: 18px;
+      text-align: center;
+      margin: 0;
     }
 
     .baseline-selector-container {
       width: 100%;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 4px;
     }
 
     .baseline-label {
-      font-size: 13px;
+      font-size: 11px;
+      text-align: center;
+      color: var(--text-secondary);
+      margin: 0;
     }
 
     .baseline-selector {
-      flex: 1;
+      flex: 0 1 auto;
       justify-content: center;
+      border-radius: 20px;
+      padding: 2px;
+      margin: 0 auto; /* Center the selector */
+      max-width: 280px; /* Limit width */
+    }
+
+    .tab-button {
+      font-size: 11px;
+      padding: 4px 8px;
+      min-width: 0; /* Allow buttons to shrink */
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .app-title {
+      font-size: 22px !important;
+    }
+
+    .baseline-selector {
+      max-width: 240px; /* Even narrower on small screens */
     }
 
     .tab-button {
       flex: 1;
-      font-size: 13px;
-      padding: 6px 12px;
+      font-size: 10px;
+      padding: 4px 6px;
     }
   }
 </style>
