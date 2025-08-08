@@ -121,11 +121,11 @@ def main():
     print("SUMMARY")
     print("=" * 50)
     print(f"Generated 4 spreadsheets:")
-    print(f"  1. {output_file_current_law} - House reforms vs Current Law baseline")
+    # print(f"  1. {output_file_current_law} - House reforms vs Current Law baseline")
     print(
         f"  2. {senate_output_file_current_law} - Senate reforms vs Current Law baseline"
     )
-    print(f"  3. {output_file_tcja} - House reforms vs TCJA baseline")
+    # print(f"  3. {output_file_tcja} - House reforms vs TCJA baseline")
     print(f"  4. {senate_output_file_tcja} - Senate reforms vs TCJA baseline")
     print(f"\nAnalysis completed at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
