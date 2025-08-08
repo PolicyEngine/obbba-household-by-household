@@ -34,7 +34,7 @@ jobs:
     - name: Build project
       run: npm run build
       env:
-        BASE_PATH: '/obbba-scatter'
+        BASE_PATH: '/obbba-household-by-household'
     
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3

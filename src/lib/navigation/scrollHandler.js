@@ -124,7 +124,7 @@ export function getRandomWeightedHousehold(filteredData) {
   
   // Calculate total weight
   const totalWeight = filteredData.reduce((sum, d) => {
-    const weight = d['Household weight'] || d['Household Weight'] || 1;
+    const weight = d['Household weight'] || d['Household weight'] || 1;
     return sum + weight;
   }, 0);
   
@@ -134,7 +134,7 @@ export function getRandomWeightedHousehold(filteredData) {
   // Find household at that weight point
   let cumulativeWeight = 0;
   for (const household of filteredData) {
-    const weight = household['Household weight'] || household['Household Weight'] || 1;
+    const weight = household['Household weight'] || household['Household weight'] || 1;
     cumulativeWeight += weight;
     if (cumulativeWeight >= randomWeight) {
       return household;

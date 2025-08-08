@@ -20,7 +20,7 @@ export async function copyHouseholdUrl(household, selectedDataset, currentState,
   // Check if we're in an iframe
   if (isInIframe) {
     // We're in an iframe - always use PolicyEngine URL
-    url = new URL('https://policyengine.org/us/obbba-household-explorer');
+    url = new URL('https://policyengine.org/us/obbba-household-by-household');
   } else {
     // Not in iframe, use current location
     url = new URL(window.location.href);

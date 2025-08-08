@@ -19,6 +19,12 @@ dist-ssr
 build/
 /build
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -29,3 +35,6 @@ build/
 *.njsproj
 *.sln
 *.sw?
+
+# Test coverage
+coverage/

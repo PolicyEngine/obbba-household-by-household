@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test PolicyEngine Production Iframe</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #ccc;
+            margin: 10px 0;
+        }
+        .log {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>PolicyEngine Production Iframe Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Direct GitHub Pages URL with Parameters</h2>
+        <p>URL: <code id="url1"></code></p>
+        <iframe id="iframe1"></iframe>
+        <div class="log" id="log1"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: PolicyEngine-style iframe</h2>
+        <p>Simulating how PolicyEngine embeds the iframe</p>
+        <p>URL: <code id="url2"></code></p>
+        <iframe id="iframe2"></iframe>
+        <div class="log" id="log2"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Dynamic Parameter Updates</h2>
+        <button onclick="updateParameters('household=12345&baseline=tcja-extension')">Test household 12345</button>
+        <button onclick="updateParameters('household=67890&baseline=tcja-expiration')">Test household 67890</button>
+        <button onclick="updateParameters('')">Clear parameters</button>
+        <iframe id="iframe3"></iframe>
+        <div class="log" id="log3"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Console Output</h2>
+        <div class="log" id="console-output"></div>
+    </div>
+
+    <script>
+        // Logging utility
+        function log(section, message, type = 'info') {
+            const logDiv = document.getElementById(`log${section}`);
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+            logDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            
+            // Also log to console output
+            const consoleDiv = document.getElementById('console-output');
+            consoleDiv.innerHTML += `<div class="${className}">[${timestamp}] Section ${section}: ${message}</div>`;
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+
+        // Test 1: Direct GitHub Pages URL
+        const directUrl = 'https://policyengine.github.io/obbba-scatter/?household=39519&baseline=tcja-expiration';
+        document.getElementById('url1').textContent = directUrl;
+        document.getElementById('iframe1').src = directUrl;
+        log(1, 'Loading direct GitHub Pages URL with parameters');
+
+        // Test 2: PolicyEngine-style iframe (mimicking their implementation)
+        const baseUrl = 'https://policyengine.github.io/obbba-scatter';
+        const urlParams = new URLSearchParams('household=39519&baseline=tcja-expiration');
+        const policyEngineUrl = urlParams.toString() ? `${baseUrl}?${urlParams.toString()}` : baseUrl;
+        document.getElementById('url2').textContent = policyEngineUrl;
+        document.getElementById('iframe2').src = policyEngineUrl;
+        log(2, 'Loading with PolicyEngine-style URL construction');
+
+        // Test 3: Dynamic updates
+        let currentParams = 'household=39519&baseline=tcja-expiration';
+        function updateParameters(params) {
+            currentParams = params;
+            const iframe3 = document.getElementById('iframe3');
+            const newUrl = params ? `${baseUrl}?${params}` : baseUrl;
+            iframe3.src = newUrl;
+            log(3, `Updated iframe URL to: ${newUrl}`);
+        }
+        updateParameters(currentParams);
+
+        // Listen for messages from iframes
+        window.addEventListener('message', (event) => {
+            // Log all messages for debugging
+            console.log('Received message:', event);
+            
+            if (event.origin === 'https://policyengine.github.io') {
+                log('console', `Message from iframe: ${JSON.stringify(event.data)}`, 'success');
+                
+                // Handle URL update messages
+                if (event.data?.type === 'urlUpdate') {
+                    log('console', `URL update requested: ${event.data.params}`, 'success');
+                }
+            }
+        });
+
+        // Test iframe load status
+        document.querySelectorAll('iframe').forEach((iframe, index) => {
+            iframe.addEventListener('load', () => {
+                log(index + 1, 'Iframe loaded successfully', 'success');
+                
+                // Try to access iframe content (will fail for cross-origin)
+                try {
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                    log(index + 1, 'Can access iframe content (same-origin)', 'success');
+                } catch (e) {
+                    log(index + 1, 'Cannot access iframe content (cross-origin) - this is expected', 'info');
+                }
+            });
+            
+            iframe.addEventListener('error', (e) => {
+                log(index + 1, `Iframe load error: ${e.message}`, 'error');
+            });
+        });
+
+        // Add current page URL info
+        setTimeout(() => {
+            log('console', `Current page URL: ${window.location.href}`);
+            log('console', `User Agent: ${navigator.userAgent}`);
+            log('console', `Referrer: ${document.referrer || 'none'}`);
+        }, 100);
+
+        // Test parameter extraction patterns
+        setTimeout(() => {
+            log('console', '--- Testing Parameter Extraction Patterns ---');
+            
+            const testUrls = [
+                'https://policyengine.org/us/obbba-household-by-household?household=39519&baseline=tcja-expiration',
+                'https://policyengine.github.io/obbba-scatter/?household=39519&baseline=tcja-expiration',
+                'https://policyengine.github.io/obbba-scatter?household=39519&baseline=tcja-expiration'
+            ];
+            
+            testUrls.forEach(url => {
+                const match = url.match(/[?&]household=(\d+)/);
+                if (match) {
+                    log('console', `✓ Extracted household ${match[1]} from: ${url}`, 'success');
+                } else {
+                    log('console', `✗ Failed to extract household from: ${url}`, 'error');
+                }
+            });
+        }, 200);
+    </script>
+</body>
+</html>
