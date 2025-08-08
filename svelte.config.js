@@ -12,7 +12,7 @@ const config = {
 		}),
 		paths: {
 			// Use environment variable or fallback to GitHub Pages path
-			base: process.env.BASE_PATH || '/obbba-scatter'
+			base: process.env.BASE_PATH || '/obbba-household-by-household'
 		}
 	}
 };
