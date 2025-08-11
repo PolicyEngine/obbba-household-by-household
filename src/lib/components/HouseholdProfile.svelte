@@ -282,19 +282,19 @@
         description: 'Modifies child and dependent care credit structure and income phaseouts. Credit remains nonrefundable.'
       },
       { 
-        name: 'Extension of ACA enhanced subsidies', 
+        name: 'ACA premium tax credit eligibility', 
         key: 'Change in net income after Extension of ACA enhanced subsidies',
-        description: 'Extends enhanced premium tax credits from American Rescue Plan, maintaining lower health insurance costs for eligible households.'
+        description: 'Changes in ACA premium tax credit eligibility based on CBO projections for subsidy participation rates.'
       },
       { 
-        name: 'SNAP reform', 
+        name: 'SNAP eligibility', 
         key: 'Change in net income after SNAP reform',
-        description: 'Modifies SNAP (food stamp) eligibility and benefit calculations, potentially affecting household food assistance.'
+        description: 'Changes in SNAP (food stamp) eligibility based on projected participation rate changes.'
       },
       { 
-        name: 'Medicaid reform', 
+        name: 'Medicaid eligibility', 
         key: 'Change in net income after Medicaid reform',
-        description: 'Changes to Medicaid eligibility and coverage, including potential work requirements and funding modifications.'
+        description: 'Changes in Medicaid eligibility based on projected participation rate changes.'
       },
       { 
         name: 'ACA reform', 
