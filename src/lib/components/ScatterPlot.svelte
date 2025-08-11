@@ -4,6 +4,7 @@
   import { COLORS, getPointColor } from '../config/colors.js';
   import { getFontFamily } from '../utils/formatting.js';
   import { animatedHouseholds } from '../utils/animations.js';
+  import { createRenderQueue } from '../utils/renderQueue.js';
   
   export let data = [];
   export let scrollStates = [];
@@ -37,6 +38,9 @@
   let margin = { top: 60, right: 120, bottom: 100, left: 120 };
   let width = 900;
   let height = 600;
+  
+  // Render queue to prevent losing dots during rapid scrolling
+  let renderQueue = null;
   
   // Responsive margins
   function updateMargins() {
@@ -164,7 +168,12 @@
     
     // Render the canvas if needed (without checking for data changes)
     if (needsRerender && canvasRef) {
-      renderCanvas();
+      // Use render queue to prevent lost renders during rapid scrolling
+      if (renderQueue) {
+        renderQueue.enqueue();
+      } else {
+        renderCanvas();
+      }
     }
     
     // Continue animation if any points are still animating
@@ -497,8 +506,12 @@
     // Check if we need to start new animations
     checkForDataChange();
     
-    // Render the canvas
-    renderCanvas();
+    // Render the canvas using queue to prevent lost renders
+    if (renderQueue) {
+      renderQueue.enqueue();
+    } else {
+      renderCanvas();
+    }
   }
   
   function drawGridLines(ctx, xScale, yScale, xMin, xMax, yMin, yMax) {
@@ -848,6 +861,11 @@
     if (!hasScrolled && scrollTrigger) {
       hasScrolled = true;
       revealReservedPoints();
+      
+      // Force render to ensure dots appear even during rapid scrolling
+      if (renderQueue) {
+        renderQueue.forceRender();
+      }
     }
   }
   
@@ -857,6 +875,9 @@
   }
   
   onMount(() => {
+    // Initialize render queue to prevent lost renders during rapid scrolling
+    renderQueue = createRenderQueue(renderCanvas, { debounceMs: 16 }); // ~60fps
+    
     // Clear any existing animation state from previous sessions
     pointAnimations.clear();
     lastDatasetLength = 0;
@@ -885,6 +906,12 @@
   });
   
   onDestroy(() => {
+    // Clean up render queue
+    if (renderQueue) {
+      renderQueue.cancel();
+      renderQueue = null;
+    }
+    
     if (typeof window !== 'undefined') {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('scroll', handleScroll);
