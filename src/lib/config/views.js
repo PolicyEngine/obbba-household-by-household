@@ -1,3 +1,11 @@
+// Precomputed household counts (in millions) based on US Census/CPS data
+export const HOUSEHOLD_COUNTS = {
+  'lower-income': 43,     // Households with income below $50,000
+  'middle-income': 51,    // Households with income $50,000 to $200,000
+  'upper-income': 12,     // Households with income $200,000 to $1 million
+  'highest-income': 0.8   // Households with income over $1 million
+};
+
 // Base view configurations for scroll states
 export const baseViews = [
   {
@@ -15,6 +23,7 @@ export const baseViews = [
     id: 'lower-income', 
     title: "Households with income below $50,000",
     groupText: null, // Will be dynamically generated with statistics
+    householdCount: HOUSEHOLD_COUNTS['lower-income'],
     view: {
       xDomain: [-20, 20],
       yDomain: [0, 50000],
@@ -26,6 +35,7 @@ export const baseViews = [
     id: 'middle-income',
     title: "Households with income $50,000 to $200,000", 
     groupText: null, // Will be dynamically generated with statistics
+    householdCount: HOUSEHOLD_COUNTS['middle-income'],
     view: {
       xDomain: [-20, 20],
       yDomain: [50000, 200000],
@@ -37,6 +47,7 @@ export const baseViews = [
     id: 'upper-income',
     title: "Households with income $200,000 to $1 million",
     groupText: null, // Will be dynamically generated with statistics
+    householdCount: HOUSEHOLD_COUNTS['upper-income'],
     view: {
       xDomain: [-20, 20],
       yDomain: [200000, 1000000],
@@ -48,6 +59,7 @@ export const baseViews = [
     id: 'highest-income',
     title: "Households with income over $1 million",
     groupText: null, // Will be dynamically generated with statistics
+    householdCount: HOUSEHOLD_COUNTS['highest-income'],
     view: {
       xDomain: [-20, 20],
       yDomain: [1000000, 10000000],
