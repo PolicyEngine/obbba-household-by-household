@@ -7,6 +7,7 @@
   // rendered here. Both routes are full-viewport apps, so the header is fixed
   // and pages size themselves against --pe-shell-height.
   const NAV_LINKS = [
+    { label: 'Working paper', href: `${base}/paper/` },
     { label: 'Research', href: 'https://policyengine.org/us/research' },
     { label: 'Model', href: 'https://policyengine.org/us/model' },
     { label: 'API', href: 'https://policyengine.org/us/api' },

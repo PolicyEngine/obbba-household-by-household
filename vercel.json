@@ -21,6 +21,22 @@
   ],
   "rewrites": [
     {
+      "source": "/us/obbba-households",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/us/obbba-households/explore",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/us/obbba-households/explore/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/us/obbba-households/:path*",
+      "destination": "/:path*"
+    },
+    {
       "source": "/us/obbba-household-explorer",
       "destination": "/index.html"
     },
