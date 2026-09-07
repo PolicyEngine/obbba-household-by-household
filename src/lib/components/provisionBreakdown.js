@@ -224,7 +224,9 @@ export function getProvisionBreakdown(household) {
     const matchingKey = provision.keys.find(
       (key) => household[key] !== undefined && household[key] !== 0
     );
-    const value = matchingKey ? household[matchingKey] : 0;
+    // The 200- and 2,000-row preview parses leave every field a string
+    // (dataLoader.js parses those with dynamicTyping off), so coerce here.
+    const value = matchingKey ? Number(household[matchingKey]) : 0;
 
     // Extract the provision suffix from the matching key
     const suffix = matchingKey ? matchingKey.replace('Change in net income after ', '') : '';
@@ -269,13 +271,14 @@ export function getTotalsSplit(household) {
     return { federalChange: 0, stateChange: 0, taxChange: 0, benefitsChange: 0, showSplit: false };
   }
 
+  // Key order matches what the component read before this module existed.
   const federalChange = readNumber(household, [
-    'Total change in federal tax',
-    'Total change in federal tax liability'
+    'Total change in federal tax liability',
+    'Total change in federal tax'
   ]);
   const stateChange = readNumber(household, [
-    'Total change in state tax',
-    'Total change in state tax liability'
+    'Total change in state tax liability',
+    'Total change in state tax'
   ]);
   const benefitsChange = readNumber(household, ['Total change in benefits']);
   const taxChange = -(federalChange + stateChange);

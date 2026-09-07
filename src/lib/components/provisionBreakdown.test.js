@@ -230,3 +230,21 @@ describe('BENEFIT_DISCLOSURE', () => {
     );
   });
 });
+
+describe('numeric coercion', () => {
+  it('returns a numeric value even from the string-typed preview parse', () => {
+    const [row] = getProvisionBreakdown({
+      'Change in federal tax liability after Tax Rate Reform': '-754.27344',
+      'Change in net income after Tax Rate Reform': '754.28125'
+    });
+
+    expect(typeof row.value).toBe('number');
+    expect(row.value).toBeCloseTo(754.28125, 5);
+  });
+
+  it('drops a provision whose only value is an unparseable string', () => {
+    expect(getProvisionBreakdown({ 'Change in net income after Tax Rate Reform': 'n/a' })).toEqual(
+      []
+    );
+  });
+});
