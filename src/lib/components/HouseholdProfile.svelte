@@ -7,7 +7,6 @@
   import { getBaselineLabel } from './profileContext.js';
   import { revealProvisionDetails } from './profileDisclosure.js';
   import {
-    BENEFIT_DISCLOSURE,
     SIGN_CONVENTION_NOTE,
     getProvisionBreakdown,
     getTotalsSplit
@@ -643,11 +642,6 @@
                   </span>
                 </span>
               {/if}
-              {#if provision.showBenefitDisclosure}
-                <p class="provision-benefit-note" data-testid="benefit-note-{provision.index}">
-                  {BENEFIT_DISCLOSURE}
-                </p>
-              {/if}
               <div class="provision-tooltip">{provision.description}</div>
             </div>
           {/each}
@@ -1080,15 +1074,6 @@
     opacity: 0.5;
   }
 
-  .provision-benefit-note {
-    flex: 1 0 100%;
-    margin: 0.25rem 0 0 0;
-    max-width: 46ch;
-    font-size: 11px;
-    line-height: 1.45;
-    color: var(--text-secondary);
-  }
-
   .sign-convention-note {
     margin: 0.5rem 0 0 0;
     max-width: 52ch;
@@ -1216,7 +1201,6 @@
       gap: 0.15rem 0.4rem;
     }
 
-    .provision-benefit-note,
     .sign-convention-note {
       font-size: 10px;
     }
@@ -1277,7 +1261,6 @@
       font-size: 10px;
     }
 
-    .provision-benefit-note,
     .sign-convention-note {
       font-size: 9px;
     }

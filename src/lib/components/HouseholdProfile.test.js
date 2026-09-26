@@ -35,8 +35,18 @@ const HOUSEHOLD_1009324 = {
   'Percentage change in net income': 32.603725
 };
 
-const DISCLOSURE =
-  'Includes Medicaid, CHIP, or marketplace credit values that respond to the tax change.';
+// Household 9275325 from static/districts/tcja-extension/district_601.csv,
+// verbatim. The district files record a Medicaid participation benefit change
+// that their net-income columns omit, so the parts do not add to the headline.
+const DISTRICT_HOUSEHOLD_9275325 = {
+  'Household ID': '9275325',
+  State: 'CA',
+  'Change in benefits after Medicaid Takeup Reform': -22373.060546875,
+  'Total change in federal tax': 0,
+  'Total change in state tax': 0,
+  'Total change in net income': 0,
+  'Total change in benefits': -22373.060546875
+};
 
 // The value span also carries the hover tooltip; read only the headline text.
 function headlineValue(row) {
@@ -80,7 +90,7 @@ describe('HouseholdProfile headline split', () => {
 
     expect(notes).toHaveLength(1);
     expect(notes[0].textContent.trim()).toBe(
-      'Taxes and benefits are shown as their effect on household resources, so a tax cut is positive.'
+      'Taxes and benefits are shown as their effect on household resources, so a tax cut is positive. The parts can differ from the total by a dollar because of rounding.'
     );
   });
 
@@ -101,10 +111,19 @@ describe('HouseholdProfile headline split', () => {
     expect(container.querySelector('[data-testid="totals-split"]')).toBeNull();
     expect(container.querySelector('.sign-convention-note')).toBeNull();
   });
+
+  it('omits the totals split when the parts do not add to the headline', () => {
+    const { container } = render(HouseholdProfile, {
+      props: { household: DISTRICT_HOUSEHOLD_9275325 }
+    });
+
+    expect(container.querySelector('[data-testid="totals-split"]')).toBeNull();
+    expect(container.querySelector('.sign-convention-note')).toBeNull();
+  });
 });
 
 describe('HouseholdProfile provision rows', () => {
-  it('splits the standard-deduction row and discloses the benefit programs', async () => {
+  it('splits the standard-deduction row into taxes and benefits', async () => {
     const { container } = await renderExpanded(HOUSEHOLD_1009324);
     const row = provisionRow(container, 'Standard deduction');
 
@@ -114,36 +133,32 @@ describe('HouseholdProfile provision rows', () => {
     expect(split).not.toBeNull();
     expect(split.textContent).toMatch(/Taxes\s*\+\$315/);
     expect(split.textContent).toMatch(/Benefits\s*\+\$55,655/);
-
-    expect(row.querySelector('.provision-benefit-note').textContent.trim()).toBe(DISCLOSURE);
   });
 
-  it('leaves the tax-rate row unsplit and undisclosed', async () => {
+  it('leaves the tax-rate row unsplit', async () => {
     const { container } = await renderExpanded(HOUSEHOLD_1009324);
     const row = provisionRow(container, 'Tax rates');
 
     expect(headlineValue(row)).toBe('+$754');
     expect(row.querySelector('.component-split')).toBeNull();
-    expect(row.querySelector('.provision-benefit-note')).toBeNull();
   });
 
-  it('leaves the CTC expansion row unsplit and undisclosed', async () => {
+  it('leaves the CTC expansion row unsplit', async () => {
     const { container } = await renderExpanded(HOUSEHOLD_1009324);
     const row = provisionRow(container, 'CTC expansion');
 
     expect(headlineValue(row)).toBe('+$2,775');
     expect(row.querySelector('.component-split')).toBeNull();
-    expect(row.querySelector('.provision-benefit-note')).toBeNull();
   });
 
-  it('discloses the programs exactly once across the expanded panel', async () => {
+  it('splits exactly one row across the expanded panel', async () => {
     const { container } = await renderExpanded(HOUSEHOLD_1009324);
 
-    expect(container.querySelectorAll('.provision-benefit-note')).toHaveLength(1);
+    expect(container.querySelectorAll('.provision-item .component-split')).toHaveLength(1);
     expect(container.querySelectorAll('.provision-item')).toHaveLength(3);
   });
 
-  it('splits a participation scenario without the tax-provision disclosure', async () => {
+  it('splits a participation scenario that moves a tax and benefits', async () => {
     // Household 1002071 from the same export: its SNAP participation step moves
     // a state tax and benefits together.
     const { container } = await renderExpanded({
@@ -158,7 +173,6 @@ describe('HouseholdProfile provision rows', () => {
 
     expect(row.querySelector('.component-split').textContent).toMatch(/Taxes\s*\+\$903/);
     expect(row.querySelector('.component-split').textContent).toMatch(/Benefits\s*-\$9,473/);
-    expect(row.querySelector('.provision-benefit-note')).toBeNull();
   });
 });
 

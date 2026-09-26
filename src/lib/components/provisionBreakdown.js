@@ -10,19 +10,25 @@
 // returns as `taxChange` is therefore already flipped into the household's
 // frame, so a tax cut reads as a gain and lines up with the headline number.
 
-// Components smaller than this are treated as absent. Matches the rounding of
-// the dollar amounts the profile renders.
+// Components whose magnitude is $0.50 or less are treated as absent.
 export const SPLIT_THRESHOLD = 0.5;
+
+// A split is only shown when its two parts add back to the headline it sits
+// under. The paper's stored component frames are float32, so the national
+// export carries component residuals of up to about $1.20; this is the same
+// tolerance scripts/validate-microcosm-data.js enforces on that export. The
+// district files follow a different accounting (their net-income columns can
+// omit a benefit change the benefits column records), so their splits fail
+// this check and are suppressed rather than shown beside a headline they
+// contradict.
+export const RECONCILIATION_TOLERANCE = 1.25;
 
 // The first PARTICIPATION_START entries are the modeled tax provisions; the
 // remainder are the reduced-form participation scenarios.
 export const PARTICIPATION_START = 18;
 
-export const BENEFIT_DISCLOSURE =
-  'Includes Medicaid, CHIP, or marketplace credit values that respond to the tax change.';
-
 export const SIGN_CONVENTION_NOTE =
-  'Taxes and benefits are shown as their effect on household resources, so a tax cut is positive.';
+  'Taxes and benefits are shown as their effect on household resources, so a tax cut is positive. The parts can differ from the total by a dollar because of rounding.';
 
 // Forward stacking order used by the paper and the exported Microcosm data.
 export const PROVISIONS = [
@@ -212,6 +218,10 @@ function isPresent(value) {
   return Math.abs(value) > SPLIT_THRESHOLD;
 }
 
+function reconciles(headline, taxChange, benefitsChange) {
+  return Math.abs(taxChange + benefitsChange - headline) <= RECONCILIATION_TOLERANCE;
+}
+
 /**
  * Per-provision rows for the profile, in the paper's forward stacking order,
  * with the tax and benefit components of each net-income change.
@@ -256,9 +266,10 @@ export function getProvisionBreakdown(household) {
       taxChange,
       isTaxProvision,
       // The headline already says everything when only one component moves.
-      showSplit: isPresent(taxChange) && isPresent(benefitsChange),
-      // Tax provisions that move benefits need saying so out loud.
-      showBenefitDisclosure: isTaxProvision && isPresent(benefitsChange)
+      showSplit:
+        isPresent(taxChange) &&
+        isPresent(benefitsChange) &&
+        reconciles(value, taxChange, benefitsChange)
     };
   }).filter((p) => Math.abs(p.value) > 0.01);
 }
@@ -268,7 +279,14 @@ export function getProvisionBreakdown(household) {
  */
 export function getTotalsSplit(household) {
   if (!household) {
-    return { federalChange: 0, stateChange: 0, taxChange: 0, benefitsChange: 0, showSplit: false };
+    return {
+      federalChange: 0,
+      stateChange: 0,
+      taxChange: 0,
+      benefitsChange: 0,
+      netChange: 0,
+      showSplit: false
+    };
   }
 
   // Key order matches what the component read before this module existed.
@@ -282,13 +300,22 @@ export function getTotalsSplit(household) {
   ]);
   const benefitsChange = readNumber(household, ['Total change in benefits']);
   const taxChange = -(federalChange + stateChange);
+  // The same headline the profile renders for the change in resources.
+  const netChange = readNumber(household, [
+    'Total change in net income',
+    'Change in Household Net Income'
+  ]);
 
   return {
     federalChange,
     stateChange,
     taxChange,
     benefitsChange,
-    // Shown whenever either side of the split carries information.
-    showSplit: isPresent(taxChange) || isPresent(benefitsChange)
+    netChange,
+    // Shown whenever either side of the split carries information and the
+    // two sides add back to the headline.
+    showSplit:
+      (isPresent(taxChange) || isPresent(benefitsChange)) &&
+      reconciles(netChange, taxChange, benefitsChange)
   };
 }

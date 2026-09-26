@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
-  BENEFIT_DISCLOSURE,
   PARTICIPATION_START,
   PROVISIONS,
+  RECONCILIATION_TOLERANCE,
   SPLIT_THRESHOLD,
   getProvisionBreakdown,
   getTotalsSplit
@@ -78,7 +78,6 @@ describe('getProvisionBreakdown', () => {
     expect(row.benefitsChange).toBeCloseTo(55654.736, 3);
     expect(row.showSplit).toBe(true);
     expect(row.isTaxProvision).toBe(true);
-    expect(row.showBenefitDisclosure).toBe(true);
   });
 
   it('shows no split for household 1009324 tax rates, which is tax only', () => {
@@ -88,7 +87,6 @@ describe('getProvisionBreakdown', () => {
     expect(row.taxChange).toBeCloseTo(754.27344, 5);
     expect(row.benefitsChange).toBe(0);
     expect(row.showSplit).toBe(false);
-    expect(row.showBenefitDisclosure).toBe(false);
   });
 
   it('shows no split for household 1009324 CTC expansion, which is tax only', () => {
@@ -98,7 +96,6 @@ describe('getProvisionBreakdown', () => {
     expect(row.taxChange).toBeCloseTo(2775.0002, 5);
     expect(row.benefitsChange).toBe(0);
     expect(row.showSplit).toBe(false);
-    expect(row.showBenefitDisclosure).toBe(false);
   });
 
   it('reconciles each row: value equals tax plus benefits', () => {
@@ -118,14 +115,13 @@ describe('getProvisionBreakdown', () => {
     expect(rows.map((row) => row.index)).toEqual([0, 1, 4]);
   });
 
-  it('splits a participation scenario without the tax-provision disclosure', () => {
+  it('splits a participation scenario that moves a tax and benefits', () => {
     const row = byName(getProvisionBreakdown(HOUSEHOLD_1002071), 'SNAP participation');
 
     expect(row.taxChange).toBeCloseTo(902.89648, 5);
     expect(row.benefitsChange).toBeCloseTo(-9472.7891, 4);
     expect(row.showSplit).toBe(true);
     expect(row.isTaxProvision).toBe(false);
-    expect(row.showBenefitDisclosure).toBe(false);
   });
 
   it('ignores components below the split threshold', () => {
@@ -138,7 +134,6 @@ describe('getProvisionBreakdown', () => {
     expect(SPLIT_THRESHOLD).toBe(0.5);
     expect(rows[0].benefitsChange).toBe(0.4);
     expect(rows[0].showSplit).toBe(false);
-    expect(rows[0].showBenefitDisclosure).toBe(false);
   });
 
   it('reads the district column vocabulary, which omits "liability"', () => {
@@ -180,6 +175,7 @@ describe('getTotalsSplit', () => {
       stateChange: 0,
       taxChange: 0,
       benefitsChange: 0,
+      netChange: 0,
       showSplit: false
     });
   });
@@ -197,8 +193,18 @@ describe('getTotalsSplit', () => {
   });
 
   it('shows the split when only one side moves', () => {
-    expect(getTotalsSplit({ 'Total change in federal tax liability': -1200 }).showSplit).toBe(true);
-    expect(getTotalsSplit({ 'Total change in benefits': -1200 }).showSplit).toBe(true);
+    expect(
+      getTotalsSplit({
+        'Total change in federal tax liability': -1200,
+        'Total change in net income': 1200
+      }).showSplit
+    ).toBe(true);
+    expect(
+      getTotalsSplit({
+        'Total change in benefits': -1200,
+        'Total change in net income': -1200
+      }).showSplit
+    ).toBe(true);
   });
 
   it('hides the split when nothing moves', () => {
@@ -215,19 +221,97 @@ describe('getTotalsSplit', () => {
     const totals = getTotalsSplit({
       'Total change in federal tax': -900,
       'Total change in state tax': 100,
-      'Total change in benefits': 250
+      'Total change in benefits': 250,
+      'Total change in net income': 1050
     });
 
     expect(totals.taxChange).toBe(800);
     expect(totals.benefitsChange).toBe(250);
+    expect(totals.netChange).toBe(1050);
+    expect(totals.showSplit).toBe(true);
   });
 });
 
-describe('BENEFIT_DISCLOSURE', () => {
-  it('names the programs in sentence case without naming a mechanism', () => {
-    expect(BENEFIT_DISCLOSURE).toBe(
-      'Includes Medicaid, CHIP, or marketplace credit values that respond to the tax change.'
-    );
+// Households 9275325 and 9275596 from static/districts/tcja-extension/
+// district_601.csv, verbatim. The district files record a Medicaid
+// participation benefit change that their net-income columns omit, so a split
+// would contradict the headline it sits under.
+const DISTRICT_9275325 = {
+  'Household ID': '9275325',
+  State: 'CA',
+  'Change in benefits after Medicaid Takeup Reform': -22373.060546875,
+  'Total change in federal tax': 0,
+  'Total change in state tax': 0,
+  'Total change in net income': 0,
+  'Total change in benefits': -22373.060546875
+};
+const DISTRICT_9275596 = {
+  'Household ID': '9275596',
+  State: 'CA',
+  'Change in federal tax after Tax Rate Reform': -5,
+  'Change in net income after Tax Rate Reform': 5,
+  'Change in federal tax after Standard Deduction Reform': -304,
+  'Change in net income after Standard Deduction Reform': 304,
+  'Change in benefits after Medicaid Takeup Reform': -22373.060546875,
+  'Total change in federal tax': -309,
+  'Total change in state tax': 0,
+  'Total change in net income': 309,
+  'Total change in benefits': -22373.060546875
+};
+
+describe('reconciliation guard', () => {
+  it('uses the tolerance the export validator enforces', () => {
+    expect(RECONCILIATION_TOLERANCE).toBe(1.25);
+  });
+
+  it('hides a totals split whose parts add to $22,373 less than a $0 headline', () => {
+    const totals = getTotalsSplit(DISTRICT_9275325);
+
+    expect(totals.benefitsChange).toBeCloseTo(-22373.06, 2);
+    expect(totals.netChange).toBe(0);
+    expect(totals.showSplit).toBe(false);
+  });
+
+  it('hides a totals split whose parts contradict a +$309 headline', () => {
+    const totals = getTotalsSplit(DISTRICT_9275596);
+
+    expect(totals.taxChange).toBe(309);
+    expect(totals.showSplit).toBe(false);
+    // Its tax-only provision rows are unaffected: nothing to split.
+    const rows = getProvisionBreakdown(DISTRICT_9275596);
+    expect(rows.map((row) => row.name)).toEqual(['Tax rates', 'Standard deduction']);
+    expect(rows.every((row) => !row.showSplit)).toBe(true);
+  });
+
+  it('hides a provision split whose parts do not add to its value', () => {
+    const [row] = getProvisionBreakdown({
+      'Change in federal tax liability after Standard Deduction Reform': -1000,
+      'Change in benefits after Standard Deduction Reform': 500,
+      'Change in net income after Standard Deduction Reform': 1000
+    });
+
+    expect(row.showSplit).toBe(false);
+  });
+
+  it('hides a totals split when a missing tax column would read as zero', () => {
+    expect(
+      getTotalsSplit({ 'Total change in benefits': 20, 'Total change in net income': 100 })
+        .showSplit
+    ).toBe(false);
+  });
+
+  it('keeps a split whose residual is within the tolerance and drops one just past it', () => {
+    const split = (residual) =>
+      getProvisionBreakdown({
+        'Change in federal tax liability after Standard Deduction Reform': -1000,
+        'Change in benefits after Standard Deduction Reform': 500,
+        'Change in net income after Standard Deduction Reform': 1500 + residual
+      })[0].showSplit;
+
+    expect(split(1.25)).toBe(true);
+    expect(split(-1.25)).toBe(true);
+    expect(split(1.26)).toBe(false);
+    expect(split(-1.26)).toBe(false);
   });
 });
 
