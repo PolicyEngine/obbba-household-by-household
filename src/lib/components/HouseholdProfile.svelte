@@ -9,7 +9,8 @@
   import {
     SIGN_CONVENTION_NOTE,
     getProvisionBreakdown,
-    getTotalsSplit
+    getTotalsSplit,
+    selectTotalsHeadline
   } from './provisionBreakdown.js';
 
   // Custom interpolation function for train station board effect
@@ -134,15 +135,8 @@
         0
     );
     baselineNetIncome.set(household['Baseline Net Income'] || 0);
-    obbbaNetIncome.set(
-      (household['Baseline Net Income'] || 0) +
-        (household['Total change in net income'] ||
-          household['Change in Household Net Income'] ||
-          0)
-    );
-    absoluteImpact.set(
-      household['Total change in net income'] || household['Change in Household Net Income'] || 0
-    );
+    obbbaNetIncome.set((household['Baseline Net Income'] || 0) + selectTotalsHeadline(household));
+    absoluteImpact.set(selectTotalsHeadline(household));
     const rawRelativeImpact = household['Percentage change in net income'];
     relativeImpactAvailable =
       rawRelativeImpact !== null &&

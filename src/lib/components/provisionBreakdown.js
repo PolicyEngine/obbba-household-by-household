@@ -28,7 +28,7 @@ export const RECONCILIATION_TOLERANCE = 1.25;
 export const PARTICIPATION_START = 18;
 
 export const SIGN_CONVENTION_NOTE =
-  'Taxes and benefits are shown as their effect on household resources, so a tax cut is positive. The parts can differ from the total by a dollar because of rounding.';
+  'Taxes and benefits are shown as their effect on household resources, so a tax cut is positive. The parts may not add exactly to the total because of rounding.';
 
 // Forward stacking order used by the paper and the exported Microcosm data.
 export const PROVISIONS = [
@@ -219,7 +219,29 @@ function isPresent(value) {
 }
 
 function reconciles(headline, taxChange, benefitsChange) {
-  return Math.abs(taxChange + benefitsChange - headline) <= RECONCILIATION_TOLERANCE;
+  return (
+    Number.isFinite(headline) &&
+    Math.abs(taxChange + benefitsChange - headline) <= RECONCILIATION_TOLERANCE
+  );
+}
+
+/**
+ * The household's change in resources, selected exactly as the profile
+ * renders it, so the totals split is checked against the number on screen.
+ */
+export function selectTotalsHeadline(household) {
+  return (
+    household['Total change in net income'] || household['Change in Household Net Income'] || 0
+  );
+}
+
+// True when a headline column holds a finite value, rather than the profile
+// falling back to $0 because both are missing or unparseable.
+function hasTotalsHeadline(household) {
+  return ['Total change in net income', 'Change in Household Net Income'].some((key) => {
+    const raw = household[key];
+    return raw !== undefined && raw !== null && raw !== '' && Number.isFinite(Number(raw));
+  });
 }
 
 /**
@@ -300,11 +322,9 @@ export function getTotalsSplit(household) {
   ]);
   const benefitsChange = readNumber(household, ['Total change in benefits']);
   const taxChange = -(federalChange + stateChange);
-  // The same headline the profile renders for the change in resources.
-  const netChange = readNumber(household, [
-    'Total change in net income',
-    'Change in Household Net Income'
-  ]);
+  // The headline the profile renders; a missing or unparseable one fails the
+  // reconciliation check below, so no split is drawn under it.
+  const netChange = Number(selectTotalsHeadline(household));
 
   return {
     federalChange,
@@ -316,6 +336,7 @@ export function getTotalsSplit(household) {
     // two sides add back to the headline.
     showSplit:
       (isPresent(taxChange) || isPresent(benefitsChange)) &&
+      hasTotalsHeadline(household) &&
       reconciles(netChange, taxChange, benefitsChange)
   };
 }

@@ -90,7 +90,7 @@ describe('HouseholdProfile headline split', () => {
 
     expect(notes).toHaveLength(1);
     expect(notes[0].textContent.trim()).toBe(
-      'Taxes and benefits are shown as their effect on household resources, so a tax cut is positive. The parts can differ from the total by a dollar because of rounding.'
+      'Taxes and benefits are shown as their effect on household resources, so a tax cut is positive. The parts may not add exactly to the total because of rounding.'
     );
   });
 
@@ -110,6 +110,41 @@ describe('HouseholdProfile headline split', () => {
 
     expect(container.querySelector('[data-testid="totals-split"]')).toBeNull();
     expect(container.querySelector('.sign-convention-note')).toBeNull();
+  });
+
+  it('checks the split against the headline it renders when both aliases are present', () => {
+    // 'Total change in net income' is 0, so the profile renders the alias
+    // (+$1,000); parts adding to $0 must not be drawn under it.
+    const { container } = render(HouseholdProfile, {
+      props: {
+        household: {
+          id: '2',
+          State: 'OH',
+          'Total change in net income': 0,
+          'Change in Household Net Income': 1000,
+          'Total change in federal tax liability': -100,
+          'Total change in benefits': -100
+        }
+      }
+    });
+
+    expect(container.querySelector('[data-testid="totals-split"]')).toBeNull();
+  });
+
+  it('omits the totals split under an unparseable headline', () => {
+    const { container } = render(HouseholdProfile, {
+      props: {
+        household: {
+          id: '3',
+          State: 'OH',
+          'Total change in net income': 'NaN',
+          'Total change in federal tax liability': -100,
+          'Total change in benefits': -100
+        }
+      }
+    });
+
+    expect(container.querySelector('[data-testid="totals-split"]')).toBeNull();
   });
 
   it('omits the totals split when the parts do not add to the headline', () => {

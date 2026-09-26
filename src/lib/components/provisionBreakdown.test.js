@@ -5,7 +5,8 @@ import {
   RECONCILIATION_TOLERANCE,
   SPLIT_THRESHOLD,
   getProvisionBreakdown,
-  getTotalsSplit
+  getTotalsSplit,
+  selectTotalsHeadline
 } from './provisionBreakdown.js';
 
 // Household 1009324 (OH, 10 people) from
@@ -298,6 +299,43 @@ describe('reconciliation guard', () => {
       getTotalsSplit({ 'Total change in benefits': 20, 'Total change in net income': 100 })
         .showSplit
     ).toBe(false);
+  });
+
+  it('reads the totals headline exactly as the profile renders it', () => {
+    // The profile renders `a || b || 0`, so a zero primary falls through.
+    expect(
+      selectTotalsHeadline({
+        'Total change in net income': 0,
+        'Change in Household Net Income': 1000
+      })
+    ).toBe(1000);
+    expect(selectTotalsHeadline({ 'Total change in net income': '57715.251' })).toBe('57715.251');
+    expect(selectTotalsHeadline({})).toBe(0);
+  });
+
+  it('hides a totals split checked against a headline the profile would not render', () => {
+    const totals = getTotalsSplit({
+      'Total change in net income': 0,
+      'Change in Household Net Income': 1000,
+      'Total change in federal tax liability': -100,
+      'Total change in benefits': -100
+    });
+
+    expect(totals.netChange).toBe(1000);
+    expect(totals.showSplit).toBe(false);
+  });
+
+  it('hides a totals split under a missing or unparseable headline', () => {
+    const parts = {
+      'Total change in federal tax liability': -100,
+      'Total change in benefits': -100
+    };
+
+    expect(getTotalsSplit({ ...parts, 'Total change in net income': 'NaN' }).showSplit).toBe(false);
+    expect(getTotalsSplit({ ...parts, 'Total change in net income': 'n/a' }).showSplit).toBe(false);
+    expect(getTotalsSplit({ ...parts, 'Total change in net income': NaN }).showSplit).toBe(false);
+    // Both columns absent: the profile falls back to $0, which is not data.
+    expect(getTotalsSplit(parts).showSplit).toBe(false);
   });
 
   it('keeps a split whose residual is within the tolerance and drops one just past it', () => {
