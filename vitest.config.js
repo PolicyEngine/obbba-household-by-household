@@ -17,6 +17,9 @@ export default defineConfig({
     }
   },
   resolve: {
+    // Component tests mount Svelte in jsdom, so resolve the browser build
+    // rather than the server build that would refuse to mount.
+    conditions: ['browser'],
     alias: {
       $lib: '/src/lib'
     }

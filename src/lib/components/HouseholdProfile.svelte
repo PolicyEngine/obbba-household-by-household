@@ -6,6 +6,12 @@
   import { cubicOut } from 'svelte/easing';
   import { getBaselineLabel } from './profileContext.js';
   import { revealProvisionDetails } from './profileDisclosure.js';
+  import {
+    SIGN_CONVENTION_NOTE,
+    getProvisionBreakdown,
+    getTotalsSplit,
+    selectTotalsHeadline
+  } from './provisionBreakdown.js';
 
   // Custom interpolation function for train station board effect
   function trainStationInterpolate(from, to) {
@@ -129,15 +135,8 @@
         0
     );
     baselineNetIncome.set(household['Baseline Net Income'] || 0);
-    obbbaNetIncome.set(
-      (household['Baseline Net Income'] || 0) +
-        (household['Total change in net income'] ||
-          household['Change in Household Net Income'] ||
-          0)
-    );
-    absoluteImpact.set(
-      household['Total change in net income'] || household['Change in Household Net Income'] || 0
-    );
+    obbbaNetIncome.set((household['Baseline Net Income'] || 0) + selectTotalsHeadline(household));
+    absoluteImpact.set(selectTotalsHeadline(household));
     const rawRelativeImpact = household['Percentage change in net income'];
     relativeImpactAvailable =
       rawRelativeImpact !== null &&
@@ -274,231 +273,13 @@
     };
   }
 
-  // Get provision breakdown for a household
-  function getProvisionBreakdown(household) {
-    if (!household) return [];
-
-    // Forward stacking order used by the paper and the exported Microcosm data.
-    const provisions = [
-      {
-        name: 'Tax rates',
-        keys: ['Change in net income after Tax Rate Reform'],
-        description:
-          'Continues the TCJA individual income tax rates instead of allowing them to expire.'
-      },
-      {
-        name: 'Standard deduction',
-        keys: ['Change in net income after Standard Deduction Reform'],
-        description:
-          "Continues the larger TCJA standard deduction and applies the Act's additional increase."
-      },
-      {
-        name: 'Personal exemption (continued suspension)',
-        keys: ['Change in net income after Exemption Reform'],
-        description:
-          'Continues the TCJA suspension of personal exemptions instead of restoring them.'
-      },
-      {
-        name: 'CTC SSN requirement',
-        keys: [
-          'Change in net income after CTC SSN Requirement',
-          'Change in net income after Child tax credit social security number requirement'
-        ],
-        description:
-          "Applies the Act's Social Security number requirements to the child tax credit."
-      },
-      {
-        name: 'CTC expansion',
-        keys: [
-          'Change in net income after CTC Expansion',
-          'Change in net income after Child tax credit expansion'
-        ],
-        description:
-          'Raises and indexes the child tax credit while continuing the TCJA credit structure.'
-      },
-      {
-        name: 'CDCC expansion',
-        keys: [
-          'Change in net income after CDCC Reform',
-          'Change in net income after Child and dependent care credit reform'
-        ],
-        description: 'Expands the child and dependent care credit rate for eligible expenses.'
-      },
-      {
-        name: 'QBI deduction',
-        keys: [
-          'Change in net income after QBI Deduction Reform',
-          'Change in net income after Qualified business interest deduction reform'
-        ],
-        description:
-          'Continues and modifies the deduction for qualified pass-through business income.'
-      },
-      {
-        name: 'AMT',
-        keys: [
-          'Change in net income after AMT Reform',
-          'Change in net income after Alternative minimum tax reform'
-        ],
-        description:
-          'Continues and modifies the higher alternative minimum tax exemption and phaseout thresholds.'
-      },
-      {
-        name: 'Miscellaneous deductions',
-        keys: [
-          'Change in net income after Miscellaneous Reform',
-          'Change in net income after Miscellaneous deduction reform'
-        ],
-        description:
-          'Continues the suspension of miscellaneous itemized deductions subject to the 2% AGI floor.'
-      },
-      {
-        name: 'Casualty loss deduction repeal',
-        keys: ['Change in net income after Casualty loss deduction repeal'],
-        description: 'Continues limits on personal casualty-loss deductions.'
-      },
-      {
-        name: 'Other itemized deductions',
-        keys: [
-          'Change in net income after Other Itemized Deductions Reform',
-          'Change in net income after Charitable deductions reform'
-        ],
-        description: "Applies the Act's rules for charitable and mortgage-interest deductions."
-      },
-      {
-        name: 'Itemized deduction limitation',
-        keys: [
-          'Change in net income after Limitation on Itemized Deductions Reform',
-          'Change in net income after Limitation on itemized deductions reform'
-        ],
-        description:
-          'Limits the value of itemized deductions for taxpayers in the top income-tax bracket.'
-      },
-      {
-        name: 'Estate tax',
-        keys: [
-          'Change in net income after Estate Tax Reform',
-          'Change in net income after Estate tax reform'
-        ],
-        description:
-          'Raises and indexes the estate and gift tax exemption. Survey records contain no decedents, so this is a structural zero here.'
-      },
-      {
-        name: 'SALT cap',
-        keys: [
-          'Change in net income after SALT Cap Reform',
-          'Change in net income after Cap on state and local tax deduction'
-        ],
-        description:
-          'Raises the cap on state and local tax deductions, with an income-based phaseout.'
-      },
-      {
-        name: 'Tip exemption',
-        keys: [
-          'Change in net income after Tip Income Exemption',
-          'Change in net income after Tip exemption'
-        ],
-        description: 'Creates a temporary deduction for qualifying tip income.'
-      },
-      {
-        name: 'Overtime exemption',
-        keys: [
-          'Change in net income after Overtime Exemption',
-          'Change in net income after Overtime exemption'
-        ],
-        description: 'Creates a temporary deduction for qualifying overtime premium pay.'
-      },
-      {
-        name: 'Senior deduction',
-        keys: [
-          'Change in net income after Senior Deduction',
-          'Change in net income after New senior deduction'
-        ],
-        description:
-          'Creates a temporary additional deduction for taxpayers age 65 and older, subject to an income phaseout.'
-      },
-      {
-        name: 'Auto loan interest deduction',
-        keys: [
-          'Change in net income after Auto Loan Interest',
-          'Change in net income after Auto loan interest deduction'
-        ],
-        description: 'Creates a temporary deduction for interest on qualifying vehicle loans.'
-      },
-      {
-        name: 'SNAP participation',
-        keys: [
-          'Change in net income after SNAP Takeup Reform',
-          'Change in net income after SNAP reform'
-        ],
-        description:
-          'A seeded, reduced-form scenario lowers SNAP participation to reflect projected enrollment effects; it does not identify specific eligibility losses.'
-      },
-      {
-        name: 'ACA participation',
-        keys: [
-          'Change in net income after ACA Takeup Reform',
-          'Change in net income after Extension of ACA enhanced subsidies'
-        ],
-        description:
-          'A seeded, reduced-form scenario lowers marketplace participation and removes enrollee-assigned premium tax credits at program cost.'
-      },
-      {
-        name: 'Medicaid participation',
-        keys: [
-          'Change in net income after Medicaid Takeup Reform',
-          'Change in net income after Medicaid reform'
-        ],
-        description:
-          "A seeded, reduced-form scenario lowers Medicaid participation toward the paper's state-level ceiling; it does not identify specific eligibility losses."
-      }
-    ];
-
-    return provisions
-      .map((provision, index) => {
-        // Find the first matching key that exists in household data
-        const matchingKey = provision.keys.find(
-          (key) => household[key] !== undefined && household[key] !== 0
-        );
-        const value = matchingKey ? household[matchingKey] : 0;
-
-        // Extract the provision suffix from the matching key
-        const suffix = matchingKey ? matchingKey.replace('Change in net income after ', '') : '';
-
-        return {
-          name: provision.name,
-          value: value,
-          index: index,
-          description: provision.description,
-          // Automatically generate the federal, state, and benefits keys
-          federalChange:
-            household[`Change in federal tax after ${suffix}`] ||
-            household[`Change in federal tax liability after ${suffix}`] ||
-            0,
-          stateChange:
-            household[`Change in state tax after ${suffix}`] ||
-            household[`Change in state tax liability after ${suffix}`] ||
-            0,
-          benefitsChange: household[`Change in benefits after ${suffix}`] || 0
-        };
-      })
-      .filter((p) => Math.abs(p.value) > 0.01);
-  }
-
-  $: provisionBreakdown = household ? getProvisionBreakdown(household) : [];
-
-  // Calculate total federal, state, and benefits changes
-  // Support both national (with "liability") and district (without) column names
-  $: totalFederalChange = household
-    ? household['Total change in federal tax liability'] ||
-      household['Total change in federal tax'] ||
-      0
-    : 0;
-  $: totalStateChange = household
-    ? household['Total change in state tax liability'] ||
-      household['Total change in state tax'] ||
-      0
-    : 0;
-  $: totalBenefitsChange = household ? household['Total change in benefits'] || 0 : 0;
+  // Provision rows and the household totals, both already carrying the
+  // tax/benefit split in the household's frame (a tax cut is a gain).
+  $: provisionBreakdown = getProvisionBreakdown(household);
+  $: totals = getTotalsSplit(household);
+  $: anyProvisionSplit = provisionBreakdown.some((p) => p.showSplit);
+  // One statement of the sign convention, rendered above every split it governs.
+  $: showSignConventionNote = totals.showSplit || (showProvisionDetails && anyProvisionSplit);
 
   // Get income sources breakdown
   function getIncomeSources(household) {
@@ -690,7 +471,7 @@
           <span class="label">Household resources under OBBBA:</span>
           <span class="value">{formatCurrency($obbbaNetIncome)}</span>
         </div>
-        <div class="detail-item">
+        <div class="detail-item impact-headline">
           <span class="label">Change in household resources:</span>
           <span
             class="value impact value-with-breakdown"
@@ -703,34 +484,56 @@
                 <span class="breakdown-label">Federal tax:</span>
                 <span
                   class="breakdown-value"
-                  class:pos={totalFederalChange < 0}
-                  class:neg={totalFederalChange > 0}
+                  class:pos={totals.federalChange < 0}
+                  class:neg={totals.federalChange > 0}
                 >
-                  {formatDollarChange(-totalFederalChange)}
+                  {formatDollarChange(-totals.federalChange)}
                 </span>
               </div>
               <div class="breakdown-item">
                 <span class="breakdown-label">State tax:</span>
                 <span
                   class="breakdown-value"
-                  class:pos={totalStateChange < 0}
-                  class:neg={totalStateChange > 0}
+                  class:pos={totals.stateChange < 0}
+                  class:neg={totals.stateChange > 0}
                 >
-                  {formatDollarChange(-totalStateChange)}
+                  {formatDollarChange(-totals.stateChange)}
                 </span>
               </div>
               <div class="breakdown-item">
                 <span class="breakdown-label">Cash and health benefits:</span>
                 <span
                   class="breakdown-value"
-                  class:pos={totalBenefitsChange > 0}
-                  class:neg={totalBenefitsChange < 0}
+                  class:pos={totals.benefitsChange > 0}
+                  class:neg={totals.benefitsChange < 0}
                 >
-                  {formatDollarChange(totalBenefitsChange)}
+                  {formatDollarChange(totals.benefitsChange)}
                 </span>
               </div>
             </div>
           </span>
+          {#if totals.showSplit}
+            <span class="component-split" data-testid="totals-split">
+              <span class="split-part">
+                Taxes
+                <span
+                  class="split-value"
+                  class:pos={totals.taxChange > 0}
+                  class:neg={totals.taxChange < 0}>{formatDollarChange(totals.taxChange)}</span
+                >
+              </span>
+              <span class="split-separator" aria-hidden="true">·</span>
+              <span class="split-part">
+                Benefits
+                <span
+                  class="split-value"
+                  class:pos={totals.benefitsChange > 0}
+                  class:neg={totals.benefitsChange < 0}
+                  >{formatDollarChange(totals.benefitsChange)}</span
+                >
+              </span>
+            </span>
+          {/if}
         </div>
         <div class="detail-item">
           <span class="label">Relative change:</span>
@@ -742,6 +545,9 @@
             {relativeImpactAvailable ? formatPercentage($relativeImpact) : 'N/A'}
           </span>
         </div>
+        {#if showSignConventionNote}
+          <p class="sign-convention-note">{SIGN_CONVENTION_NOTE}</p>
+        {/if}
         <button
           class="expand-button"
           on:click={toggleProvisionDetails}
@@ -807,6 +613,29 @@
                   </div>
                 </div>
               </span>
+              {#if provision.showSplit}
+                <span class="component-split" data-testid="provision-split-{provision.index}">
+                  <span class="split-part">
+                    Taxes
+                    <span
+                      class="split-value"
+                      class:pos={provision.taxChange > 0}
+                      class:neg={provision.taxChange < 0}
+                      >{formatDollarChange(provision.taxChange)}</span
+                    >
+                  </span>
+                  <span class="split-separator" aria-hidden="true">·</span>
+                  <span class="split-part">
+                    Benefits
+                    <span
+                      class="split-value"
+                      class:pos={provision.benefitsChange > 0}
+                      class:neg={provision.benefitsChange < 0}
+                      >{formatDollarChange(provision.benefitsChange)}</span
+                    >
+                  </span>
+                </span>
+              {/if}
               <div class="provision-tooltip">{provision.description}</div>
             </div>
           {/each}
@@ -1200,6 +1029,53 @@
     border-top: none;
   }
 
+  /* Tax and benefit split sub-line */
+  .impact-headline,
+  .provision-item {
+    flex-wrap: wrap;
+  }
+
+  .component-split {
+    flex: 1 0 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.15rem 0.5rem;
+    margin-top: 0.25rem;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--text-secondary);
+  }
+
+  .split-part {
+    white-space: nowrap;
+  }
+
+  .split-value {
+    margin-left: 0.3rem;
+    font-weight: 600;
+  }
+
+  .split-value.pos {
+    color: var(--scatter-positive);
+  }
+
+  .split-value.neg {
+    color: var(--scatter-negative);
+  }
+
+  .split-separator {
+    opacity: 0.5;
+  }
+
+  .sign-convention-note {
+    margin: 0.5rem 0 0 0;
+    max-width: 52ch;
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--text-secondary);
+  }
+
   /* Mobile responsive styles */
   @media (max-width: 768px) {
     .household-profile {
@@ -1313,6 +1189,15 @@
     .breakdown-value {
       font-size: 11px;
     }
+
+    .component-split {
+      font-size: 11px;
+      gap: 0.15rem 0.4rem;
+    }
+
+    .sign-convention-note {
+      font-size: 10px;
+    }
   }
 
   @media (max-width: 480px) {
@@ -1364,6 +1249,14 @@
 
     .breakdown-value {
       font-size: 10px;
+    }
+
+    .component-split {
+      font-size: 10px;
+    }
+
+    .sign-convention-note {
+      font-size: 9px;
     }
   }
 </style>
