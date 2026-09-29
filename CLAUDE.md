@@ -64,7 +64,8 @@ Each CSV contains household-level tax impact data with columns for income, tax c
 
 ## Development Notes
 
-- The app is configured for deployment to GitHub Pages with base path `/obbba-scatter`
+- Production is policyengine.org/us/obbba-households (base path `/us/obbba-households`, `npm run build:policyengine`), proxied from the Vercel origin; see POLICYENGINE_DEPLOYMENT.md for routing, old-slug redirects and rollback order. GitHub Pages builds with `/obbba-household-by-household`
+- Serve a production build locally with the real vercel.json routing: `npm run serve:policyengine` (needs `npm install --no-save @vercel/routing-utils@6.6.0`)
 - No TypeScript despite presence of tsconfig in temp files
-- No test framework configured
+- Tests: Vitest (`npm test -- --run`)
 - Uses ES modules throughout (`"type": "module"` in package.json)

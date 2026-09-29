@@ -10,9 +10,9 @@ npm run dev
 ```
 
 Then test these URLs directly in your browser:
-- http://localhost:5173/?household=39519&baseline=tcja-expiration
-- http://localhost:5173/?household=12345&baseline=tcja-extension
-- http://localhost:5173/?household=67890
+- http://localhost:5173/obbba-household-by-household/?household=39519&baseline=tcja-expiration
+- http://localhost:5173/obbba-household-by-household/?household=12345&baseline=tcja-extension
+- http://localhost:5173/obbba-household-by-household/?household=67890
 
 **Expected behavior:**
 - The app should load and automatically navigate to the specified household
@@ -33,37 +33,35 @@ Then test these URLs directly in your browser:
 
 ### 3. Test Production Build
 
-Build with PolicyEngine path:
+Build with the policyengine.org base path and serve it with the production routing (see POLICYENGINE_DEPLOYMENT.md):
 ```bash
+npm install --no-save @vercel/routing-utils@6.6.0
 npm run build:policyengine
+npm run serve:policyengine
 ```
 
-Then serve the build locally:
-```bash
-npm run preview
-```
-
-Test with these URLs (adjust port if needed):
-- http://localhost:4173/us/obbba-household-by-household/?household=39519&baseline=tcja-expiration
+Test with these URLs:
+- http://localhost:4173/us/obbba-households?household=39519&baseline=tcja-expiration
+- http://localhost:4173/us/obbba-household-explorer?household=39519&baseline=tcja-expiration (old slug: redirects, keeping the query)
 
 ## Detailed Test Cases
 
 ### Test Case 1: Direct Navigation
-1. Go to: http://localhost:5173/?household=39519&baseline=tcja-expiration
+1. Go to: http://localhost:5173/obbba-household-by-household/?household=39519&baseline=tcja-expiration
 2. **Verify:**
    - Household 39519 is selected (highlighted in chart)
    - Baseline is set to "TCJA Expiration"
    - Page scrolls to appropriate section based on household income
 
 ### Test Case 2: URL Updates When Selecting Household
-1. Start at: http://localhost:5173/
+1. Start at: http://localhost:5173/obbba-household-by-household/
 2. Click on any household in the scatter plot
 3. **Verify:**
    - URL updates to include household ID and baseline
    - Browser back button works to deselect
 
 ### Test Case 3: Switching Baselines Preserves Selection
-1. Go to: http://localhost:5173/?household=39519&baseline=tcja-expiration
+1. Go to: http://localhost:5173/obbba-household-by-household/?household=39519&baseline=tcja-expiration
 2. Use the baseline switcher in the header
 3. **Verify:**
    - Household remains selected

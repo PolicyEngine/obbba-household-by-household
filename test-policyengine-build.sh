@@ -1,30 +1,30 @@
 #!/bin/bash
+# Build the policyengine.org bundle and serve it the way the Vercel origin
+# does (vercel.json redirects and rewrites, via serve-policyengine.js).
+set -euo pipefail
 
-echo "🚀 Building app with PolicyEngine base path..."
+cd "$(dirname "$0")"
+
+PORT="${PORT:-4173}"
+ORIGIN="http://localhost:${PORT}"
+ROUTING_UTILS=6.6.0
+
+installed=$(node -p "require('./node_modules/@vercel/routing-utils/package.json').version" 2>/dev/null || true)
+if [ "$installed" != "$ROUTING_UTILS" ]; then
+  echo "Installing @vercel/routing-utils@$ROUTING_UTILS (not saved to package.json)..."
+  npm install --no-save "@vercel/routing-utils@$ROUTING_UTILS"
+fi
+
+echo "Building with BASE_PATH=/us/obbba-households..."
 npm run build:policyengine
 
 echo ""
-echo "✅ Build complete!"
+echo "Try:"
+echo "  ${ORIGIN}/us/obbba-households"
+echo "  ${ORIGIN}/us/obbba-households?household=39519&baseline=tcja-expiration"
+echo "  ${ORIGIN}/us/obbba-households/explore"
+echo "  ${ORIGIN}/us/obbba-households/paper"
+echo "  ${ORIGIN}/us/obbba-household-explorer?household=39519  (old slug: redirects)"
 echo ""
-echo "📦 Starting preview server..."
-npm run preview:policyengine &
 
-# Wait a moment for server to start
-sleep 2
-
-echo ""
-echo "🌐 Server is running!"
-echo ""
-echo "👉 To test the app, open your browser to:"
-echo "   http://localhost:4173/us/obbba-household-by-household/"
-echo ""
-echo "🔗 Test these deep links:"
-echo "   http://localhost:4173/us/obbba-household-by-household/?household=39519&baseline=tcja-expiration"
-echo "   http://localhost:4173/us/obbba-household-by-household/?household=12345&baseline=tcja-extension"
-echo ""
-echo "📝 Note: The app won't load at http://localhost:4173/ because it's built with a base path"
-echo ""
-echo "Press Ctrl+C to stop the server"
-
-# Keep script running
-wait 
+PORT="${PORT}" npm run serve:policyengine

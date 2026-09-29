@@ -19,7 +19,7 @@ These are modeled records, not identifiable families. Their assigned household I
 Use the `household` query parameter to open a record. The optional `baseline=tcja-expiration` parameter is retained for compatibility.
 
 ```text
-/us/obbba-household-explorer?household=1026679&baseline=tcja-expiration
+https://www.policyengine.org/us/obbba-households?household=1026679&baseline=tcja-expiration
 ```
 
 Links that request the retired `tcja-extension` dataset fall back to the paper-consistent TCJA-expiration baseline.
@@ -31,11 +31,15 @@ npm ci
 npm run dev
 ```
 
-Build the multizone path served by PolicyEngine:
+Build the multizone path served by PolicyEngine (`/us/obbba-households`) and serve it locally with the production routing from `vercel.json`:
 
 ```bash
+npm install --no-save @vercel/routing-utils@6.6.0
 npm run build:policyengine
+npm run serve:policyengine
 ```
+
+See [POLICYENGINE_DEPLOYMENT.md](POLICYENGINE_DEPLOYMENT.md) for how policyengine.org serves the app, the old-slug redirects, and rollback order.
 
 Run tests and the generated-data contract:
 
