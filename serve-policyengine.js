@@ -3,7 +3,7 @@
 //
 // Serves build/ (from `npm run build:policyengine`) with the routing in
 // vercel.json, compiled by @vercel/routing-utils — the same compiler the
-// Vercel CLI uses — so local runs and the browser regression suite (stage 5)
+// Vercel CLI uses — so local runs and the browser regression suite (e2e/)
 // see the same trailing-slash strip, redirects, filesystem precedence and
 // rewrites as production, including production's strict matching (no SPA
 // fallback: a missing file is a 404, as on Vercel).
@@ -14,7 +14,9 @@
 //
 // @vercel/routing-utils is installed without saving so that Vercel's
 // `npm ci` stays on the committed lockfile; the helper warns if the installed
-// version is not the one it was checked against. Beyond vercel.json it
+// version is not the one it was checked against. e2e/routes.spec.js runs one
+// route table against this helper in CI (e2e.yml) and against the live origin
+// (e2e-live.yml), so drift between them fails a check. Beyond vercel.json it
 // mirrors two origin behaviours measured with curl: paths with repeated
 // slashes 308 to the collapsed path, and methods other than GET/HEAD get 405.
 import { createServer } from 'node:http';

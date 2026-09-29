@@ -44,3 +44,7 @@ coverage/
 static/district_obbba_impacts.csv
 static/district_obbba_impacts_current_law.csv
 .vercel
+
+# Playwright (e2e/)
+/test-results/
+/playwright-report/

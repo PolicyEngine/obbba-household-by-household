@@ -1,0 +1,57 @@
+name: Browser regression
+
+# Builds the policyengine.org bundle and runs the Playwright suite (e2e/)
+# against serve-policyengine.js, which applies vercel.json the way the Vercel
+# origin does. Catches old-slug redirects, reload loops outside the base,
+# broken paper links and assets that don't load, before they deploy.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  emulated:
+    name: Browser regression (emulated origin)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        # Playwright and routing-utils stay out of package-lock.json so
+        # Vercel's `npm ci` is unaffected.
+        run: |
+          npm ci
+          npm install --no-save @playwright/test@1.63.0 @vercel/routing-utils@6.6.0
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build the policyengine.org bundle
+        run: npm run build:policyengine
+
+      - name: Run the suite against the emulated origin
+        run: npx playwright test --project=origin-emulated
+        env:
+          E2E_EMULATED: '1'
+
+      - name: Upload the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-emulated
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
