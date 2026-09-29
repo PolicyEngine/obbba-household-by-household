@@ -34,7 +34,7 @@
         // Function to update iframe src with current URL parameters
         function updateIframeSrc() {
             const urlParams = new URLSearchParams(window.location.search);
-            const baseUrl = '/us/obbba-households/'; // Or full URL for PolicyEngine
+            const baseUrl = '/us/obbba-households'; // Or full URL for PolicyEngine
             
             // Pass URL parameters to iframe
             const fullUrl = baseUrl + (urlParams.toString() ? '?' + urlParams.toString() : '');

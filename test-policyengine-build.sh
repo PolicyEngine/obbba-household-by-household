@@ -3,12 +3,16 @@
 # does (vercel.json redirects and rewrites, via serve-policyengine.js).
 set -euo pipefail
 
+cd "$(dirname "$0")"
+
 PORT="${PORT:-4173}"
 ORIGIN="http://localhost:${PORT}"
+ROUTING_UTILS=6.6.0
 
-if [ ! -d node_modules/@vercel/routing-utils ]; then
-  echo "Installing @vercel/routing-utils (not saved to package.json)..."
-  npm install --no-save @vercel/routing-utils@6.6.0
+installed=$(node -p "require('./node_modules/@vercel/routing-utils/package.json').version" 2>/dev/null || true)
+if [ "$installed" != "$ROUTING_UTILS" ]; then
+  echo "Installing @vercel/routing-utils@$ROUTING_UTILS (not saved to package.json)..."
+  npm install --no-save "@vercel/routing-utils@$ROUTING_UTILS"
 fi
 
 echo "Building with BASE_PATH=/us/obbba-households..."

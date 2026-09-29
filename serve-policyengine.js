@@ -13,13 +13,16 @@
 //   npm run serve:policyengine          # PORT=4173 by default
 //
 // @vercel/routing-utils is installed without saving so that Vercel's
-// `npm ci` stays on the committed lockfile. e2e/routes.spec.js runs the same
-// route table against this server and the live origin, so drift between the
-// two fails CI.
+// `npm ci` stays on the committed lockfile; the helper warns if the installed
+// version is not the one it was checked against. Beyond vercel.json it
+// mirrors two origin behaviours measured with curl: paths with repeated
+// slashes 308 to the collapsed path, and methods other than GET/HEAD get 405.
 import { createServer } from 'node:http';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+export const ROUTING_UTILS_VERSION = '6.6.0';
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -40,9 +43,18 @@ export async function compileRoutes(config) {
   let getTransformedRoutes;
   try {
     ({ getTransformedRoutes } = await import('@vercel/routing-utils'));
-  } catch {
+  } catch (error) {
+    if (error?.code !== 'ERR_MODULE_NOT_FOUND') throw error;
     throw new Error(
-      'serve-policyengine.js needs @vercel/routing-utils: npm install --no-save @vercel/routing-utils@6.6.0'
+      `serve-policyengine.js needs @vercel/routing-utils: npm install --no-save @vercel/routing-utils@${ROUTING_UTILS_VERSION}`
+    );
+  }
+  const installed = JSON.parse(
+    readFileSync(new URL('./node_modules/@vercel/routing-utils/package.json', import.meta.url), 'utf8')
+  ).version;
+  if (installed !== ROUTING_UTILS_VERSION) {
+    console.warn(
+      `@vercel/routing-utils ${installed} is installed; this helper was checked against ${ROUTING_UTILS_VERSION}.`
     );
   }
   const { routes, error } = getTransformedRoutes(config);
@@ -77,8 +89,19 @@ export function fileLookup(buildDir) {
  * throws rather than silently diverging from Vercel.
  */
 export function resolveRequest(url, routes, lookup) {
-  const incoming = new URL(url, 'http://localhost');
+  // Prefix the origin rather than resolving against it: a request target
+  // like "//paper" would otherwise parse "paper" as a host.
+  const incoming = new URL(`http://localhost${url}`);
   let pathname = incoming.pathname;
+
+  // The origin collapses repeated slashes with a 308 before any routing.
+  if (/\/{2,}/.test(pathname)) {
+    return {
+      type: 'redirect',
+      status: 308,
+      location: pathname.replace(/\/{2,}/g, '/') + incoming.search
+    };
+  }
 
   for (const route of routes) {
     if (route.handle) {
@@ -109,7 +132,7 @@ export function resolveRequest(url, routes, lookup) {
         const file = lookup(pathname);
         if (file) return { type: 'file', file };
       }
-      if (!route.continue) break;
+      // On a miss, routing carries on with the rewritten path.
       continue;
     }
     if (!route.continue) throw new Error(`Unsupported route: ${JSON.stringify(route)}`);
@@ -122,6 +145,11 @@ export function resolveRequest(url, routes, lookup) {
 export function createHandler({ buildDir, routes }) {
   const lookup = fileLookup(buildDir);
   return (req, res) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      res.writeHead(405, { Allow: 'GET, HEAD' });
+      res.end();
+      return;
+    }
     const result = resolveRequest(req.url, routes, lookup);
     const cacheControl = { 'Cache-Control': 'public, max-age=0, must-revalidate' };
     if (result.type === 'redirect') {

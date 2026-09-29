@@ -12,15 +12,25 @@ Other builds:
 
 ## Routing (`vercel.json`)
 
+Evaluated in this order:
+
 | Request | Response |
 |---|---|
+| A path with repeated slashes | 308 to the collapsed path (the origin does this before any routing) |
+| Any path ending in `/` | 308 to the same path without it (`trailingSlash: false`, as policyengine.org does) |
 | `/` and `/index.html` | 307 to `/us/obbba-households` |
 | `/us/obbba-household-explorer[/*]`, `/us/obbba-household-by-household[/*]` (old slugs) | 307 to `/us/obbba-households[/*]`, query kept |
-| Any path ending in `/` | 308 to the same path without it (`trailingSlash: false`, as policyengine.org does) |
+| A file in `build/` at its own path | the file. The filesystem is checked before the rewrites, so `/_app/*`, `/paper` and the data files also answer outside the base; that is harmless |
 | `/us/obbba-households`, `/explore`, `/explore/*` | the SPA shell (`index.html`) |
 | `/us/obbba-households/*` | the file under `build/`; a missing file is a 404 |
 
-policyengine.org sends the old slugs to the new one with its own permanent 308s (`website/next.config.ts`). It also redirects `/us/obbba-scatter`, the `/us/obba-household-explorer` typo, the `/us/research/obbba-household-*` forms, and the temporary `/us/ob3-households` alias.
+An old slug with a trailing slash therefore takes two hops (308, then 307).
+
+On policyengine.org, the old slugs get a single permanent 308 to the new one, from policyengine.org's own redirects (`website/next.config.ts`, policyengine-app-v2#1178). Those redirects also cover:
+- `/us/obbba-scatter`;
+- the `/us/obba-household-explorer` typo;
+- the `/us/research/obbba-household-*` forms;
+- the temporary `/us/ob3-households` alias.
 
 `src/app.html` also carries a guard. If the page is ever served outside the base anyway, the guard moves it under the base before SvelteKit starts, keeping the old-slug suffix, the query and the hash.
 
