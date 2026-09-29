@@ -25,6 +25,7 @@ describe('vercel.json routing contract', () => {
     const rewrites = Object.fromEntries(vercel.rewrites.map((r) => [r.source, r.destination]));
     expect(rewrites[OLD]).toBe('/index.html');
     expect(rewrites[`${OLD}/explore`]).toBe('/index.html');
+    expect(rewrites[`${OLD}/explore/:path*`]).toBe('/index.html');
     expect(rewrites[`${OLD}/:path*`]).toBe('/:path*');
   });
 
@@ -43,7 +44,7 @@ describe('vercel.json routing contract', () => {
 
   it('never rewrites a path outside the compiled base to the app shell', () => {
     for (const rewrite of vercel.rewrites) {
-      expect(rewrite.source.startsWith(OLD)).toBe(true);
+      expect(rewrite.source === OLD || rewrite.source.startsWith(`${OLD}/`)).toBe(true);
     }
   });
 });
