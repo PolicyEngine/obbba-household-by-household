@@ -3,7 +3,8 @@ import {
   parseUrlParams,
   updateUrlWithHousehold,
   notifyParentOfUrlChange,
-  findSectionForHousehold
+  findSectionForHousehold,
+  EXPLORER_URL_QUERY
 } from './urlSync.js';
 import { scrollStates } from '../config/views.js';
 
@@ -143,5 +144,22 @@ describe('urlSync utilities', () => {
       expect(scrollStates[index].viewType).toBe('group');
       expect(scrollStates[index].id).toBe('middle-income');
     });
+  });
+});
+
+describe('EXPLORER_URL_QUERY', () => {
+  it.each([
+    'https://www.policyengine.org/us/obbba-households?household=8&baseline=tcja-expiration',
+    'https://www.policyengine.org/us/obbba-households/explore?household=8&baseline=tcja-expiration',
+    'https://policyengine.org/us/obbba-household-explorer?household=8&baseline=tcja-expiration',
+    'https://policyengine.org/us/obbba-household-by-household?household=8&baseline=tcja-expiration'
+  ])('reads the query from %s', (url) => {
+    expect(url.match(EXPLORER_URL_QUERY)[1]).toBe('household=8&baseline=tcja-expiration');
+  });
+
+  it('ignores other pages', () => {
+    expect('https://www.policyengine.org/us/research?household=8'.match(EXPLORER_URL_QUERY)).toBe(
+      null
+    );
   });
 });

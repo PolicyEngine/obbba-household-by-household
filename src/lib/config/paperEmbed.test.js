@@ -43,7 +43,7 @@ describe('paper wrapper', () => {
   });
 
   it('points canonical and og:url at the policyengine.org slug', () => {
-    const canonical = 'https://policyengine.org/us/obbba-households/paper';
+    const canonical = 'https://www.policyengine.org/us/obbba-households/paper';
     expect(html).toContain(`<link rel="canonical" href="${canonical}">`);
     expect(html).toContain(`<meta property="og:url" content="${canonical}">`);
     expect(html).not.toContain('obbba-household-explorer');

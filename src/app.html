@@ -3,20 +3,20 @@
 	<head>
 		<meta charset="utf-8" />
 		<script>
-			// The old slugs redirect to /us/obbba-households on the origin and on
-			// policyengine.org. If an old-slug URL ever serves this bundle anyway
-			// (a stale or misrouted response), move it under the base path before
-			// SvelteKit starts: SvelteKit reloads any URL outside its base, which
-			// would loop.
+			// SvelteKit reloads any URL outside its base, forever. The origin and
+			// policyengine.org redirect old slugs into the base, but if this page is
+			// ever served outside it anyway (a stale or misrouted response, or
+			// /index.html), move it under the base before SvelteKit starts. Old
+			// slugs keep their suffix; the query and hash are always kept.
 			(function () {
-				var legacy = /^\/us\/obbba-household-(?:explorer|by-household)(\/.*)?$/;
-				var match = location.pathname.match(legacy);
-				if (match) {
-					location.replace('/us/obbba-households' + (match[1] || '') + location.search + location.hash);
-				}
+				var base = '%sveltekit.assets%';
+				var path = location.pathname;
+				if (base.charAt(0) !== '/' || path === base || path.indexOf(base + '/') === 0) return;
+				var legacy = path.match(/^\/us\/obbba-household-(?:explorer|by-household)(\/.*)?$/);
+				location.replace(base + ((legacy && legacy[1]) || '') + location.search + location.hash);
 			})();
 		</script>
-		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
+		<link rel="icon" type="image/svg+xml" href="%sveltekit.assets%/favicon.svg" />
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">

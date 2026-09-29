@@ -10,6 +10,11 @@
       "permanent": false
     },
     {
+      "source": "/index.html",
+      "destination": "/us/obbba-households",
+      "permanent": false
+    },
+    {
       "source": "/us/obbba-household-explorer",
       "destination": "/us/obbba-households",
       "permanent": false

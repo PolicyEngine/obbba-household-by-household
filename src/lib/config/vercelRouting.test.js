@@ -49,6 +49,16 @@ describe('vercel.json routing contract', () => {
     expect(redirectFor('/')).toEqual({ source: '/', destination: BASE, permanent: false });
   });
 
+  it('redirects /index.html into the base instead of serving the app outside it', () => {
+    // Vercel would otherwise serve the SPA shell from the filesystem at
+    // /index.html, outside the base, where SvelteKit reloads forever.
+    expect(redirectFor('/index.html')).toEqual({
+      source: '/index.html',
+      destination: BASE,
+      permanent: false
+    });
+  });
+
   it.each(LEGACY)('redirects %s to the base, keeping the suffix', (legacy) => {
     // Temporary on the origin so a rollback can never meet a browser-cached
     // redirect; policyengine.org carries the permanent one.
@@ -65,47 +75,58 @@ describe('vercel.json routing contract', () => {
   });
 });
 
-describe('legacy-slug guard in src/app.html', () => {
+describe('out-of-base guard in src/app.html', () => {
   // Runs the inline guard against a stub location, the way a browser would
-  // before SvelteKit starts.
+  // before SvelteKit starts. SvelteKit substitutes %sveltekit.assets% with the
+  // base path in the SPA fallback page (build/index.html).
   const html = read('src/app.html');
-  const guard = html.match(/<script>\s*(\/\/ The old slugs[\s\S]*?)<\/script>/)[1];
+  const guard = html.match(
+    /<script>\s*(\/\/ SvelteKit reloads any URL outside[\s\S]*?)<\/script>/
+  )[1];
 
-  const run = (pathname, search = '', hash = '') => {
+  const run = (pathname, { search = '', hash = '', base = BASE } = {}) => {
     const location = { pathname, search, hash, replace: vi.fn() };
-    new Function('location', guard)(location);
+    new Function('location', guard.replaceAll('%sveltekit.assets%', base))(location);
     return location.replace.mock.calls.map(([url]) => url);
   };
 
-  it('runs before SvelteKit boots', () => {
+  it('runs before SvelteKit boots and reads the base from the build', () => {
     expect(html.indexOf(guard)).toBeLessThan(html.indexOf('%sveltekit.head%'));
+    expect(guard).toContain("'%sveltekit.assets%'");
   });
 
   it.each([
     ['/us/obbba-household-explorer', '', '', '/us/obbba-households'],
     ['/us/obbba-household-explorer/', '', '', '/us/obbba-households/'],
     [
-      '/us/obbba-household-explorer/explore/12',
+      '/us/obbba-household-explorer/explore',
       '?household=8&baseline=tcja-expiration',
       '#map',
-      '/us/obbba-households/explore/12?household=8&baseline=tcja-expiration#map'
+      '/us/obbba-households/explore?household=8&baseline=tcja-expiration#map'
     ],
-    ['/us/obbba-household-by-household', '?household=8', '', '/us/obbba-households?household=8']
+    ['/us/obbba-household-by-household', '?household=8', '', '/us/obbba-households?household=8'],
+    ['/index.html', '?household=8', '', '/us/obbba-households?household=8'],
+    ['/', '', '', '/us/obbba-households'],
+    ['/us/obbba-household-explorerx/explore', '', '', '/us/obbba-households']
   ])('moves %s%s%s under the base', (pathname, search, hash, expected) => {
-    expect(run(pathname, search, hash)).toEqual([expected]);
+    expect(run(pathname, { search, hash })).toEqual([expected]);
   });
 
-  it.each([
-    '/us/obbba-households',
-    '/us/obbba-households/explore',
-    '/obbba-household-by-household/',
-    '/us/obbba-household-explorerx',
-    '/us/obbba-scatter'
-  ])('leaves %s alone', (pathname) => {
-    expect(run(pathname)).toEqual([]);
+  it.each(['/us/obbba-households', '/us/obbba-households/', '/us/obbba-households/explore'])(
+    'leaves %s alone',
+    (pathname) => {
+      expect(run(pathname, { search: '?household=8' })).toEqual([]);
+    }
+  );
+
+  it('leaves the GitHub Pages build alone', () => {
+    const base = '/obbba-household-by-household';
+    expect(run('/obbba-household-by-household/', { base })).toEqual([]);
+    expect(run('/obbba-household-by-household/explore', { base })).toEqual([]);
   });
 
-  it('targets the compiled base', () => {
-    expect(guard).toContain(`'${BASE}'`);
+  it('does nothing if the assets path is ever relative', () => {
+    // paths.relative makes %sveltekit.assets% relative in prerendered pages.
+    expect(run('/us/obbba-household-explorer', { base: '.' })).toEqual([]);
   });
 });
