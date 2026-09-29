@@ -50,6 +50,14 @@ npm run serve:policyengine                          # http://localhost:4173/us/o
 
 `./test-policyengine-build.sh` does all three steps.
 
+## Browser regression suite
+
+`e2e/` (Playwright) runs against four targets:
+- the local helper, in CI on every PR (`e2e.yml`);
+- the live origin, policyengine.org and the GitHub Pages copy, after each Production deploy, daily, and on demand (`e2e-live.yml`).
+
+On Vercel, `_app/version.json` names the commit it was built from (`kit.version.name = VERCEL_GIT_COMMIT_SHA`), so the post-deploy run waits for the deployment that triggered it. The policyengine.org route table pins redirects that live in policyengine-app-v2's `next.config.ts`. Change both together.
+
 ## Rollback floors
 
 Fix forward where possible. If you must roll back:

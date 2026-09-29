@@ -16,6 +16,9 @@ on:
     - cron: '23 10 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   live:
     name: Browser regression (live hosts)

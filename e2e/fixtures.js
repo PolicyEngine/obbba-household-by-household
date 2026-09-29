@@ -52,16 +52,6 @@ export const test = base.extend({
 
 export { expect };
 
-/** The redirect hops a response went through, as paths with queries. */
-export function hops(response) {
-  const chain = [];
-  for (let request = response.request(); request; request = request.redirectedFrom()) {
-    const url = new URL(request.url());
-    chain.unshift(url.pathname + url.search);
-  }
-  return chain;
-}
-
 export async function expectHouseholdSelected(page) {
   await expect(
     page.locator('.household-profile h3', { hasText: `Household #${HOUSEHOLD}` }).first()
@@ -86,7 +76,7 @@ export function expectAppAssets(watch) {
 
 /** Settles, then asserts one document load, no errors and no failed requests. */
 export async function expectHealthyLoad(page, watch) {
-  await page.waitForLoadState('networkidle').catch(() => {});
+  await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
   await page.waitForTimeout(2_000); // a reload loop would show up here
   expect(watch.documents, 'one document load, no reload loop').toHaveLength(1);
   expect(watch.errors, 'no uncaught page errors').toEqual([]);
