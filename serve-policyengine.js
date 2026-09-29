@@ -3,7 +3,7 @@
 //
 // Serves build/ (from `npm run build:policyengine`) with the routing in
 // vercel.json, compiled by @vercel/routing-utils — the same compiler the
-// Vercel CLI uses — so local runs and the browser regression suite (stage 5)
+// Vercel CLI uses — so local runs and the browser regression suite (e2e/)
 // see the same trailing-slash strip, redirects, filesystem precedence and
 // rewrites as production, including production's strict matching (no SPA
 // fallback: a missing file is a 404, as on Vercel).
