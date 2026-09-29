@@ -3,7 +3,7 @@
 //
 // Serves build/ (from `npm run build:policyengine`) with the routing in
 // vercel.json, compiled by @vercel/routing-utils — the same compiler the
-// Vercel CLI uses — so local runs and the browser regression suite (e2e/)
+// Vercel CLI uses — so local runs and the browser regression suite (stage 5)
 // see the same trailing-slash strip, redirects, filesystem precedence and
 // rewrites as production, including production's strict matching (no SPA
 // fallback: a missing file is a 404, as on Vercel).
@@ -110,7 +110,7 @@ export function resolveRequest(url, routes, lookup) {
       if (file) return { type: 'file', file };
       continue;
     }
-    // Case-sensitive, as the live origin matches (e2e/routes.spec.js pins it).
+    // Case-sensitive, as measured against the live origin.
     const match = new RegExp(route.src).exec(pathname);
     if (!match) continue;
     const fill = (template) => template.replace(/\$(\d+)/g, (_, n) => match[Number(n)] ?? '');
