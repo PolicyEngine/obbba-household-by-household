@@ -2,11 +2,13 @@
   import { base } from '$app/paths';
 
   // PolicyEngine site shell, rendered by the child app itself. Multizone
-  // rewrites proxy this app under policyengine.org/us/obbba-household-explorer
+  // rewrites proxy this app under policyengine.org/us/obbba-households
   // but do not inject the parent site shell, so the header/nav and footer are
   // rendered here. Both routes are full-viewport apps, so the header is fixed
   // and pages size themselves against --pe-shell-height.
   const NAV_LINKS = [
+    // A static page under the base, not a SvelteKit route: load it directly.
+    { label: 'Working paper', href: `${base}/paper`, reload: true },
     { label: 'Research', href: 'https://policyengine.org/us/research' },
     { label: 'Model', href: 'https://policyengine.org/us/model' },
     { label: 'API', href: 'https://policyengine.org/us/api' },
@@ -29,7 +31,7 @@
     </a>
     <div class="pe-shell-links">
       {#each NAV_LINKS as link}
-        <a href={link.href}>{link.label}</a>
+        <a href={link.href} data-sveltekit-reload={link.reload ? '' : undefined}>{link.label}</a>
       {/each}
     </div>
   </div>

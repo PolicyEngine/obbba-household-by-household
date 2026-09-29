@@ -1,6 +1,7 @@
 <script>
   import { onMount, onDestroy, tick } from 'svelte';
   import { page } from '$app/stores';
+  import { base } from '$app/paths';
   import { DATASETS } from '$lib/config/datasets.js';
   import { introMethodology, scrollStates } from '$lib/config/views.js';
   import { loadFullDataBackground } from '$lib/data/instantLoader.js';
@@ -10,7 +11,8 @@
     parseUrlParams,
     updateUrlWithHousehold,
     findSectionForHousehold,
-    notifyParentOfUrlChange
+    notifyParentOfUrlChange,
+    EXPLORER_URL_QUERY
   } from '$lib/navigation/urlSync.js';
   import {
     createIntersectionObserver,
@@ -548,9 +550,7 @@
       if (!window.location.search && parentUrl) {
         try {
           // Check if parent URL contains household explorer path with params
-          const parentUrlMatch = parentUrl.match(
-            /obbba-household-(?:explorer|by-household)[^?]*\?(.+)/
-          );
+          const parentUrlMatch = parentUrl.match(EXPLORER_URL_QUERY);
           if (parentUrlMatch) {
             console.log('Found parameters in parent path, applying to iframe');
             const parentParams = new URLSearchParams(parentUrlMatch[1]);
@@ -746,7 +746,7 @@
 
   <!-- Top right links -->
   <div class="top-right-links">
-    <a href="explore" class="explore-link" title="Explore by Congressional District">
+    <a href="{base}/explore" class="explore-link" title="Explore by Congressional District">
       <svg
         width="20"
         height="20"

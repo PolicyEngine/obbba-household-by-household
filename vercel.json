@@ -2,38 +2,54 @@
   "installCommand": "npm ci",
   "buildCommand": "npm run build:policyengine",
   "outputDirectory": "build",
+  "trailingSlash": false,
   "redirects": [
     {
       "source": "/",
-      "destination": "/us/obbba-household-explorer",
+      "destination": "/us/obbba-households",
       "permanent": false
     },
     {
-      "source": "/us/obbba-households",
-      "destination": "/us/obbba-household-explorer",
+      "source": "/index.html",
+      "destination": "/us/obbba-households",
       "permanent": false
     },
     {
-      "source": "/us/obbba-households/:path*",
-      "destination": "/us/obbba-household-explorer/:path*",
+      "source": "/us/obbba-household-explorer",
+      "destination": "/us/obbba-households",
+      "permanent": false
+    },
+    {
+      "source": "/us/obbba-household-explorer/:path*",
+      "destination": "/us/obbba-households/:path*",
+      "permanent": false
+    },
+    {
+      "source": "/us/obbba-household-by-household",
+      "destination": "/us/obbba-households",
+      "permanent": false
+    },
+    {
+      "source": "/us/obbba-household-by-household/:path*",
+      "destination": "/us/obbba-households/:path*",
       "permanent": false
     }
   ],
   "rewrites": [
     {
-      "source": "/us/obbba-household-explorer",
+      "source": "/us/obbba-households",
       "destination": "/index.html"
     },
     {
-      "source": "/us/obbba-household-explorer/explore",
+      "source": "/us/obbba-households/explore",
       "destination": "/index.html"
     },
     {
-      "source": "/us/obbba-household-explorer/explore/:path*",
+      "source": "/us/obbba-households/explore/:path*",
       "destination": "/index.html"
     },
     {
-      "source": "/us/obbba-household-explorer/:path*",
+      "source": "/us/obbba-households/:path*",
       "destination": "/:path*"
     }
   ]
