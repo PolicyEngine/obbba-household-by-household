@@ -31,6 +31,15 @@ describe('vercel.json routing contract', () => {
     expect(rewrites[`${BASE}/:path*`]).toBe('/:path*');
   });
 
+  it('matches the catch-all rewrite last', () => {
+    // Rewrites are first-match: the static-file catch-all must not shadow the
+    // SPA routes.
+    expect(vercel.rewrites.at(-1).source).toBe(`${BASE}/:path*`);
+    expect(
+      vercel.rewrites.filter((r) => r.source.endsWith('/:path*') && r.destination === '/:path*')
+    ).toHaveLength(1);
+  });
+
   it('never rewrites a path outside the compiled base to the app shell', () => {
     for (const rewrite of vercel.rewrites) {
       expect(inBase(rewrite.source)).toBe(true);

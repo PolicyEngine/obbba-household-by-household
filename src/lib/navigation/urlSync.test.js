@@ -157,6 +157,11 @@ describe('EXPLORER_URL_QUERY', () => {
     expect(url.match(EXPLORER_URL_QUERY)[1]).toBe('household=8&baseline=tcja-expiration');
   });
 
+  it('stops at the fragment', () => {
+    const url = 'https://www.policyengine.org/us/obbba-households?household=8#profile';
+    expect(url.match(EXPLORER_URL_QUERY)[1]).toBe('household=8');
+  });
+
   it('ignores other pages', () => {
     expect('https://www.policyengine.org/us/research?household=8'.match(EXPLORER_URL_QUERY)).toBe(
       null

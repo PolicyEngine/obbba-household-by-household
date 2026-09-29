@@ -3,7 +3,7 @@ import { goto } from '$app/navigation';
 // Matches the query string of a policyengine.org explorer URL under any of its
 // slugs (current: obbba-households; older: obbba-household-explorer and
 // obbba-household-by-household), for copying params from an embedding page.
-export const EXPLORER_URL_QUERY = /obbba-household(?:s|-explorer|-by-household)[^?]*\?(.+)/;
+export const EXPLORER_URL_QUERY = /obbba-household(?:s|-explorer|-by-household)[^?#]*\?([^#]+)/;
 
 // Helper function to notify parent window of URL changes (for iframe integration)
 export function notifyParentOfUrlChange(explicitParams = null) {
