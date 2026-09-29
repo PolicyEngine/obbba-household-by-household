@@ -80,14 +80,14 @@
         }
 
         // Test 1: Direct GitHub Pages URL with parameters
-        const testUrl1 = 'https://policyengine.github.io/obbba-scatter/?household=46067&baseline=tcja-expiration';
+        const testUrl1 = 'https://policyengine.github.io/obbba-household-by-household/?household=46067&baseline=tcja-expiration';
         document.getElementById('url1').textContent = testUrl1;
         const iframe1 = document.getElementById('iframe1');
         iframe1.src = testUrl1;
         log(1, 'Loading iframe with parameters', 'info');
 
         // Test 2: Without parameters
-        const testUrl2 = 'https://policyengine.github.io/obbba-scatter/';
+        const testUrl2 = 'https://policyengine.github.io/obbba-household-by-household/';
         document.getElementById('url2').textContent = testUrl2;
         const iframe2 = document.getElementById('iframe2');
         iframe2.src = testUrl2;

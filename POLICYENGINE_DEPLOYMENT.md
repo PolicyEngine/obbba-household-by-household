@@ -1,79 +1,49 @@
-# PolicyEngine Deployment Guide
+# Serving the explorer on policyengine.org
 
-## Deep Linking Issues and Solutions
+The explorer lives at **https://www.policyengine.org/us/obbba-households**. policyengine.org (PolicyEngine/policyengine-app-v2, `website/`) proxies that path to this app's Vercel deployment, https://obbba-household-by-household.vercel.app/us/obbba-households, as a path-mounted multizone route (`website/src/data/appZoneRoutes.ts`). The proxy does not inject the parent site shell, so `src/routes/+layout.svelte` renders the PolicyEngine header and footer itself.
 
-### The Problem
+## Base path
 
-Deep links like `https://policyengine.org/us/obbba-household-by-household?household=39519&baseline=tcja-expiration` are not working because:
+SvelteKit is built with `BASE_PATH=/us/obbba-households` (`npm run build:policyengine`, which Vercel runs). The public path and the proxied path must match: SvelteKit treats any URL outside its base as external and reloads it, so serving this bundle under any other path loops.
 
-1. **Base Path Mismatch**: The app is built with base path `/obbba-scatter` but deployed at `/us/obbba-household-by-household`
-2. **Iframe Parameter Passing**: When embedded as an iframe, URL parameters from the parent page aren't automatically passed to the iframe src
+Other builds:
+- GitHub Pages (`deploy.yml`) uses `/obbba-household-by-household` and serves https://policyengine.github.io/obbba-household-by-household/.
+- `npm run dev` uses the same default.
 
-### Solution 1: Build with Correct Base Path
+## Routing (`vercel.json`)
 
-When building for PolicyEngine deployment, use the correct base path:
+| Request | Response |
+|---|---|
+| `/` and `/index.html` | 307 to `/us/obbba-households` |
+| `/us/obbba-household-explorer[/*]`, `/us/obbba-household-by-household[/*]` (old slugs) | 307 to `/us/obbba-households[/*]`, query kept |
+| Any path ending in `/` | 308 to the same path without it (`trailingSlash: false`, as policyengine.org does) |
+| `/us/obbba-households`, `/explore`, `/explore/*` | the SPA shell (`index.html`) |
+| `/us/obbba-households/*` | the file under `build/`; a missing file is a 404 |
+
+policyengine.org sends the old slugs to the new one with its own permanent 308s (`website/next.config.ts`). It also redirects `/us/obbba-scatter`, the `/us/obba-household-explorer` typo, the `/us/research/obbba-household-*` forms, and the temporary `/us/ob3-households` alias.
+
+`src/app.html` also carries a guard. If the page is ever served outside the base anyway, the guard moves it under the base before SvelteKit starts, keeping the old-slug suffix, the query and the hash.
+
+## Paper
+
+The working paper lives at `/us/obbba-households/paper`: a wrapper, `static/paper/index.html`, around the manuscript in `static/paper/web/`. Both hosts strip the trailing slash, so the wrapper pins `<base>` to the paper directory before any of its relative links are parsed.
+
+## Local serving
+
+`serve-policyengine.js` serves `build/` with the routing above. It compiles `vercel.json` with `@vercel/routing-utils`, the compiler the Vercel CLI uses. It deliberately has no SPA fallback, so it 404s wherever Vercel would.
 
 ```bash
-# Build with PolicyEngine base path
-BASE_PATH=/us/obbba-household-by-household npm run build
+npm install --no-save @vercel/routing-utils@6.6.0   # kept out of package-lock.json
+npm run build:policyengine
+npm run serve:policyengine                          # http://localhost:4173/us/obbba-households
 ```
 
-### Solution 2: Proper Iframe Integration
+`./test-policyengine-build.sh` does all three steps.
 
-PolicyEngine needs to:
+## Rollback floors
 
-1. **Pass parameters to iframe src**:
-```javascript
-// Instead of:
-<iframe src="/us/obbba-household-by-household/"></iframe>
+Fix forward where possible. If you must roll back:
 
-// Use:
-<iframe src="/us/obbba-household-by-household/?household=39519&baseline=tcja-expiration"></iframe>
-```
-
-2. **Handle parameter synchronization** between parent and iframe (see `policyengine-integration.html` for example)
-
-### Solution 3: Alternative Deployment Approach
-
-If PolicyEngine can't modify their iframe integration, consider:
-
-1. **Direct deployment** (not in iframe) - This would make deep links work naturally
-2. **Proxy configuration** to handle the base path mismatch
-3. **URL parameter forwarding** via postMessage API
-
-### Testing Deep Links
-
-To test if deep links are working:
-
-1. Direct URL: `https://your-deployment.com/us/obbba-household-by-household/?household=39519&baseline=tcja-expiration`
-2. Should automatically:
-   - Load the specified household (39519)
-   - Set the baseline to "tcja-expiration"
-   - Scroll to the appropriate section based on household income
-
-### Quick Fix for PolicyEngine
-
-The quickest fix is to ensure the iframe src includes URL parameters:
-
-```javascript
-// In PolicyEngine's code where they embed the iframe
-const currentParams = new URLSearchParams(window.location.search);
-const iframeSrc = `/us/obbba-household-by-household/${currentParams.toString() ? '?' + currentParams.toString() : ''}`;
-document.getElementById('obbba-iframe').src = iframeSrc;
-```
-
-### Building for Different Environments
-
-```json
-// package.json scripts
-{
-  "scripts": {
-    "build:github": "vite build",
-    "build:policyengine": "BASE_PATH=/us/obbba-household-by-household vite build"
-  }
-}
-```
-
-## Contact
-
-If you need help with deployment or have questions about the integration, please open an issue in the repository. 
+- **Keep the parent route.** Never revert or Instant-Rollback policyengine.org below the release that proxies `/us/obbba-households` (policyengine-app-v2#1226) while this app serves that base. The old URLs redirect there.
+- **Keep this app on the new base.** Never take this app below the base-path move (#250) while policyengine.org 308s the old slugs (policyengine-app-v2#1178). The earlier deployment 307s the new slug back to the old one, and the two redirects would loop.
+- **Order matters.** Roll back policyengine.org's redirects first, confirm that's live, then this app.

@@ -33,18 +33,16 @@ Then test these URLs directly in your browser:
 
 ### 3. Test Production Build
 
-Build with PolicyEngine path:
+Build with the policyengine.org base path and serve it with the production routing (see POLICYENGINE_DEPLOYMENT.md):
 ```bash
+npm install --no-save @vercel/routing-utils@6.6.0
 npm run build:policyengine
+npm run serve:policyengine
 ```
 
-Then serve the build locally:
-```bash
-npm run preview
-```
-
-Test with these URLs (adjust port if needed):
-- http://localhost:4173/us/obbba-household-by-household/?household=39519&baseline=tcja-expiration
+Test with these URLs:
+- http://localhost:4173/us/obbba-households?household=39519&baseline=tcja-expiration
+- http://localhost:4173/us/obbba-household-explorer?household=39519&baseline=tcja-expiration (old slug: redirects, keeping the query)
 
 ## Detailed Test Cases
 
