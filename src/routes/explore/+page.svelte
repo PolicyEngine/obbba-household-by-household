@@ -3,6 +3,7 @@
   import { page } from '$app/stores';
   import { goto, afterNavigate } from '$app/navigation';
   import { browser } from '$app/environment';
+  import { base } from '$app/paths';
   import { districtDatasets } from '$lib/config/datasets.js';
   import ExplorerLayout from '$lib/components/ExplorerLayout.svelte';
   import ScatterPlot from '$lib/components/ScatterPlot.svelte';
@@ -418,7 +419,7 @@
   <!-- Header -->
   <header class="header">
     <div class="header-left">
-      <a href=".." class="back-link">
+      <a href="{base}/" class="back-link">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
           <path
             d="M12.5 15L7.5 10L12.5 5"

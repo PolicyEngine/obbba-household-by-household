@@ -1,6 +1,7 @@
 <script>
   import { onMount, onDestroy, tick } from 'svelte';
   import { page } from '$app/stores';
+  import { base } from '$app/paths';
   import { DATASETS } from '$lib/config/datasets.js';
   import { introMethodology, scrollStates } from '$lib/config/views.js';
   import { loadFullDataBackground } from '$lib/data/instantLoader.js';
@@ -746,7 +747,7 @@
 
   <!-- Top right links -->
   <div class="top-right-links">
-    <a href="explore" class="explore-link" title="Explore by Congressional District">
+    <a href="{base}/explore" class="explore-link" title="Explore by Congressional District">
       <svg
         width="20"
         height="20"

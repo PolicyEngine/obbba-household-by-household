@@ -2,14 +2,28 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<script>
+  // Relative links below (web/..., ../) assume the URL ends in "/paper/".
+  // policyengine.org and the Vercel origin both strip the trailing slash
+  // (/paper/ -> /paper), which would resolve them one directory too high.
+  // Pin the base to the paper directory before any of them is parsed.
+  (function () {
+    var path = location.pathname.replace(/\/index\.html$/, '/');
+    if (path.charAt(path.length - 1) !== '/') {
+      var base = document.createElement('base');
+      base.href = path + '/';
+      document.head.appendChild(base);
+    }
+  })();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Household and geographic variation in federal tax and transfer policy: analysis of the One Big Beautiful Bill Act — PolicyEngine working paper</title>
 <meta name="description" content="Working paper: OBBBA raises 2026 household resources by $546 billion against a TCJA-expiration counterfactual; 83% of households gain, 4% lose, the bottom decile loses on average, and district averages range from about $150 to $5,800.">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Household and geographic variation in federal tax and transfer policy: analysis of the One Big Beautiful Bill Act">
 <meta property="og:description" content="PolicyEngine working paper, revised August 30, 2026. Presented at the IARIW 39th General Conference, Brussels.">
-<meta property="og:url" content="https://policyengine.org/us/obbba-households/paper/">
-<link rel="canonical" href="https://policyengine.org/us/obbba-households/paper/">
+<meta property="og:url" content="https://policyengine.org/us/obbba-households/paper">
+<link rel="canonical" href="https://policyengine.org/us/obbba-households/paper">
 <style>
   :root { --teal: #319795; --dark: #1D4044; --darker: #0D2F33; --ink: #1e293b; --muted: #64748b; --border: #e2e8f0; --bg: #f8fafc; }
   * { box-sizing: border-box; margin: 0; }
@@ -74,7 +88,7 @@
             referrerpolicy="same-origin"></iframe>
   </div>
   <div class="footrow">
-    <a href="#top">↑ Back to top</a>
+    <a href="#top" onclick="window.scrollTo(0, 0); return false;">↑ Back to top</a>
     <a href="web/index.html?v=r2-20260830">Open manuscript in a new page</a>
   </div>
 </main>
