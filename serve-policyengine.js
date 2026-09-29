@@ -14,7 +14,9 @@
 //
 // @vercel/routing-utils is installed without saving so that Vercel's
 // `npm ci` stays on the committed lockfile; the helper warns if the installed
-// version is not the one it was checked against. Beyond vercel.json it
+// version is not the one it was checked against. e2e/routes.spec.js runs one
+// route table against this helper in CI (e2e.yml) and against the live origin
+// (e2e-live.yml), so drift between them fails a check. Beyond vercel.json it
 // mirrors two origin behaviours measured with curl: paths with repeated
 // slashes 308 to the collapsed path, and methods other than GET/HEAD get 405.
 import { createServer } from 'node:http';
