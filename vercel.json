@@ -7,6 +7,16 @@
       "source": "/",
       "destination": "/us/obbba-household-explorer",
       "permanent": false
+    },
+    {
+      "source": "/us/obbba-households",
+      "destination": "/us/obbba-household-explorer",
+      "permanent": false
+    },
+    {
+      "source": "/us/obbba-households/:path*",
+      "destination": "/us/obbba-household-explorer/:path*",
+      "permanent": false
     }
   ],
   "rewrites": [
