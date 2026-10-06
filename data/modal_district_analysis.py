@@ -11,12 +11,11 @@ import modal
 
 app = modal.App("obbba-district-analysis")
 
-# Image with policyengine-us installed from git and local Python sources mounted
+# Image with PolicyEngine pinned for reproducible district-level analysis.
 image = (
     modal.Image.debian_slim(python_version="3.10")
-    .apt_install("git")
     .pip_install(
-        "git+https://github.com/PolicyEngine/policyengine-us.git",
+        "policyengine[us]==4.4.4",
         "pandas",
         "numpy",
     )

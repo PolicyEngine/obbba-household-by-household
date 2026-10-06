@@ -2,6 +2,23 @@ import numpy as np
 from policyengine_core.reforms import Reform
 
 
+PRE_OBBBA_SNAP_ELIGIBLE_IMMIGRATION_STATUSES = [
+    "CITIZEN",
+    "LEGAL_PERMANENT_RESIDENT",
+    "REFUGEE",
+    "ASYLEE",
+    "DEPORTATION_WITHHELD",
+    "CUBAN_HAITIAN_ENTRANT",
+    "CONDITIONAL_ENTRANT",
+    "PAROLED_ONE_YEAR",
+]
+
+PRE_OBBBA_ACA_INELIGIBLE_IMMIGRATION_STATUSES = [
+    "DACA",
+    "UNDOCUMENTED",
+]
+
+
 def current_law_baseline():
     """
     Returns a baseline with no reforms (current law).
@@ -12,8 +29,13 @@ def current_law_baseline():
 
 def obbba_reversal_reform():
     """
-    Reverses OBBBA provisions back to TCJA expiration (pre-OBBBA law).
-    Use this as the baseline to show OBBBA's impact.
+    Construct pre-OBBBA law on top of PolicyEngine's current-law baseline.
+
+    PolicyEngine 4.4.4 includes enacted OBBBA provisions in baseline law, so
+    this reform actively reverses those provisions. Use it as the baseline to
+    show OBBBA's impact. The reversal is based on the former PolicyEngine-US
+    reconciliation reforms that were moved into current policy, plus later
+    OBBBA current-law parameter updates in PolicyEngine-US.
     """
     return Reform.from_dict({
         "gov.irs.credits.estate.base": {
@@ -57,6 +79,9 @@ def obbba_reversal_reform():
             "2033-01-01.2033-12-31": 6100,
             "2034-01-01.2034-12-31": 6200,
             "2035-01-01.2100-12-31": 6350
+        },
+        "gov.irs.income.exemption.suspended": {
+            "2026-01-01.2100-12-31": False
         },
         "gov.irs.deductions.tip_income.cap": {
             "2025-01-01.2100-12-31": 0
@@ -643,6 +668,9 @@ def obbba_reversal_reform():
         "gov.irs.deductions.qbi.deduction_floor.amount[1].amount": {
             "2025-01-01.2100-12-31": 0
         },
+        "gov.irs.deductions.qbi.deduction_floor.in_effect": {
+            "2026-01-01.2100-12-31": False
+        },
         "gov.irs.credits.cdcc.phase_out.amended_structure.applies": {
             "2026-01-01.2100-12-31": False
         },
@@ -703,8 +731,17 @@ def obbba_reversal_reform():
         "gov.irs.deductions.itemized.charity.non_itemizers_amount.SINGLE": {
             "2026-01-01.2100-12-31": 0
         },
-        "gov.irs.deductions.itemized.reduction.amended_structure.applies": {
+        "gov.irs.deductions.itemized.limitation.applies": {
+            "2026-01-01.2100-12-31": True
+        },
+        "gov.irs.deductions.itemized.limitation.obbb.applies": {
             "2026-01-01.2100-12-31": False
+        },
+        "gov.irs.deductions.itemized.charity.floor.applies": {
+            "2026-01-01.2100-12-31": False
+        },
+        "gov.irs.income.amt.exemption.phase_out.rate": {
+            "2026-01-01.2100-12-31": 0.25
         },
         "gov.irs.deductions.itemized.charity.non_itemizers_amount.SEPARATE": {
             "2026-01-01.2100-12-31": 0
@@ -734,6 +771,24 @@ def obbba_reversal_reform():
         },
         "gov.irs.deductions.itemized.charity.non_itemizers_amount.HEAD_OF_HOUSEHOLD": {
             "2026-01-01.2100-12-31": 0
+        },
+        "gov.usda.snap.eligibility.eligible_immigration_statuses": {
+            "2025-07-01.2100-12-31": PRE_OBBBA_SNAP_ELIGIBLE_IMMIGRATION_STATUSES
+        },
+        "gov.usda.snap.work_requirements.abawd.in_effect": {
+            "2025-07-04.2100-12-31": False
+        },
+        "gov.states.ca.cdss.snap.work_requirements.abawd.hr1_in_effect": {
+            "2026-06-01.2100-12-31": False
+        },
+        "gov.hhs.medicaid.eligibility.eligible_immigration_statuses": {
+            "2026-10-01.2100-12-31": PRE_OBBBA_SNAP_ELIGIBLE_IMMIGRATION_STATUSES
+        },
+        "gov.hhs.medicaid.eligibility.work_requirements.applies": {
+            "2027-01-01.2100-12-31": False
+        },
+        "gov.aca.ineligible_immigration_statuses": {
+            "2027-01-01.2100-12-31": PRE_OBBBA_ACA_INELIGIBLE_IMMIGRATION_STATUSES
         }
     }, country_id="us")
 
@@ -933,32 +988,20 @@ def tcja_reform():
             "gov.irs.income.amt.exemption.phase_out.start.SURVIVING_SPOUSE": {
                 "2026-01-01.2026-12-31": 1271900,
             },
-            "gov.irs.deductions.itemized.reduction.applies": {
+            "gov.irs.deductions.itemized.limitation.applies": {
                 "2026-01-01.2100-12-31": False
             },
-            "gov.irs.deductions.itemized.reduction.agi_threshold.SINGLE": {
-                "2026-01-01.2100-12-31": 0
+            "gov.irs.deductions.itemized.limitation.obbb.applies": {
+                "2026-01-01.2100-12-31": False
             },
             "gov.irs.income.amt.exemption.phase_out.start.HEAD_OF_HOUSEHOLD": {
                 "2026-01-01.2026-12-31": 635900,
-            },
-            "gov.irs.deductions.itemized.reduction.agi_threshold.JOINT": {
-                "2026-01-01.2100-12-31": 0
-            },
-            "gov.irs.deductions.itemized.reduction.agi_threshold.HEAD_OF_HOUSEHOLD": {
-                "2026-01-01.2100-12-31": 0
             },
             "gov.irs.deductions.itemized.salt_and_real_estate.cap.SURVIVING_SPOUSE": {
                 "2026-01-01.2100-12-31": 10_000
             },
             "gov.irs.deductions.itemized.salt_and_real_estate.cap.HEAD_OF_HOUSEHOLD": {
                 "2026-01-01.2100-12-31": 10_000
-            },
-            "gov.irs.deductions.itemized.reduction.agi_threshold.SEPARATE": {
-                "2026-01-01.2100-12-31": 0
-            },
-            "gov.irs.deductions.itemized.reduction.agi_threshold.SURVIVING_SPOUSE": {
-                "2026-01-01.2100-12-31": 0
             },
             "gov.irs.credits.estate.base": {
                 "2026-01-01.2026-12-31": 14200000,

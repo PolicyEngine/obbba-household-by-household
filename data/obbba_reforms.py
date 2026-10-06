@@ -5,12 +5,34 @@ These reforms revert parameters from TCJA expiration (obbba_reversal baseline)
 back to OBBBA/current law values. Stack these on top of obbba_reversal_reform()
 to build up OBBBA impact incrementally.
 
+2026 values are audited against PolicyEngine 4.4.4 current law, with statutory
+effective windows from Public Law 119-21 where relevant. PolicyEngine-US
+previously carried many of these as gov.contrib.reconciliation reforms before
+moving them into current policy.
+
 Usage:
     baseline = obbba_reversal_reform()  # TCJA expiration
     reforms = get_obbba_provisions()     # Stack these to get back to OBBBA
 """
 
 from policyengine_core.reforms import Reform
+
+
+OBBBA_SNAP_ELIGIBLE_IMMIGRATION_STATUSES = [
+    "CITIZEN",
+    "LEGAL_PERMANENT_RESIDENT",
+    "CUBAN_HAITIAN_ENTRANT",
+]
+
+OBBBA_ACA_INELIGIBLE_IMMIGRATION_STATUSES = [
+    "DACA",
+    "UNDOCUMENTED",
+    "TPS",
+    "REFUGEE",
+    "ASYLEE",
+    "DEPORTATION_WITHHELD",
+    "PAROLED_ONE_YEAR",
+]
 
 
 def obbba_tax_rate_reform():
@@ -79,7 +101,7 @@ def obbba_standard_deduction_reform():
             "2026-01-01.2026-12-31": 16100,
         },
         "gov.irs.deductions.standard.amount.HEAD_OF_HOUSEHOLD": {
-            "2026-01-01.2026-12-31": 24175,
+            "2026-01-01.2026-12-31": 24150,
         },
         "gov.irs.deductions.standard.amount.SURVIVING_SPOUSE": {
             "2026-01-01.2026-12-31": 32200,
@@ -90,10 +112,10 @@ def obbba_standard_deduction_reform():
 def obbba_exemption_reform():
     """
     OBBBA personal exemption provisions.
-    Sets exemption to 0 (TCJA eliminated personal exemptions).
+    Suspends personal exemptions while preserving the statutory amount.
     """
     return Reform.from_dict({
-        "gov.irs.income.exemption.amount": {"2026-01-01.2100-12-31": 0},
+        "gov.irs.income.exemption.suspended": {"2026-01-01.2100-12-31": True},
     }, country_id="us")
 
 
@@ -164,7 +186,7 @@ def obbba_cdcc_reform():
             "2026-01-01.2100-12-31": 0.5
         },
         "gov.irs.credits.cdcc.phase_out.min": {
-            "2026-01-01.2100-12-31": 0.2
+            "2026-01-01.2100-12-31": 0.35
         },
         "gov.irs.credits.cdcc.phase_out.amended_structure.applies": {
             "2026-01-01.2100-12-31": True
@@ -175,15 +197,21 @@ def obbba_cdcc_reform():
 def obbba_qbi_reform():
     """
     OBBBA Qualified Business Income Deduction provisions.
-    Reverts to TCJA/OBBBA QBI deduction including floor.
+    Reverts to TCJA/OBBBA QBI deduction including phase-out lengths and floor.
     """
     return Reform.from_dict({
         "gov.irs.deductions.qbi.max.rate": {"2026-01-01.2100-12-31": 0.2},
         "gov.irs.deductions.qbi.max.w2_wages.rate": {"2026-01-01.2100-12-31": 0.5},
         "gov.irs.deductions.qbi.max.w2_wages.alt_rate": {"2026-01-01.2100-12-31": 0.25},
         "gov.irs.deductions.qbi.max.business_property.rate": {"2026-01-01.2100-12-31": 0.025},
+        "gov.irs.deductions.qbi.phase_out.length.JOINT": {"2026-01-01.2100-12-31": 150000},
+        "gov.irs.deductions.qbi.phase_out.length.SINGLE": {"2026-01-01.2100-12-31": 75000},
+        "gov.irs.deductions.qbi.phase_out.length.SEPARATE": {"2026-01-01.2100-12-31": 75000},
+        "gov.irs.deductions.qbi.phase_out.length.HEAD_OF_HOUSEHOLD": {"2026-01-01.2100-12-31": 75000},
+        "gov.irs.deductions.qbi.phase_out.length.SURVIVING_SPOUSE": {"2026-01-01.2100-12-31": 150000},
         # QBI deduction floor (OBBBA provision)
-        "gov.irs.deductions.qbi.deduction_floor.amount[1].amount": {"2026-01-01.2100-12-31": 5000},
+        "gov.irs.deductions.qbi.deduction_floor.in_effect": {"2026-01-01.2100-12-31": True},
+        "gov.irs.deductions.qbi.deduction_floor.amount[1].amount": {"2026-01-01.2100-12-31": 400},
     }, country_id="us")
 
 
@@ -194,34 +222,37 @@ def obbba_amt_reform():
     """
     return Reform.from_dict({
         "gov.irs.income.amt.exemption.amount.JOINT": {
-            "2026-01-01.2026-12-31": 139100,
+            "2026-01-01.2026-12-31": 140200,
         },
         "gov.irs.income.amt.exemption.amount.SINGLE": {
-            "2026-01-01.2026-12-31": 89400,
+            "2026-01-01.2026-12-31": 90100,
         },
         "gov.irs.income.amt.exemption.amount.SEPARATE": {
-            "2026-01-01.2026-12-31": 69500,
+            "2026-01-01.2026-12-31": 70100,
         },
         "gov.irs.income.amt.exemption.amount.HEAD_OF_HOUSEHOLD": {
-            "2026-01-01.2026-12-31": 89400,
+            "2026-01-01.2026-12-31": 90100,
         },
         "gov.irs.income.amt.exemption.amount.SURVIVING_SPOUSE": {
-            "2026-01-01.2026-12-31": 139100,
+            "2026-01-01.2026-12-31": 140200,
         },
         "gov.irs.income.amt.exemption.phase_out.start.JOINT": {
-            "2026-01-01.2026-12-31": 1271900,
+            "2026-01-01.2026-12-31": 1000000,
         },
         "gov.irs.income.amt.exemption.phase_out.start.SINGLE": {
-            "2026-01-01.2026-12-31": 635900,
+            "2026-01-01.2026-12-31": 500000,
         },
         "gov.irs.income.amt.exemption.phase_out.start.SEPARATE": {
-            "2026-01-01.2026-12-31": 635900,
+            "2026-01-01.2026-12-31": 500000,
         },
         "gov.irs.income.amt.exemption.phase_out.start.HEAD_OF_HOUSEHOLD": {
-            "2026-01-01.2026-12-31": 635900,
+            "2026-01-01.2026-12-31": 500000,
         },
         "gov.irs.income.amt.exemption.phase_out.start.SURVIVING_SPOUSE": {
-            "2026-01-01.2026-12-31": 1271900,
+            "2026-01-01.2026-12-31": 1000000,
+        },
+        "gov.irs.income.amt.exemption.phase_out.rate": {
+            "2026-01-01.2100-12-31": 0.5,
         },
     }, country_id="us")
 
@@ -233,19 +264,19 @@ def obbba_salt_reform():
     """
     return Reform.from_dict({
         "gov.irs.deductions.itemized.salt_and_real_estate.cap.JOINT": {
-            "2026-01-01.2100-12-31": 40000
+            "2026-01-01.2026-12-31": 40400
         },
         "gov.irs.deductions.itemized.salt_and_real_estate.cap.SINGLE": {
-            "2026-01-01.2100-12-31": 20000
+            "2026-01-01.2026-12-31": 40400
         },
         "gov.irs.deductions.itemized.salt_and_real_estate.cap.SEPARATE": {
-            "2026-01-01.2100-12-31": 20000
+            "2026-01-01.2026-12-31": 20200
         },
         "gov.irs.deductions.itemized.salt_and_real_estate.cap.HEAD_OF_HOUSEHOLD": {
-            "2026-01-01.2100-12-31": 20000
+            "2026-01-01.2026-12-31": 40400
         },
         "gov.irs.deductions.itemized.salt_and_real_estate.cap.SURVIVING_SPOUSE": {
-            "2026-01-01.2100-12-31": 40000
+            "2026-01-01.2026-12-31": 40400
         },
         # SALT phase-out parameters (OBBBA provision)
         "gov.irs.deductions.itemized.salt_and_real_estate.phase_out.in_effect": {
@@ -264,7 +295,7 @@ def obbba_tip_income_reform():
     """
     return Reform.from_dict({
         "gov.irs.deductions.tip_income.cap": {
-            "2026-01-01.2100-12-31": 25000
+            "2025-01-01.2028-12-31": 25000
         },
     }, country_id="us")
 
@@ -276,19 +307,19 @@ def obbba_overtime_reform():
     """
     return Reform.from_dict({
         "gov.irs.deductions.overtime_income.cap.JOINT": {
-            "2026-01-01.2100-12-31": 25000
+            "2025-01-01.2028-12-31": 25000
         },
         "gov.irs.deductions.overtime_income.cap.SINGLE": {
-            "2026-01-01.2100-12-31": 25000
+            "2025-01-01.2028-12-31": 12500
         },
         "gov.irs.deductions.overtime_income.cap.SEPARATE": {
-            "2026-01-01.2100-12-31": 25000
+            "2025-01-01.2028-12-31": 12500
         },
         "gov.irs.deductions.overtime_income.cap.HEAD_OF_HOUSEHOLD": {
-            "2026-01-01.2100-12-31": 25000
+            "2025-01-01.2028-12-31": 12500
         },
         "gov.irs.deductions.overtime_income.cap.SURVIVING_SPOUSE": {
-            "2026-01-01.2100-12-31": 25000
+            "2025-01-01.2028-12-31": 12500
         },
     }, country_id="us")
 
@@ -300,7 +331,7 @@ def obbba_senior_deduction_reform():
     """
     return Reform.from_dict({
         "gov.irs.deductions.senior_deduction.amount": {
-            "2026-01-01.2100-12-31": 6000
+            "2025-01-01.2028-12-31": 6000
         },
     }, country_id="us")
 
@@ -312,7 +343,7 @@ def obbba_auto_loan_reform():
     """
     return Reform.from_dict({
         "gov.irs.deductions.auto_loan_interest.cap": {
-            "2026-01-01.2100-12-31": 10000
+            "2025-01-01.2028-12-31": 10000
         },
     }, country_id="us")
 
@@ -364,19 +395,22 @@ def obbba_other_item_reform():
         },
         # Charity non-itemizers - all filing statuses (OBBBA provision: $2,000/$1,000)
         "gov.irs.deductions.itemized.charity.non_itemizers_amount.JOINT": {
-            "2025-01-01.2028-12-31": 2000
+            "2026-01-01.2100-12-31": 2000
         },
         "gov.irs.deductions.itemized.charity.non_itemizers_amount.SINGLE": {
-            "2025-01-01.2028-12-31": 1000
+            "2026-01-01.2100-12-31": 1000
         },
         "gov.irs.deductions.itemized.charity.non_itemizers_amount.SEPARATE": {
-            "2025-01-01.2028-12-31": 1000
+            "2026-01-01.2100-12-31": 1000
         },
         "gov.irs.deductions.itemized.charity.non_itemizers_amount.HEAD_OF_HOUSEHOLD": {
-            "2025-01-01.2028-12-31": 1000
+            "2026-01-01.2100-12-31": 1000
         },
         "gov.irs.deductions.itemized.charity.non_itemizers_amount.SURVIVING_SPOUSE": {
-            "2025-01-01.2028-12-31": 2000
+            "2026-01-01.2100-12-31": 1000
+        },
+        "gov.irs.deductions.itemized.charity.floor.applies": {
+            "2026-01-01.2100-12-31": True
         },
     }, country_id="us")
 
@@ -384,13 +418,13 @@ def obbba_other_item_reform():
 def obbba_limitation_on_itemized_reform():
     """
     OBBBA limitation on itemized deductions.
-    Uses standard parameter to disable Pease limitation (which was repealed under TCJA).
+    Restores the OBBB itemized deduction limitation structure.
     """
     return Reform.from_dict({
-        "gov.irs.deductions.itemized.reduction.applies": {
-            "2026-01-01.2100-12-31": False
+        "gov.irs.deductions.itemized.limitation.applies": {
+            "2026-01-01.2100-12-31": True
         },
-        "gov.irs.deductions.itemized.reduction.amended_structure.applies": {
+        "gov.irs.deductions.itemized.limitation.obbb.applies": {
             "2026-01-01.2100-12-31": True
         },
     }, country_id="us")
@@ -408,60 +442,61 @@ def obbba_estate_tax_reform():
     }, country_id="us")
 
 
-def snap_takeup_reform():
+def obbba_snap_immigration_reform():
     """
-    SNAP program takeup rate adjustment.
+    OBBBA SNAP immigration eligibility restrictions.
     """
     return Reform.from_dict({
-        "gov.usda.snap.takeup_rate": {"2026-01-01.2028-12-31": 0.775},
+        "gov.usda.snap.eligibility.eligible_immigration_statuses": {
+            "2025-07-01.2100-12-31": OBBBA_SNAP_ELIGIBLE_IMMIGRATION_STATUSES
+        },
     }, country_id="us")
 
 
-def aca_takeup_reform():
+def obbba_snap_abawd_reform():
     """
-    ACA program takeup rate adjustment.
+    OBBBA SNAP ABAWD work requirement changes.
     """
     return Reform.from_dict({
-        "gov.aca.takeup_rate": {"2026-01-01.2028-12-31": 0.63},
+        "gov.usda.snap.work_requirements.abawd.in_effect": {
+            "2025-07-04.2100-12-31": True
+        },
+        "gov.states.ca.cdss.snap.work_requirements.abawd.hr1_in_effect": {
+            "2026-06-01.2100-12-31": True
+        },
     }, country_id="us")
 
 
-def medicaid_takeup_reform():
+def obbba_medicaid_immigration_reform():
     """
-    Medicaid program takeup rate adjustment.
+    OBBBA Medicaid immigration eligibility restrictions.
     """
     return Reform.from_dict({
-        "gov.hhs.medicaid.takeup_rate": {"2026-01-01.2028-12-31": 0.92},
+        "gov.hhs.medicaid.eligibility.eligible_immigration_statuses": {
+            "2026-10-01.2100-12-31": OBBBA_SNAP_ELIGIBLE_IMMIGRATION_STATUSES
+        },
     }, country_id="us")
 
 
-def aca_enhanced_subsidies_reform():
+def obbba_medicaid_work_requirement_reform():
     """
-    ACA enhanced subsidies removal (OBBBA does NOT extend enhanced subsidies).
-
-    The American Rescue Plan Act (2021) and Inflation Reduction Act (2022) enhanced
-    ACA subsidies by:
-    1. Removing the 400% FPL income cap (anyone can get subsidies)
-    2. Lowering required contribution percentages
-
-    These enhancements expire after 2025. OBBBA does NOT extend them, so this reform
-    reverts to post-ARPA values (higher contribution rates, 400% FPL cap restored).
-
-    This causes losses for households receiving ACA subsidies, especially those
-    above 400% FPL who lose eligibility entirely.
+    OBBBA Medicaid work requirement.
     """
     return Reform.from_dict({
-        # Revert to post-ARPA contribution rates (higher = people pay more)
-        "gov.aca.ptc_phase_out_rate[0].amount": {"2026-01-01.2100-12-31": 0.02},
-        "gov.aca.ptc_phase_out_rate[1].threshold": {"2026-01-01.2100-12-31": 1.33},
-        "gov.aca.ptc_phase_out_rate[1].amount": {"2025-01-01.2100-12-31": 0.03},
-        "gov.aca.ptc_phase_out_rate[2].amount": {"2026-01-01.2100-12-31": 0.04},
-        "gov.aca.ptc_phase_out_rate[3].amount": {"2026-01-01.2100-12-31": 0.063},
-        "gov.aca.ptc_phase_out_rate[4].amount": {"2026-01-01.2100-12-31": 0.0805},
-        "gov.aca.ptc_phase_out_rate[5].amount": {"2026-01-01.2100-12-31": 0.095},
-        "gov.aca.ptc_phase_out_rate[6].amount": {"2026-01-01.2100-12-31": 0.095},
-        # Restore 400% FPL cap (above 400% = NOT eligible)
-        "gov.aca.ptc_income_eligibility[2].amount": {"2026-01-01.2100-12-31": False},
+        "gov.hhs.medicaid.eligibility.work_requirements.applies": {
+            "2027-01-01.2100-12-31": True
+        },
+    }, country_id="us")
+
+
+def obbba_aca_immigration_reform():
+    """
+    OBBBA ACA premium tax credit immigration eligibility restrictions.
+    """
+    return Reform.from_dict({
+        "gov.aca.ineligible_immigration_statuses": {
+            "2027-01-01.2100-12-31": OBBBA_ACA_INELIGIBLE_IMMIGRATION_STATUSES
+        },
     }, country_id="us")
 
 
@@ -492,7 +527,9 @@ def get_obbba_provisions():
         "Overtime Exemption": obbba_overtime_reform(),
         "Senior Deduction": obbba_senior_deduction_reform(),
         "Auto Loan Interest": obbba_auto_loan_reform(),
-        "SNAP Takeup Reform": snap_takeup_reform(),
-        "ACA Takeup Reform": aca_takeup_reform(),
-        "Medicaid Takeup Reform": medicaid_takeup_reform(),
+        "SNAP Immigration Eligibility": obbba_snap_immigration_reform(),
+        "SNAP ABAWD Work Requirements": obbba_snap_abawd_reform(),
+        "Medicaid Immigration Eligibility": obbba_medicaid_immigration_reform(),
+        "Medicaid Work Requirements": obbba_medicaid_work_requirement_reform(),
+        "ACA Immigration Eligibility": obbba_aca_immigration_reform(),
     }
