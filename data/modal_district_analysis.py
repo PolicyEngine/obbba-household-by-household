@@ -13,7 +13,7 @@ app = modal.App("obbba-district-analysis")
 
 # Image with policyengine-us installed from git and local Python sources mounted
 image = (
-    modal.Image.debian_slim(python_version="3.10")
+    modal.Image.debian_slim(python_version="3.11")
     .apt_install("git")
     .pip_install(
         "git+https://github.com/PolicyEngine/policyengine-us.git",
